@@ -51,7 +51,6 @@ references/
     rust-apis.md
     rust-craft.md
     type-driven.md
-    SOURCES.md
 ```
 
 ## Care priority (when weighting findings)

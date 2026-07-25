@@ -5,21 +5,22 @@ Personal setup for coding agents.
 ## Layout
 
 ```text
+context/           # always-on (AGENTS.md)
 skills/<name>/     # one folder per job
-context/           # always-on preferences (AGENTS.md, …)
 ```
 
 ## Skill format
 
-Skills use [Skillet](https://skillet.sentry.dev) for authoring and checks.
+[Skillet](https://skillet.sentry.dev) skill layout:
 
 ```text
 skills/<name>/
-  SKILL.md         # runtime instructions
-  spec.md          # Skillet behavior contract
-  SOURCES.md       # optional: provenance and decisions
-  references/      # extra docs for this skill (load on demand)
-  scripts/         # optional helpers
+  SKILL.md              # runtime instructions
+  spec.md               # behavior contract
+  evals/cases/          # optional mechanical checks
+  references/           # optional load-on-demand depth
 ```
 
-Skeptic keeps shared review depth under `skills/skeptic/references/` (including `examples/` for worked samples). Stages point there; they do not use a pack-level `references/` folder.
+Only add `references/` or `evals/` when the skill needs them. No extra provenance files.
+
+Shared review depth for skeptic lives under `skills/skeptic/references/`; stage skills point there.

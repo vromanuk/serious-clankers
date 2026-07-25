@@ -1,0 +1,21 @@
+behavior: testing-section-substance
+prompt: |
+  Write the PR description to PR_DESCRIPTION.md for the current branch.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src test
+  echo 'export function parse(s){ return Number(s) }' > src/parse.js
+  git add -A && git commit -qm "initial"
+  git checkout -q -b fix/parse-empty
+  echo 'export function parse(s){ if(s==="") throw new Error("empty"); return Number(s) }' > src/parse.js
+  echo 'import { parse } from "../src/parse.js"; parse("")' > test/parse.test.js
+  git add -A && git commit -qm "reject empty parse + test"
+checks:
+  - file_exists: PR_DESCRIPTION.md
+  - shell: grep -Eq '^Testing:' PR_DESCRIPTION.md
+  - judge: >
+      Testing: names a real check (test file, command, or manual case).
+      Bare N/A or "tested" alone fails.
+timeout: 300

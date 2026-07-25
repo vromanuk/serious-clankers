@@ -1,0 +1,21 @@
+behavior: component-diagram-when-structure-matters
+prompt: |
+  Write a PR description into PR_DESCRIPTION.md for this branch.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  echo 'export async function handle(db, id){ return db.read(id) }' > src/handler.js
+  git add -A && git commit -qm "initial"
+  git checkout -q -b feat/pure-plan
+  echo 'export function planUpdate(existing, incoming){ if (existing.value === incoming.value) return { type: "noop" }; return { type: "write", value: incoming.value } }' > src/plan.js
+  echo 'import { planUpdate } from "./plan.js"; export async function handle(db, id, incoming){ const existing = await db.read(id); const decision = planUpdate(existing, incoming); if (decision.type === "write") await db.write(id, decision.value); return decision }' > src/handler.js
+  git add -A && git commit -qm "extract pure planner"
+checks:
+  - file_exists: PR_DESCRIPTION.md
+  - shell: grep -c '^---$' PR_DESCRIPTION.md | grep -Eq '^[2-9]'
+  - judge: >
+      Has a short diagram or component sketch between --- lines (after How,
+      before Testing). Prose-only with no sketch fails.
+timeout: 300

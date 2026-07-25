@@ -101,3 +101,16 @@ Multi-step: brief plan with a check per step:
 ```
 
 Strong success criteria let you loop on your own. Weak ones ("make it work") force constant clarification.
+
+---
+
+## Skills (this pack)
+
+Load when the job matches — not always-on:
+
+| Skill | When |
+|-------|------|
+| `pr-description` | Draft a PR body (why first, how, testing, diagram if structure) |
+| `skeptic` | Multi-lens code review |
+| `explain-topic` | Teach a concept from first principles |
+| `unit-tests` | Unit-test craft / review |

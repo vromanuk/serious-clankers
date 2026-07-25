@@ -1,0 +1,22 @@
+behavior: why-before-how
+prompt: |
+  Write a PR description for the current branch against main. Put the full
+  body in PR_DESCRIPTION.md.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  echo 'export function handle(req){ return { ok: true, items: req.items || [] } }' > src/api.js
+  git add -A && git commit -qm "initial"
+  git checkout -q -b feat/validate-empty
+  echo 'export function handle(req){ const items = req.items || []; if (!items.length) return { ok: false, error: "items required" }; return { ok: true, items } }' > src/api.js
+  git add -A && git commit -qm "reject empty items"
+checks:
+  - file_exists: PR_DESCRIPTION.md
+  - shell: grep -Eq '^Why:' PR_DESCRIPTION.md
+  - shell: grep -Eq '^How:' PR_DESCRIPTION.md
+  - judge: >
+      Why: states the need (reject empty items). How: states the change.
+      Why appears before How.
+timeout: 300

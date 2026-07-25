@@ -1,0 +1,20 @@
+behavior: diff-grounded-accuracy
+prompt: |
+  Generate a PR description for this branch in PR_DESCRIPTION.md.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  echo 'export function greet(u){ return "hi " + u.name }' > src/greet.js
+  git add -A && git commit -qm "initial"
+  git checkout -q -b fix/null-greet
+  echo 'export function greet(u){ if(!u) return "hi stranger"; return "hi " + u.name }' > src/greet.js
+  git add -A && git commit -qm "null-safe greet"
+checks:
+  - file_exists: PR_DESCRIPTION.md
+  - judge: >
+      Describes a null-safety fix for greet grounded in the committed branch
+      change. Must not invent unrelated systems or features not in this tiny
+      committed diff.
+timeout: 300

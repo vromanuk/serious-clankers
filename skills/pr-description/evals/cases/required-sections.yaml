@@ -1,0 +1,20 @@
+behavior: fixed-label-structure
+prompt: |
+  Draft a PR description for this branch and save it as PR_DESCRIPTION.md.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  echo 'export const add = (a,b) => a + b' > src/math.js
+  git add -A && git commit -qm "initial"
+  git checkout -q -b fix/null-add
+  echo 'export const add = (a,b) => (a ?? 0) + (b ?? 0)' > src/math.js
+  echo 'import { add } from "./math.js"; if (add(null,2) !== 2) process.exit(1)' > src/math.test.js
+  git add -A && git commit -qm "null-safe add + test"
+checks:
+  - file_exists: PR_DESCRIPTION.md
+  - shell: grep -Eq '^Why:' PR_DESCRIPTION.md
+  - shell: grep -Eq '^How:' PR_DESCRIPTION.md
+  - shell: grep -Eq '^Testing:' PR_DESCRIPTION.md
+timeout: 300

@@ -1,8 +1,7 @@
 # Testing guidelines
 
 Load when writing or reviewing tests.  
-Also: `examples/pure-core.md` (state/invariant ideas), `write-code.md` § Tests, skeptic-testability stage.  
-**Unit-test maintainability (Google Ch.12-style):** skill `unit-tests` → `../unit-tests/references/guide.md`.
+Also: `pure-core.md` (state/invariant ideas); unit craft: skill `unit-tests` → `../unit-tests/references/guide.md`.
 
 Inspired by (portable ideas): *Software Engineering at Google* Ch. 12 Unit Testing — not Java-specific copy.
 
@@ -81,7 +80,7 @@ If every small refactor forces a wall of test edits, the tests are brittle.
 | Fit | Examples |
 |-----|----------|
 | Pure functions with a wide input space | Parsers, window math, serializers round-trip, codecs |
-| Stateful cores | `step(state, event)` — random legal event sequences; assert invariants after every step (see `examples/pure-core.md`) |
+| Stateful cores | `step(state, event)` — random legal event sequences; assert invariants after every step (see `pure-core.md`) |
 | “Never” / “always” rules | Never commit past unpersisted work; checksum; monotonic counters |
 
 **When not**
@@ -184,4 +183,4 @@ For **benches**: unit-test SQL builders and pure window math; don’t replace A/
 ## Sources
 
 - SE at Google Ch. 12 (unit testing maintainability, public API, unchanging tests) — portable ideas only  
-- `examples/pure-core.md`, `write-code.md` given/expected  
+- `pure-core.md`; composition/comments depth: `skeptic-conventions/references/write-code.md`  

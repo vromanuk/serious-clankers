@@ -13,11 +13,9 @@ description: >
 
 ## Load (on demand)
 
-- `../skeptic/references/personal-guidelines.md` § Thinking code vs shell + Tests  
-- `../skeptic/references/write-code.md` § Thinking code vs shell + Tests  
-- `../skeptic/references/testing.md` — property/snapshot shapes  
+- `references/testing.md` — property/snapshot shapes  
+- `references/pure-core.md` — thinking vs shell samples  
 - `../unit-tests/SKILL.md` + `../unit-tests/references/guide.md` — **unit-test quality** (unchanging, public API, state vs interaction, DAMP)  
-- `../skeptic/references/examples/pure-core.md`  
 
 ## Plain words
 

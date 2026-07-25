@@ -12,10 +12,8 @@ description: >
 
 ## Load (on demand)
 
-- `../skeptic/references/personal-guidelines.md` § Architecture  
-- `../skeptic/references/write-code.md` — names/types at the use site  
-- `../skeptic/references/examples/type-driven.md` — worked type-boundary samples  
-- `../skeptic/references/examples/rust-apis.md` — misuse-resistant APIs  
+- `references/type-driven.md` — worked type-boundary samples  
+- `references/rust-apis.md` — misuse-resistant APIs  
 
 ## Do
 

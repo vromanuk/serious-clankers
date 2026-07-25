@@ -32,26 +32,9 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 | 2 | `../skeptic-architecture/SKILL.md` | Components by job? Public vs private? Data ownership? Types at boundaries? |
 | 3 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Tests for new contracts? |
 | 4 | `../skeptic-conventions/SKILL.md` | Comments, plain language, composition, Rust form? |
-| 5 | `../skeptic-hard-rules/SKILL.md` | Absolute bans only (`references/hard-rules.md`)? |
+| 5 | `../skeptic-hard-rules/SKILL.md` | Absolute bans only (`references/hard-rules.md` on that skill)? |
 
-## References (this skill — Skillet load-on-demand)
-
-Shared by stages. Load only what the stage asks for; do not paste wholesale into every prompt.
-
-```text
-references/
-  hard-rules.md
-  write-code.md
-  testing.md
-  personal-guidelines.md
-  examples/           # worked samples
-    comments.md
-    design-headers.md
-    pure-core.md
-    rust-apis.md
-    rust-craft.md
-    type-driven.md
-```
+Each stage owns its own `references/` (load only what that stage’s SKILL asks for). Coordinator stays thin — no shared ref library here.
 
 ## Care priority (when weighting findings)
 
@@ -75,7 +58,7 @@ references/
 - One opaque mega-diff / squash of many ideas  
 - Contract only in a second helper — caller can forget  
 
-Hard-rule IDs only from stage 5 / `hard-rules.md`. Soft scars go to the matching stage with evidence.
+Hard-rule IDs only from stage 5 / `skeptic-hard-rules/references/hard-rules.md`. Soft scars go to the matching stage with evidence.
 
 ## Concern format
 
@@ -92,7 +75,7 @@ Material design forks: NUMBER the issue, then LETTER real options (recommended f
 ## Loop
 
 1. **Snapshot** — base/dirty tree, real need (mark assumed if needed), non-goals, changed files, validation commands available  
-2. **Load** each stage `SKILL.md` (and hard-rules for stage 5). Do not skip a stage because the slice “looks safe.”  
+2. **Load** each stage `SKILL.md` (and that stage’s `references/` as the stage says). Do not skip a stage because the slice “looks safe.”  
 3. **Choose mode** — subagents if available; else same-session sequential stages  
 4. **Run stages 1→5** — subagent-per-stage (max 3 concurrent) **or** sequential in this window  
 5. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
@@ -117,7 +100,7 @@ Scope: <base, changed files>
 Non-goals: <or none>
 Intentional tradeoffs: <or none>
 Validation already run: <or not run>
-Shared reference paths (read if stage says so): <list>
+Stage reference paths (read if stage says so): <list from that stage’s SKILL>
 
 Rules:
 - Stay inside this stage’s Do / Do not.

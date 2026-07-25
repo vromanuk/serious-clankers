@@ -21,6 +21,6 @@ skills/<name>/
   references/           # optional load-on-demand depth
 ```
 
-Only add `references/` or `evals/` when the skill needs them. No extra provenance files.
+Only add `references/` or `evals/` when the skill needs them. No pack-level shared library — each skill keeps its own depth.
 
-Shared review depth for skeptic lives under `skills/skeptic/references/`; stage skills point there.
+Skeptic stages follow that rule: e.g. hard-rules live under `skeptic-hard-rules/references/`, not under the coordinator.

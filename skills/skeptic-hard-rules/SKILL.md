@@ -12,7 +12,7 @@ description: >
 
 ## Load
 
-- **Only** `../skeptic/references/hard-rules.md` as the checklist (Skillet: shared under coordinator skill)  
+- **Only** `references/hard-rules.md` as the checklist  
 - Optional: run deterministic tools (`clippy`, `rustfmt`, tests) and report pass/fail  
 
 ## Do

@@ -57,6 +57,6 @@ The agent SHALL NOT implement fixes unless the user explicitly asked to fix.
 
 ### Constraint: No invented hard-rule IDs
 
-The agent MUST NOT invent hard-rule IDs; stage 5 uses only IDs from `references/hard-rules.md` on this skill.
+The agent MUST NOT invent hard-rule IDs; stage 5 uses only IDs from `skeptic-hard-rules/references/hard-rules.md`.
 
 <!-- skillet-version: 1.7.0 -->

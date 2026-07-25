@@ -688,9 +688,9 @@ When reviewing or writing unit tests, ask:
 
 | Idea | Where else |
 |------|------------|
-| Thinking code vs shell (what is easy to unit-test) | `skeptic/references/examples/pure-core.md`, skeptic-testability |
-| Property / snapshot **when** | `skeptic/references/testing.md` (still obey public-API + unchanging rules) |
-| Hard ban: new thinking behavior without tests | `skeptic/references/hard-rules.md` → `HR-new-behavior-no-test` |
+| Thinking code vs shell (what is easy to unit-test) | `skeptic-testability/references/pure-core.md` |
+| Property / snapshot **when** | `skeptic-testability/references/testing.md` (still obey public-API + unchanging rules) |
+| Hard ban: new thinking behavior without tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-new-behavior-no-test` |
 
 ---
 

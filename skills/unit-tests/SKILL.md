@@ -53,9 +53,9 @@ Flag with path:line:
 ## Scope
 
 - **In:** unit tests, brittleness, clarity, naming, structure, DAMP/DRY, state vs interaction.  
-- **Out:** full integration/E2E design alone; property/snapshot *mechanics* (see `skeptic/references/testing.md` for those tools — they still obey unchanging/public-API rules).  
+- **Out:** full integration/E2E design alone; property/snapshot *mechanics* (see `skeptic-testability/references/testing.md` — they still obey unchanging/public-API rules).  
 
 ## Related
 
-- Skeptic: `skeptic-testability` loads this for unit depth; `skeptic/references/testing.md` for property/snapshot shapes.  
+- Skeptic: `skeptic-testability` loads this for unit depth; its `references/testing.md` for property/snapshot shapes.  
 - Local review pack: `review-testability` loads the same skill under `~/agents/skills/unit-tests/`.  

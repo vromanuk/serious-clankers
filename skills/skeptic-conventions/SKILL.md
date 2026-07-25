@@ -12,10 +12,9 @@ description: >
 
 ## Load (on demand)
 
-1. `../skeptic/references/personal-guidelines.md` — comments, language, code shape  
-2. `../skeptic/references/write-code.md` — comments + § Composition  
-3. `../skeptic/references/examples/` — read the relevant sample files before judging  
-4. `../skeptic/references/hard-rules.md` — only to *point* at a ban (stage 5 owns the walk)  
+1. `references/write-code.md` — comments + § Composition  
+2. `references/comments.md`, `references/design-headers.md` — comment samples  
+3. `references/rust-craft.md` — plain Rust form samples  
 
 ## Do
 

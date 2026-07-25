@@ -2,7 +2,7 @@
 
 ## Intent
 
-Stage 5 of skeptic: pass/fail absolute bans only, from `../skeptic/references/hard-rules.md`. No soft taste.
+Stage 5 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md` on this skill. No soft taste.
 
 ## Triggers
 
@@ -13,7 +13,7 @@ Stage 5 of skeptic: pass/fail absolute bans only, from `../skeptic/references/ha
 
 ### Behavior: Checklist only
 
-The agent SHALL walk `../skeptic/references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`.
+The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`.
 
 #### Scenario: Private import
 

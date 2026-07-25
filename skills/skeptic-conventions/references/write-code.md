@@ -1,7 +1,8 @@
 # How to write code (detail)
 
 Load when implementing or reviewing code shape — not required for pure Q&A.  
-Companion files: `testing.md`, `examples/`, `hard-rules.md`.
+Same skill: `comments.md`, `design-headers.md`, `rust-craft.md`.  
+Sibling skills: `skeptic-testability/references/testing.md`, `skeptic-hard-rules/references/hard-rules.md`.
 
 ## Optimize for the reader
 
@@ -99,7 +100,7 @@ Prefer strong invariants over dozens of one-off scenarios.
 
 Skip tiny leaves named by the caller. Never skip decisions, protocol steps, public APIs.
 
-See also: `examples/design-headers.md`.
+See also: `design-headers.md`.
 
 ## Composition (one function per task)
 
@@ -147,7 +148,7 @@ Same idea for non-string pipelines: parse → decide → format; or shell: read 
 - “One function per task” does not cancel **optimize for the reader** or **performance when it matters** — a hot path may stay denser if measured and commented.  
 - Blank lines between composed steps can help the reader; they are not a substitute for real functions.
 
-When the pieces are pure (no IO), compose pure tasks + thin shell (see `examples/pure-core.md`). Review checks composition under **skeptic-conventions**.
+When the pieces are pure (no IO), compose pure tasks + thin shell (see `skeptic-testability/references/pure-core.md`). Review checks composition under **skeptic-conventions**.
 
 ## When to extract
 
@@ -167,7 +168,7 @@ Handle edges the system can produce. Do not invent guards for impossible states;
 - Large input/state space → property / sequence + invariants  
 - Stable complex output → snapshot/golden (normalize clocks/paths)  
 
-**Full testing guidelines:** `testing.md`
+**Full testing guidelines:** `skeptic-testability/references/testing.md`
 
 ## Comments (detail)
 
@@ -224,5 +225,5 @@ Non-trivial functions: **design header** (purpose + given/expected). No type-sig
 
 **Do not:** narrate control flow; comment obvious leaves; aspirational lies; force the reader into the implementation for a contract that should sit on the API.
 
-Examples: `examples/comments.md`, `examples/design-headers.md`.  
-Hard bans: `hard-rules.md`.
+Examples: `comments.md`, `design-headers.md`.  
+Hard bans: `skeptic-hard-rules/references/hard-rules.md`.

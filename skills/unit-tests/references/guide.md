@@ -1,7 +1,9 @@
 # Unit testing guide
 
 Distilled from *Software Engineering at Google*, Chapter 12 — Unit Testing (Erik Kuefler; ed. Tom Manshreck).  
-Portable rules and examples for writing and reviewing **unit tests**. Language samples follow the book (Java-style) plus short Rust notes where the same idea applies.
+Portable rules for writing and reviewing **unit tests**.
+
+**Language of the samples:** most code blocks are **Java** (as in the book), with a few Go/JS/Python snippets and occasional Rust notes. Treat them as **illustrations of the idea**, not as a Java-only rulebook. The same practices apply in Rust, Go, TypeScript, or any other stack — restate them in the project’s language when you write or review tests.
 
 **Load this file** when applying the `unit-tests` skill in depth.
 
@@ -218,88 +220,230 @@ Unclear tests hurt as much as brittle ones: failures don’t teach, and readers 
 
 #### Example 12-6 — incomplete + cluttered (bad)
 
-A test that buries the important values in huge setup, or omits the expected outcome in the name/body so readers must reverse-engineer.
+Neither complete nor concise: noise in the constructor, and the real inputs hide inside a helper.
+
+```java
+@Test
+public void shouldPerformAddition() {
+  Calculator calculator = new Calculator(new RoundingStrategy(),
+      "unused", ENABLE_COSINE_FEATURE, 0.01, calculusEngine, false);
+  int result = calculator.calculate(newTestCalculation());
+  assertThat(result).isEqualTo(5); // Where did this number come from?
+}
+```
+
+| Problem | What’s wrong |
+|---------|----------------|
+| **Not concise** | Constructor args (`"unused"`, cosine flag, tolerance, engine, …) are irrelevant to addition and distract the reader. |
+| **Not complete** | The meaningful inputs (e.g. 2 + 3) are buried in `newTestCalculation()`; expected `5` has no visible link to those inputs. |
 
 #### Example 12-7 — complete and concise (good)
 
-Only the accounts, amounts, and expected balances that matter for **this** behavior; assertion states the outcome clearly.
+Same behavior: hide *irrelevant* construction; put *behavior-critical* values in the test body.
+
+```java
+@Test
+public void shouldPerformAddition() {
+  Calculator calculator = newCalculator();  // hides boring defaults
+  int result = calculator.calculate(newCalculation(2, Operation.PLUS, 3));
+  assertThat(result).isEqualTo(5);  // 2 + 3 → 5 is obvious
+}
+```
+
+| Fix | How |
+|-----|-----|
+| **More complete** | `2`, `PLUS`, `3` and expected `5` are all in the body — no reverse-engineering. |
+| **More concise** | `newCalculator()` drops constructor noise that does not affect this behavior. |
+
+**Rule:** the body should hold everything needed to understand the result, and nothing that only distracts. Helpers are good for **uninteresting** setup; they are bad when they hide **what makes this test this test**.
 
 **Duplication vs cleverness:** humans miss bugs in concatenated strings and clever helpers. Duplicating a base URL in a test can be worth it so the expected value is visible (see DAMP later).
 
 ### 4.2 Test behaviors, not methods
 
-Don’t write “one test class per production class, one test method per production method.” That couples tests to structure and produces shallow tests.
+Don’t map “one production method → one test method.” Methods grow; tests become bags of unrelated checks (and violate unchanging tests when people pile on).
 
-Instead: **features = collections of behaviors**. Each test encodes **one behavior** (given a situation, when an action happens, then an outcome).
+A **behavior** is a guarantee: given a state, when an action happens, then an outcome. Method ↔ behavior is many-to-many.
 
-#### Example 12-8–10 — method-driven vs behavior-driven
+#### Example 12-8 — production (two behaviors in one method)
 
-**Method-driven (weaker):** `testProcessTransaction`, `testIsValid`, … maps 1:1 to methods, including privates.
+```java
+public void displayTransactionResults(User user, Transaction transaction) {
+  ui.showMessage("You bought a " + transaction.getItemName());
+  if (user.getBalance() < LOW_BALANCE_THRESHOLD) {
+    ui.showMessage("Warning: your balance is low!");
+  }
+}
+```
 
-**Behavior-driven (stronger):**  
+#### Example 12-9 — method-driven (weaker)
 
-- `shouldTransferFundsWhenBalanceSufficient`  
-- `shouldRejectTransferWhenBalanceInsufficient`  
+One test grows as the method gains features:
 
-Multiple behaviors may exercise the same method; that’s fine.
+```java
+@Test
+public void testDisplayTransactionResults() {
+  transactionProcessor.displayTransactionResults(
+      newUserWithBalance(LOW_BALANCE_THRESHOLD.plus(dollars(2))),
+      new Transaction("Some Item", dollars(3)));
+
+  assertThat(ui.getText()).contains("You bought a Some Item");
+  assertThat(ui.getText()).contains("your balance is low");
+}
+```
+
+#### Example 12-10 — behavior-driven (stronger)
+
+Split by story; extra boilerplate is worth it:
+
+```java
+@Test
+public void displayTransactionResults_showsItemName() {
+  transactionProcessor.displayTransactionResults(
+      new User(), new Transaction("Some Item"));
+  assertThat(ui.getText()).contains("You bought a Some Item");
+}
+
+@Test
+public void displayTransactionResults_showsLowBalanceWarning() {
+  transactionProcessor.displayTransactionResults(
+      newUserWithBalance(LOW_BALANCE_THRESHOLD.plus(dollars(2))),
+      new Transaction("Some Item", dollars(3)));
+  assertThat(ui.getText()).contains("your balance is low");
+}
+```
 
 ### 4.3 Structure tests to emphasize behaviors
 
-Use a clear narrative (names vary; idea is the same):
-
-```text
-Given  — arrange world
-When   — act
-Then   — assert
-```
-
-(Also called arrange / act / assert.)
+Make **Given / When / Then** (arrange / act / assert) explicit — comments and whitespace, or framework support.
 
 #### Example 12-11 — well-structured
 
-```text
-// Given
-set balances…
+```java
+@Test
+public void transferFundsShouldMoveMoneyBetweenAccounts() {
+  // Given two accounts with initial balances of $150 and $20
+  Account account1 = newAccountWithBalance(usd(150));
+  Account account2 = newAccountWithBalance(usd(20));
 
-// When
-processTransaction(…)
+  // When transferring $100 from the first to the second account
+  bank.transferFunds(account1, account2, usd(100));
 
-// Then
-assert balances…
+  // Then the new account balances should reflect the transfer
+  assertThat(account1.getBalance()).isEqualTo(usd(50));
+  assertThat(account2.getBalance()).isEqualTo(usd(120));
+}
 ```
 
-#### Example 12-12 — multiple when/then
+Read at three levels: method name → given/when/then comments → code.  
+Don’t interleave many acts and asserts unless you mean a multi-step **single** behavior.
 
-If one test needs several acts, separate blocks clearly — or split into multiple behavior tests if they’re independent stories.
+#### Example 12-12 — alternating when/then (one multi-step behavior)
+
+```java
+@Test
+public void shouldTimeOutConnections() {
+  // Given two users
+  User user1 = newUser();
+  User user2 = newUser();
+
+  // And an empty connection pool with a 10-minute timeout
+  Pool pool = newPool(Duration.minutes(10));
+
+  // When connecting both users to the pool
+  pool.connect(user1);
+  pool.connect(user2);
+
+  // Then the pool should have two connections
+  assertThat(pool.getConnections()).hasSize(2);
+
+  // When waiting for 20 minutes
+  clock.advance(Duration.minutes(20));
+
+  // Then the pool should have no connections
+  assertThat(pool.getConnections()).isEmpty();
+
+  // And each user should be disconnected
+  assertThat(user1.isConnected()).isFalse();
+  assertThat(user2.isConnected()).isFalse();
+}
+```
+
+Most unit tests need only one when + one then. If you need “and” in the **name**, you might be testing multiple behaviors.
 
 ### 4.4 Name tests after the behavior
 
-Names should read like a specification sentence.
+Names show up first in failure reports. Describe **action + expected outcome** (and setup when needed).
 
-Patterns (book samples):
+#### Example 12-13 — nested naming (e.g. Jasmine)
 
-- Nested / descriptive: `transferFunds / when balance sufficient / updates both accounts`  
-- Method-style still OK if the **name is the behavior**: `shouldUpdateBothAccountsWhenBalanceSufficient`
+```javascript
+describe("multiplication", function() {
+  describe("with a positive number", function() {
+    var positiveNumber = 10;
+    it("is positive with another positive number", function() {
+      expect(positiveNumber * 10).toBeGreaterThan(0);
+    });
+    it("is negative with a negative number", function() {
+      expect(positiveNumber * -10).toBeLessThan(0);
+    });
+  });
+  // ...
+});
+```
 
-Avoid: `test1`, `testProcessTransaction`, `works`.
+#### Example 12-14 — method-name patterns
+
+```text
+multiplyingTwoPositiveNumbersShouldReturnAPositiveNumber
+multiply_positiveAndNegative_returnsNegative
+divide_byZero_throwsException
+```
+
+Verbose is OK: tests aren’t called from production. Trick: start with **should…** so class + name read as a sentence  
+(`BankAccount` + `shouldNotAllowWithdrawalsWhenBalanceIsEmpty`).
+
+Avoid: `test1`, `testProcessTransaction`, `works`. Word **and** in a name → maybe split tests.
 
 ### 4.5 Don’t put logic in tests
 
-**No** conditionals, loops, or clever helpers that re-implement production logic in the test. Stick to **straight-line** code.
+No operators/loops/conditionals that force mental execution. If a test needs its own tests, something is wrong. Prefer straight-line code; tolerate duplication for clarity.
 
-#### Example 12-15–16 — logic conceals bugs
+#### Example 12-15 — logic conceals a bug
 
-If the test builds expected values with the same formula as production, both can be wrong and the test still passes. Hard-coded expected outcomes reveal the bug.
+```java
+@Test
+public void shouldNavigateToAlbumsPage() {
+  String baseUrl = "http://photos.google.com/";
+  Navigator nav = new Navigator(baseUrl);
+  nav.goToAlbumPage();
+  assertThat(nav.getCurrentUrl()).isEqualTo(baseUrl + "/albums");
+}
+```
 
-**Tolerate duplication** when it makes the expected result obvious.
+One concatenation — still easy to miss a double-slash bug shared with production.
+
+#### Example 12-16 — no logic; bug is visible
+
+```java
+@Test
+public void shouldNavigateToPhotosPage() {
+  Navigator nav = new Navigator("http://photos.google.com/");
+  nav.goToPhotosPage();
+  assertThat(nav.getCurrentUrl())
+      .isEqualTo("http://photos.google.com//albums"); // Oops! double slash
+}
+```
+
+Duplicating the base URL is worth it so expected strings are readable. Loops/conditionals in tests hide bugs even more.
 
 ### 4.6 Write clear failure messages
 
-Ideal: engineer diagnoses from the **failure message** alone.
+Ideal: diagnose from the log without opening the test. Include desired outcome, actual outcome, relevant params.
 
-Bad: `Test failed: account is closed` (expected closed or actual closed?)  
+**Bad:** `Test failed: account is closed` (expected closed, or was closed?)  
 
-Better: expected state, actual state, relevant fields:
+**Better:**
 
 ```text
 Expected an account in state CLOSED, but got account:
@@ -310,13 +454,19 @@ Expected an account in state CLOSED, but got account:
 
 ```java
 Set<String> colors = ImmutableSet.of("red", "green", "blue");
-assertTrue(colors.contains("orange"));  // weak message
-assertThat(colors).contains("orange");  // Truth: richer failure
+assertTrue(colors.contains("orange"));  // "expected true but was false"
+assertThat(colors).contains("orange");  // Truth: subject in the message
+// e.g. <[red, green, blue]> should have contained <orange>
 ```
 
 #### Example 12-18 — Go-style explicit messages
 
-Same idea: assertions that print expected vs actual with context.
+```go
+result := Add(2, 3)
+if result != 5 {
+  t.Errorf("Add(2, 3) = %v, want %v", result, 5)
+}
+```
 
 **Rust note:** prefer `assert_eq!(got, expected)` / `pretty_assertions` / custom messages over bare `assert!(cond)`.
 
@@ -324,31 +474,177 @@ Same idea: assertions that print expected vs actual with context.
 
 ## 5. DAMP over DRY in tests
 
-Production code often optimizes **DRY**. Test code optimizes **reader clarity**.
+Production often optimizes **DRY**. Tests optimize **clarity and stability** (they should break when behavior changes, not when you extract a helper in prod).
 
-**DAMP** = Descriptive And Meaningful Phrases (favor readability and local clarity).  
-**DRY** = Don’t Repeat Yourself.
+**DAMP** = Descriptive And Meaningful Phrases.  
+**DRY** = Don’t Repeat Yourself.  
+DAMP **complements** DRY: helpers are fine when they make tests *clearer*, not only shorter.
 
-### Too DRY (Example 12-19)
+### Example 12-19 — too DRY (bad)
 
-Heavy shared setup + loops hide which values matter for **this** behavior; failures are opaque.
+```java
+@Test
+public void shouldAllowMultipleUsers() {
+  List<User> users = createUsers(false, false);
+  Forum forum = createForumAndRegisterUsers(users);
+  validateForumAndUsers(forum, users);
+}
 
-### DAMP (Example 12-20)
+@Test
+public void shouldNotAllowBannedUsers() {
+  List<User> users = createUsers(true);
+  Forum forum = createForumAndRegisterUsers(users);
+  validateForumAndUsers(forum, users);
+}
 
-Each test shows the important inputs and expectations even if similar lines repeat across tests.
+// helpers with loops/conditionals hide important details and can hide bugs
+private static List<User> createUsers(boolean... banned) { /* loop + setState */ }
+private static Forum createForumAndRegisterUsers(List<User> users) { /* loop + catch */ }
+private static void validateForumAndUsers(Forum forum, List<User> users) {
+  // e.g. wrong equality vs BANNED state buried in a loop
+}
+```
 
-### Sharing code carefully
+Bodies are short but **incomplete**; logic in helpers is hard to verify at a glance.
 
-Sharing **can** help if it keeps tests descriptive:
+### Example 12-20 — DAMP (good)
 
-| Pattern | Guidance |
-|---------|----------|
-| **Shared constants with vague names** (Ex 12-21) | Bad — readers don’t know role of `VALUE_A`. |
-| **Helper factories with explicit overrides** (Ex 12-22) | Better — defaults for uninteresting fields; test sets only fields it cares about. Optionally **slightly randomize** defaults for unspecified fields so accidental equality is rarer and hardcoding defaults is harder. |
-| **setUp that tests silently depend on** (Ex 12-23) | Risky — important given state is invisible in the test body. |
-| **Override in the test** (Ex 12-24) | Better — make the relevant given state local or obviously overridden. |
+```java
+@Test
+public void shouldAllowMultipleUsers() {
+  User user1 = newUser().setState(State.NORMAL).build();
+  User user2 = newUser().setState(State.NORMAL).build();
 
-**Conceptually simple tests** (Ex 12-25): a reader should reconstruct the story without spelunking setup hierarchies.
+  Forum forum = new Forum();
+  forum.register(user1);
+  forum.register(user2);
+
+  assertThat(forum.hasRegisteredUser(user1)).isTrue();
+  assertThat(forum.hasRegisteredUser(user2)).isTrue();
+}
+
+@Test
+public void shouldNotRegisterBannedUsers() {
+  User user = newUser().setState(State.BANNED).build();
+
+  Forum forum = new Forum();
+  try {
+    forum.register(user);
+  } catch (BannedUserException ignored) {}
+
+  assertThat(forum.hasRegisteredUser(user)).isFalse();
+}
+```
+
+More lines, but each test is meaningful **without leaving the body**.
+
+### Example 12-21 — shared values, ambiguous names (bad)
+
+```java
+private static final Account ACCOUNT_1 = Account.newBuilder()
+    .setState(AccountState.OPEN).setBalance(50).build();
+private static final Account ACCOUNT_2 = Account.newBuilder()
+    .setState(AccountState.CLOSED).setBalance(0).build();
+private static final Item ITEM = Item.newBuilder()
+    .setName("Cheeseburger").setPrice(100).build();
+
+@Test
+public void canBuyItem_returnsFalseForClosedAccounts() {
+  assertThat(store.canBuyItem(ITEM, ACCOUNT_1)).isFalse(); // which is closed?
+}
+
+@Test
+public void canBuyItem_returnsFalseWhenBalanceInsufficient() {
+  assertThat(store.canBuyItem(ITEM, ACCOUNT_2)).isFalse();
+}
+```
+
+Even with good **test names**, readers scroll for definitions; reuse encourages wrong constant for the scenario. Prefer descriptive names **or** (better) build values in the test / via helpers.
+
+### Example 12-22 — factory helpers with defaults (good)
+
+```python
+def newContact(firstName="Grace", lastName="Hopper", phoneNumber="555-123-4567"):
+  return Contact(firstName, lastName, phoneNumber)
+
+def test_fullNameShouldCombineFirstAndLastNames(self):
+  contact = newContact(firstName="Ada", lastName="Lovelace")
+  self.assertEqual(contact.fullName(), "Ada Lovelace")
+```
+
+```java
+private static Contact.Builder newContact() {
+  return Contact.newBuilder()
+      .setFirstName("Grace")
+      .setLastName("Hopper")
+      .setPhoneNumber("555-123-4567");
+}
+
+@Test
+public void fullNameShouldCombineFirstAndLastNames() {
+  Contact contact = newContact()
+      .setFirstName("Ada")
+      .setLastName("Lovelace")
+      .build();
+  assertThat(contact.getFullName()).isEqualTo("Ada Lovelace");
+}
+```
+
+Optional: slightly **randomize** defaults for fields tests don’t set, so accidental equality and hardcoded defaults are harder.
+
+### Example 12-23 — depend on setUp values (incomplete)
+
+```java
+@Before
+public void setUp() {
+  nameService = new NameService();
+  nameService.set("user1", "Donald Knuth");
+  userStore = new UserStore(nameService);
+}
+
+// ... hundreds of lines later ...
+
+@Test
+public void shouldReturnNameFromService() {
+  UserDetails user = userStore.get("user1");
+  assertThat(user.getName()).isEqualTo("Donald Knuth"); // where from?
+}
+```
+
+### Example 12-24 — override important values in the test (better)
+
+```java
+@Before
+public void setUp() {
+  nameService = new NameService();
+  nameService.set("user1", "Donald Knuth");
+  userStore = new UserStore(nameService);
+}
+
+@Test
+public void shouldReturnNameFromService() {
+  nameService.set("user1", "Margaret Hamilton");
+  UserDetails user = userStore.get("user1");
+  assertThat(user.getName()).isEqualTo("Margaret Hamilton");
+}
+```
+
+Setup is fine for boring construction; tests that care about **particular** values should state them.
+
+### Example 12-25 — focused validation helper (OK when one fact)
+
+General `validateEverything()` at the end of every test blurs behaviors. A helper that asserts **one** conceptual fact — especially if it needs a loop — can still help:
+
+```java
+private void assertUserHasAccessToAccount(User user, Account account) {
+  for (long userId : account.getUsersWithAccess()) {
+    if (user.getId() == userId) {
+      return;
+    }
+  }
+  fail(user.getName() + " cannot access " + account.getName());
+}
+```
 
 ### Test infrastructure (cross-suite)
 
@@ -356,7 +652,7 @@ Code shared across many suites is **infrastructure**, more like production:
 
 - Many dependents → hard to change.  
 - Treat as its own product **with its own tests**.  
-- Prefer standard org-wide libraries early (e.g. Google standardized on Mockito for Java mocks).  
+- Prefer standard org-wide libraries early (e.g. one mocking framework for the org).  
 
 ---
 

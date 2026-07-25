@@ -12,7 +12,8 @@ description: >
 
 Write and judge **unit tests** so they raise productivity: fast feedback, real bugs on failure, almost never rewritten unless product behavior changes.
 
-**Full rules + examples:** load `references/guide.md` (required for non-trivial work).
+**Full rules + examples:** load `references/guide.md` (required for non-trivial work).  
+Samples in the guide are mostly **Java** (from the source chapter) — principles apply in any language; the code is reference material, not a stack requirement.
 
 ## First rules (always)
 

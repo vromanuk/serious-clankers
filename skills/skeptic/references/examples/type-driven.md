@@ -1,4 +1,4 @@
-# Exemplars — type-driven contracts
+# Type-driven contracts
 
 **Sources:** [Type-Driven API Design in Rust](https://willcrichton.net/rust-api-type-patterns/introduction.html) (Will Crichton); [Parse, don’t validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/); Rust API Guidelines.
 

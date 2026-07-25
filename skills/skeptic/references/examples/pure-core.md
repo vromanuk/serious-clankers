@@ -1,4 +1,4 @@
-# Exemplars — thinking code vs shell (plain words)
+# Thinking code vs shell
 
 Use plain names. Do not require coined labels in findings.
 

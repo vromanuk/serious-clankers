@@ -1,8 +1,7 @@
-# Exemplars — design headers (HTDP-style)
+# Design headers (purpose + given/expected)
 
-**Class:** behavior contract on non-trivial thinking functions.  
-**Form:** purpose (what/why), then **given / expected**. **No type-signature line** (types live in the type system).
-
+On non-trivial functions: purpose (what/why), then **given / expected**.  
+**No type-signature line** — types live in the type system.
 ## Good (Rust)
 
 ```rust

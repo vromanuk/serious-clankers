@@ -140,12 +140,12 @@ letter(first, last, signature):
 
 Same idea for non-string pipelines: parse → decide → format; or shell: read → thinking → act.
 
-**Balance with denseness**
+**Balance with splitting**
 
 - Split on **real tasks**, not on every line.  
 - A one-call helper that only renames a loop or forwards fields is still not worth it.  
 - “One function per task” does not cancel **optimize for the reader** or **performance when it matters** — a hot path may stay denser if measured and commented.  
-- Blank lines between composed steps can help the reader; they are not a substitute for real functions (and not a fmt/review ban).
+- Blank lines between composed steps can help the reader; they are not a substitute for real functions.
 
 When the pieces are pure (no IO), compose pure tasks + thin shell (see `examples/pure-core.md`). Review checks composition under **skeptic-conventions**.
 

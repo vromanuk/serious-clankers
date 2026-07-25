@@ -1,29 +1,27 @@
-# Exemplars — hazard and ownership comments
+# Hazard and ownership comments
 
-**Class:** truths that names, types, and tests do not make cheap. Prefer **why / who must / must not / negative space**.
+Comments carry truths that names, types, and tests do not make cheap: **why / who must / must not / negative space**.
 
-**Also drawn from (language-agnostic parts of):** [Google C++ Style Guide — Comments](https://google.github.io/styleguide/cppguide.html#Comments). We do **not** copy C++-only rules (header vs `.cc` placement, `//` file banners for includes, etc.). Rust keeps docs on the item (`///` / `//!`).
+Useful portable ideas: [Google C++ Style Guide — Comments](https://google.github.io/styleguide/cppguide.html#Comments) (intent, not narration). Rust: put docs on the item (`///` / `//!`).
 
 ## Local reasoning
 
-A reader should grasp what a call does **at the call site** (or on the public `///`) without opening every implementation. Types and names do most of that; comments fill the gaps. (“Leave a trace for the reader” / in-place evidence — same goal as Google’s comment rules.)
+A reader should grasp what a call does **at the call site** (or on the public `///`) without opening every implementation. Types and names do most of that; comments fill the gaps.
 
 | Documentation (`//!` / `///`) | Implementation (`//`) |
 |------------------------------|------------------------|
 | Intent and design of module/type/function | Why this branch, this order, this skip |
 | Purpose, contracts, given/expected | Tricky bit, hazard, “do not simplify to X” |
 
-## What each comment kind is for (portable)
+| Kind | Put | Job |
+|------|-----|-----|
+| **Module** | `//!` | What this unit is for; key invariants; entrypoints / short flow when multi-step |
+| **Type / function** | `///` | Purpose, contracts, failure/no-op, order notes when part of the API |
+| **Body** | `//` | Non-obvious choices and hazards next to the line that can go wrong |
 
-| Kind | Put | Job (Google-aligned, Rust form) |
-|------|-----|----------------------------------|
-| **File / module** | `//!` at top of module | What this unit is for; key invariants; entrypoints / short flow when multi-step |
-| **Type / function (public or real contract)** | `///` | Design and intent: purpose, inputs/outputs in plain words or given/expected, failure/no-op, thread/order notes when part of the contract |
-| **Inside the body** | `//` | Non-obvious choices, tricky bits, important “do not undo” — the explanation a reader would look for *here* |
+Prefer fixing unclear code over a long comment that apologizes for it.
 
-Function/module docs describe **what and why** the API exists; body comments justify **surprising how**. Prefer fixing unclear code over a long comment that apologizes for it (“don’t comment bad code — rewrite it” when rewrite is cheap).
-
-## Module purpose + boundary (good pattern)
+## Module purpose + boundary
 
 ```rust
 //! Cold DuckDB read timing and result artifacts for historian-shaped SQL.
@@ -31,11 +29,11 @@ Function/module docs describe **what and why** the API exists; body comments jus
 //! Local "cold" is DuckDB-cache-cold only; OS page cache may still be warm.
 ```
 
-Pattern: **purpose + key invariant** at module top (plain language). Optional: where related work lives. No required “owns / does not own” labels. Use denseness without storytelling.
+**purpose + key invariant** at module top. Optional: where related work lives. No forced “owns / does not own” template. Dense when useful; no storytelling essay.
 
-## Multi-step flow (good pattern)
+## Multi-step flow
 
-Prefer **context on each step** (inputs, outcomes, important side notes), not bare names only:
+Prefer **context on each step** (inputs, outcomes, side notes), not bare names only:
 
 ```rust
 //! ```text
@@ -46,11 +44,11 @@ Prefer **context on each step** (inputs, outcomes, important side notes), not ba
 //! ```
 ```
 
-Avoid stacking Pure/Shell/Compose inventories that restate the diagram. Pure vs shell is a **code-shape / review** concern, not a documentation template — not on `//!`, and not on function `///` either (“Pure (no I/O)”, “No DuckDB”, “thinking code”). Prefer a real contract or silence.
+Do not stamp Pure/Shell/Compose inventories on `//!` or `///`. Pure vs shell is a review lens — state real contracts in ordinary words, or say nothing.
 
-## Scar at the right level (good pattern)
+## Scar at the right level
 
-Backward-compat / serde defaults belong on the **type or field** (and a test), not a vague module “Compat:” line:
+Compat / serde defaults belong on the **type or field** (and a test), not a vague module “Compat:” line:
 
 ```rust
 /// `_spread` / `distinct_values` default to 0 so older stats.json still load;
@@ -59,17 +57,17 @@ Backward-compat / serde defaults belong on the **type or field** (and a test), n
 pub(crate) frac_unchanged_spread: f64,
 ```
 
-## Coherence across modules (when reviewing a crate)
+## Coherence across modules
 
 | Check | Fail when |
 |-------|-----------|
-| Cascade style | One module uses `**Flow**` + bullets, another uses bare arrows, a third lists Pure/Shell |
-| Detail level | Sibling private modules: one has an essay, next has nothing |
-| Names match code | Diagram says old fn name after rename |
-| Placement | History/compat only on module; fields that carry `#[serde(default)]` have no note |
-| No template theater | Forced owns/not-owns or Pure/Shell on every `//!` / `///` |
+| Cascade style | Modules mix unrelated flow styles with no pattern |
+| Detail level | Sibling private modules: one essay, next empty |
+| Names match code | Diagram still uses old function names |
+| Placement | History only on module; `#[serde(default)]` fields have no note |
+| No template theater | Forced owns/not-owns or Pure/Shell on every doc comment |
 
-## Identity / pairing hazard (good pattern)
+## Identity / pairing hazard
 
 ```rust
 // Workload key joins signals with a unit separator so one signal named "a,b"
@@ -77,33 +75,26 @@ pub(crate) frac_unchanged_spread: f64,
 fn workload_key(...) -> String { ... }
 ```
 
-## Security hazard (good pattern)
+## Security hazard
 
 ```rust
 // CREATE SECRET so keys are redacted in DuckDB errors/settings; map_err so our
-// built SQL (which still contains literals) is not attached to the anyhow chain.
+// built SQL (which still contains literals) is not attached to the error chain.
 conn.execute_batch(&secret)
     .map_err(|_| anyhow::anyhow!("failed to configure object storage credentials"))?;
 ```
 
-## Scar-style (good pattern)
-
-When the same mistake bit you twice, one local line:
+## Scar line (when the same miss happened twice)
 
 ```rust
 // Stale writer must not overwrite newer state — generation check is the contract.
 ```
 
-Public Ghostty/Mitchell writing emphasizes **scar logs** and mechanisms over slogans: record the failure mode next to the code or in a short scars list that feeds hard-rules — not a novel in every function.
+One local line (or a hard-rule). Not a novel in every function.
 
-## Netflix-style denseness (pattern, not a paste)
+## Dense comments (when they help)
 
-High-density industrial code comments tend to pack **caller obligations + negative space + policy** into few lines, not “// increment i”. When reviewing, prefer:
-
-- one block that changes how you call or change the code  
-- over many lines that narrate the algorithm  
-
-If you have an approved internal sample, add it here with path.
+Prefer a short block that changes how you **call or change** the code (caller obligations, negative space, policy) over many lines that narrate the algorithm (“// increment i”).
 
 ## Bad
 
@@ -117,12 +108,12 @@ for f in files {
 Restates the next line. Delete.
 
 ```rust
-// TEI-34468: skip cache
+// TICKET-123: skip cache
 ```
 
-Weak: ticket without the real constraint. Prefer the **why** first; add a ticket only if it is a lasting scar (e.g. critical prod bug):
+Ticket without the constraint. Prefer **why** first; ticket only if it is a lasting scar:
 
 ```rust
 // OS page cache not cleared on local cold — use remote for true cold.
-// Critical: TEI-34468 — async A/B misread warm local as engine win.
+// Scar: local warm runs were misread as engine wins (TICKET-123).
 ```

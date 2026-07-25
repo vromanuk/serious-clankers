@@ -1,4 +1,4 @@
-# Exemplars — Rust craft and control flow
+# Rust craft and control flow
 
 ## matklad — push ifs up, fors down
 
@@ -21,9 +21,9 @@ fn handle(req: Request) {
 
 When reviewing: flag functions that mix policy branching with dense loops when the branch could be lifted.
 
-## Armin Ronacher / explicit boring code
+## Explicit over clever
 
-Public themes from Armin’s ecosystem writing (Flask history, Rust tooling essays): prefer **explicit** over clever; small composable pieces; errors you can see; avoid magic globals.
+Prefer **explicit** over clever; small composable pieces; errors you can see; avoid magic globals.
 
 When reviewing:
 
@@ -33,8 +33,8 @@ When reviewing:
 
 ## Density vs cleverness
 
-Dense **local** code that states the domain (Netflix-like denseness in *logic*) is fine.  
-Dense **abstraction** for one call site is not (your small-surface rule).
+Dense **local** code that states the domain is fine.  
+Dense **abstraction** for one call site is not (small-surface rule).
 
 ## Formatter / linter
 

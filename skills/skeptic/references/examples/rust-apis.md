@@ -1,4 +1,4 @@
-# Exemplars — Rust API and type shape
+# Rust API and type shape
 
 **Sources:** [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/); Jon Gjengset (*Rust for Rustaceans*) themes; [Type-Driven API Design in Rust](https://willcrichton.net/rust-api-type-patterns/introduction.html) (deeper patterns → **`type-driven.md`**).
 

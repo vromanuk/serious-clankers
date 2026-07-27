@@ -26,7 +26,8 @@ description: >
    - Hard to follow code → simplify the code first (OK to explain *what* for regex or hard algorithms).  
    - Keep only what the code cannot say (reasoning, scars, rules).  
 3. **Public docs vs body comments:**  
-   - On the type/function (`///` / `//!`): how to **use** it.  
+   - On the type/function (`///`): how to **use** it.  
+   - On the **module** (`//!`): purpose, key rules, **entrypoints**, related modules, short flow when multi-step (`comments.md` § Module docs).  
    - Inside the body (`//`): tricky **how/why** — do not copy the public blurb into the body.  
 4. On types and functions: purpose and contracts when not obvious. On fields: special values the type doesn’t show (e.g. `-1` means unknown).  
 5. **Do not state the obvious** — no comment that only repeats the next line.  

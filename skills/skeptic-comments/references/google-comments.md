@@ -29,7 +29,7 @@ Rust: `///` / `//!` on the item vs `//` inside the body.
 
 If a file or module holds related public pieces, a short top note can say what belongs here and what does **not**. Detail lives on each type/function, not a novel at the top.
 
-Rust: module `//!` for purpose + key rules; skip empty filler.
+Rust: module `//!` for **purpose**, key rules, **entrypoints** (what to call first), related modules, and a short multi-step flow when useful — see `comments.md` § Module docs. Skip empty filler.
 
 ### Types / classes / structs
 

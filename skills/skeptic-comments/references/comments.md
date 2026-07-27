@@ -19,25 +19,53 @@ A reader should get what a call does **where it’s used** (or on the public `//
 
 | Kind | Put | Job |
 |------|-----|-----|
-| **Module** | `//!` | What this unit is for; key rules; short flow when multi-step |
+| **Module** | `//!` | Purpose; key rules; **entrypoints**; related modules; short flow when multi-step |
 | **Type / function** | `///` | Purpose, contracts, failure, order notes when part of the API |
 | **Body** | `//` | Non-obvious choices next to the hard line |
 
 Prefer fixing unclear code over a long comment that apologizes for it.
 
-## Module purpose + boundary
+## Module docs (`//!`)
+
+A public (or crate-important) module should open with a short `//!` block a stranger can use **without reading every item**. Dense and useful — not a story essay, not a forced “owns / does not own” template.
+
+**Usually include (when they apply):**
+
+1. **Purpose** — what this unit does (one or two lines).  
+2. **Key rules** — important behavior or invariants (only if not already obvious).  
+3. **Entrypoints** — functions/types to start with (name + short job each).  
+4. **Related modules** — where sibling work lives (e.g. “profiling is `parquet_stats`; cold reads are `bench`”).  
+5. **Short flow** — multi-step path as plain text; note hazards (partial output on failure, cleanup, order).  
+
+Skip empty modules that only re-export one obvious type. Do not stamp pure/shell labels on every doc.
+
+### Good shape (purpose + entrypoints + related + flow)
+
+```rust
+//! Turn a `stats.json` profile into distribution-matched hive parquet at a chosen scale.
+//!
+//! Values are a seeded random walk per (pack, signal) series.
+//! Entrypoints: `run` (write hive parquet under out_dir), `generate_output_reuse` (suite reuse / regenerate).
+//! Profiling is `parquet_stats`; cold reads are `bench`.
+//!
+//! ```text
+//! GenerateRun::prepare → write_parquet → finish
+//! (on failure, partial out_dir is left on disk — remove it yourself before re-running)
+//! ```
+```
+
+### Purpose + boundary only (when no multi-step flow)
 
 ```rust
 //! Cold DuckDB read timing and result artifacts for historian-shaped SQL.
 //! Object-storage hydration, gRPC pagination, and production connection pools are out of scope.
 //! Local "cold" is DuckDB-cache-cold only; OS page cache may still be warm.
+//! Entrypoints: `measure_profile`, `write_stats_json`.
 ```
 
-**purpose + key invariant** at module top. Optional: where related work lives. No forced “owns / does not own” template. Dense when useful; no storytelling essay.
+### Flow detail
 
-## Multi-step flow
-
-Prefer **context on each step** (inputs, outcomes, side notes), not bare names only:
+Prefer **named steps** with outcomes/hazards, not a bare name list with no context:
 
 ```rust
 //! ```text
@@ -47,8 +75,6 @@ Prefer **context on each step** (inputs, outcomes, side notes), not bare names o
 //!       → write_stats_json (file + human summary)
 //! ```
 ```
-
-Do not stamp labels like “pure” / “shell” on every doc. Say the real rule in ordinary words, or say nothing.
 
 ## Scar at the right level
 
@@ -67,7 +93,8 @@ pub(crate) frac_unchanged_spread: f64,
 |-------|-----------|
 | Cascade style | Modules mix unrelated flow styles with no pattern |
 | Detail level | Sibling private modules: one essay, next empty |
-| Names match code | Diagram still uses old function names |
+| Entrypoints missing | Multi-entry module with no “start here” names |
+| Names match code | Flow still uses old function names |
 | Placement | History only on module; `#[serde(default)]` fields have no note |
 | No empty templates | Forced “owns / does not own” or pure/shell labels on every doc |
 

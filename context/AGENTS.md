@@ -22,6 +22,26 @@ Always give the high-level idea before details. Lead with intuition: the essence
 
 ---
 
+## Project layout (default)
+
+**Default structure: job-shaped components, not horizontal layers.**
+
+When creating or growing a project, prefer this shape unless the user or an existing codebase says otherwise:
+
+- **One component = one job + one namespace** (package / module tree / crate).  
+- **Public surface vs private interior** (`api` vs `internal`, or language equivalent: only re-export what outsiders may use).  
+- **Depend only on others’ public surfaces** — never reach into another job’s private modules.  
+- **One owner for data** that job writes; other jobs go through its API.  
+- **Compose at the edge** — app/binary/server wires components.  
+- Sub-components nest under the parent’s private area.  
+- Small one-shot scripts stay local — no fake multi-component theater.
+
+Do **not** default to app-wide `controllers/` + `services/` + `repositories/` as the only structure.
+
+Depth + examples: skill `skeptic-architecture` → `references/components.md` (Hombergs / reflectoring). Review stage **skeptic** judges the same default.
+
+---
+
 ## Language
 
 - Plain words. Prefer the common word.
@@ -112,5 +132,6 @@ Load when the job matches — not always-on:
 |-------|------|
 | `pr-description` | Draft a PR body (why first, how, testing, diagram if structure) |
 | `skeptic` | Multi-lens code review |
+| `skeptic-architecture` | Component layout (default architecture) + type boundaries — also via skeptic stage 2 |
 | `explain-topic` | Teach a concept from first principles |
 | `unit-tests` | Unit-test craft / review |

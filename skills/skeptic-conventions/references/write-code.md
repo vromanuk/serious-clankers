@@ -10,6 +10,12 @@ When choosing between a short clever form and a longer plain form, pick the one 
 
 Does **not** excuse verbose noise or restating the next line in comments.
 
+## Project / component layout (default)
+
+**Default:** job-shaped components (`api` / public surface + `internal` / private interior; compose at the app edge). Not app-wide layer folders as the primary structure.
+
+Full rules and examples: `skeptic-architecture/references/components.md`. Always-on short form: pack `context/AGENTS.md` § Project layout.
+
 ## Performance when it matters
 
 - Default: clarity and consistency over micro-optimization.  

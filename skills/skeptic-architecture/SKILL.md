@@ -1,31 +1,38 @@
 ---
 name: skeptic-architecture
 description: >
-  Stage 2 of skeptic: component ownership, public vs private surface, data
-  ownership, dependency direction, type-driven contracts at boundaries. Use when
-  skeptic runs or the user asks for architecture/component review only.
+  Stage 2 of skeptic: component-based layout (job-shaped components, public vs
+  private surface, data ownership, edge composition), dependency direction, and
+  type-driven contracts at boundaries. Use when skeptic runs or the user asks
+  for architecture/component review only.
 ---
 
 # Skeptic architecture
 
-**Question:** Who owns which job, how may pieces depend, and do types force the real contract at boundaries?
+**Question:** Who owns which job, how is the project laid out into components, how may pieces depend, and do types force the real contract at boundaries?
+
+**Default (build and review):** job-shaped **components**, not horizontal layers. Same default as pack `context/AGENTS.md` § Project layout — this stage enforces it on diffs and guides structure when the change introduces layout.
 
 ## Load (on demand)
 
-- `references/type-driven.md` — worked type-boundary samples  
-- `references/rust-apis.md` — misuse-resistant APIs  
+1. `references/components.md` — **default component layout** (build + review; api/internal, nesting, data ownership, enforcement, Rust mapping; Hombergs / reflectoring)  
+2. `references/type-driven.md` — type-boundary samples when APIs/results change  
+3. `references/rust-apis.md` — misuse-resistant API craft  
 
 ## Do
 
-1. Name **components / modules** by job (not by technical layer).  
-2. For each changed boundary: **public surface** vs **internal**; flag imports of someone else’s private surface.  
-3. **Data ownership** — who writes which facts; no shared write free-for-all.  
-4. **Compose at the edge** — app/binary wires components; no tangled internal graph.  
-5. **Tool vs product:** small scripts stay local; no package theater.  
-6. **Type-driven contracts** when new/changed APIs or shared results are in scope (below).  
-7. Findings with file:line; options when a boundary or type should move.  
+### Component layout (primary — default architecture)
 
-## Type-driven contracts
+1. Name **components** by **job** (billing, check-engine, …) — not by technical layer alone (`controllers/`, `services/`, `repositories/` as the whole story). Prefer this when **adding** structure as well as when reviewing.  
+2. For each component in scope: **public surface** vs **private interior** (`api` / `internal`, or language equivalent: `pub` surface vs private modules).  
+3. Flag **imports of another component’s private/internal** path (same job as hard-rule `HR-private-import` — architecture reports the boundary smell with evidence).  
+4. **Sub-components** nest under the parent’s private area; they may expose local APIs only for siblings, not for the outside world.  
+5. **Data ownership** — who writes which facts/tables; no shared write free-for-all across jobs.  
+6. **Compose at the edge** — app/binary/server wires components; no tangled mesh of internals.  
+7. **Tool vs product:** small scripts stay local; no package theater for a one-shot.  
+8. When layout is in scope, report `components: ok` (one line: owners + surfaces) or layout findings with path:line.  
+
+### Type-driven contracts (when APIs/results change)
 
 **Question:** Can a caller forget a real decision, or pass an impossible value, without the type system complaining?
 
@@ -47,12 +54,18 @@ description: >
 
 When APIs/results changed, include `type-driven: ok` (what the type forces) or type-driven findings.
 
+### Findings
+
+- Evidence at file:line (or import path).  
+- LETTER options when a **boundary or ownership** should move (real alternatives).  
+
 ## Do not
 
 - Pure vs IO placement deep-dive (→ testability) unless it is boundary ownership  
 - Comment wording (→ conventions)  
-- Hard bans list (→ hard-rules)  
+- Full hard-rule walk (→ hard-rules); still flag private-import as architecture  
 - Newtypes for every list when empty is a valid inventory outcome  
+- Demand multi-crate / multi-module packaging theater for a tiny single-site change  
 
 ## Output section title
 

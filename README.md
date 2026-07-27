@@ -24,3 +24,5 @@ skills/<name>/
 Only add `references/` or `evals/` when the skill needs them. No pack-level shared library — each skill keeps its own depth.
 
 Skeptic stages follow that rule: e.g. hard-rules live under `skeptic-hard-rules/references/`, not under the coordinator.
+
+**Default project architecture** (always-on in `context/AGENTS.md`): job-shaped components, not layers. Depth: `skills/skeptic-architecture/references/components.md`.

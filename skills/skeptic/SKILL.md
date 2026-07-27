@@ -29,7 +29,7 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 | # | Stage skill | Question |
 |---|-------------|----------|
 | 1 | `../skeptic-purpose/SKILL.md` | Real need? Approach fit? Serious bugs? Alternatives? |
-| 2 | `../skeptic-architecture/SKILL.md` | Components by job? Public vs private? Data ownership? Types at boundaries? |
+| 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components (not layers)? Public vs private? Data ownership? Types at boundaries? |
 | 3 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Tests for new contracts? |
 | 4 | `../skeptic-conventions/SKILL.md` | Comments, plain language, composition, Rust form? |
 | 5 | `../skeptic-hard-rules/SKILL.md` | Absolute bans only (`references/hard-rules.md` on that skill)? |

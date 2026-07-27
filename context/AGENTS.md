@@ -138,4 +138,5 @@ Load when the job matches — not always-on:
 | `skeptic-naming` | Naming quality — also skeptic stage 5 |
 | `skeptic-conventions` | One function per task, plain words, clear Rust style — also skeptic stage 6 |
 | `explain-topic` | Teach a concept from first principles |
+| `explain-diff` | Teach a code change: background, intuition, alternatives, then code |
 | `unit-tests` | Unit-test craft / review |

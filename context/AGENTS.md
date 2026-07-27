@@ -29,16 +29,17 @@ Always give the high-level idea before details. Lead with intuition: the essence
 When creating or growing a project, prefer this shape unless the user or an existing codebase says otherwise:
 
 - **One component = one job + one namespace** (package / module tree / crate).  
-- **Public surface vs private interior** (`api` vs `internal`, or language equivalent: only re-export what outsiders may use).  
-- **Depend only on others’ public surfaces** — never reach into another job’s private modules.  
+- **Public surface at the boundary** — outsiders use only what the component root exports (Rust: `mod.rs` / `lib.rs` re-exports the public interface; private modules stay private).  
+- **Depend only on others’ public surfaces** — never dig into another job’s private modules.  
 - **One owner for data** that job writes; other jobs go through its API.  
 - **Compose at the edge** — app/binary/server wires components.  
-- Sub-components nest under the parent’s private area.  
 - Small one-shot scripts stay local — no fake multi-component theater.
+
+**Not required:** folders literally named `api/` or `internal/`. Those are one optional convention (handy in Java for tools). The idea is the **boundary**, not the folder names.
 
 Do **not** default to app-wide `controllers/` + `services/` + `repositories/` as the only structure.
 
-Depth + examples: skill `skeptic-architecture` → `references/components.md` (Hombergs / reflectoring). Review stage **skeptic** judges the same default.
+Depth + examples: skill `skeptic-architecture` → `references/components.md`. Review stage **skeptic** judges the same default.
 
 ---
 

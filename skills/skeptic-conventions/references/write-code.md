@@ -12,7 +12,7 @@ Does **not** excuse verbose noise or restating the next line in comments.
 
 ## Project / component layout (default)
 
-**Default:** job-shaped components (`api` / public surface + `internal` / private interior; compose at the app edge). Not app-wide layer folders as the primary structure.
+**Default:** job-shaped components with a clear public surface at the component root (Rust: `mod.rs` / `lib.rs` re-exports) and private implementation underneath; compose at the app edge. Not app-wide layer folders as the primary structure. Folders named `api/` / `internal/` are **optional**, not required.
 
 Full rules and examples: `skeptic-architecture/references/components.md`. Always-on short form: pack `context/AGENTS.md` § Project layout.
 

@@ -15,7 +15,7 @@ description: >
 
 ## Load (on demand)
 
-1. `references/components.md` — **default component layout** (build + review; api/internal, nesting, data ownership, enforcement, Rust mapping; Hombergs / reflectoring)  
+1. `references/components.md` — **default component layout** (public surface at the root; optional naming conventions; Hombergs / reflectoring)  
 2. `references/type-driven.md` — type-boundary samples when APIs/results change  
 3. `references/rust-apis.md` — misuse-resistant API craft  
 
@@ -24,13 +24,14 @@ description: >
 ### Component layout (primary — default architecture)
 
 1. Name **components** by **job** (billing, check-engine, …) — not by technical layer alone (`controllers/`, `services/`, `repositories/` as the whole story). Prefer this when **adding** structure as well as when reviewing.  
-2. For each component in scope: **public surface** vs **private interior** (`api` / `internal`, or language equivalent: `pub` surface vs private modules).  
-3. Flag **imports of another component’s private/internal** path (same job as hard-rule `HR-private-import` — architecture reports the boundary smell with evidence).  
-4. **Sub-components** nest under the parent’s private area; they may expose local APIs only for siblings, not for the outside world.  
-5. **Data ownership** — who writes which facts/tables; no shared write free-for-all across jobs.  
-6. **Compose at the edge** — app/binary/server wires components; no tangled mesh of internals.  
-7. **Tool vs product:** small scripts stay local; no package theater for a one-shot.  
-8. When layout is in scope, report `components: ok` (one line: owners + surfaces) or layout findings with path:line.  
+2. For each component: a clear **public surface** (what outsiders may use) vs **private implementation**. In Rust, that is usually the root `mod.rs` / `lib.rs` defining/`pub use` of the public interface; child modules stay private unless re-exported.  
+3. **Do not require** folders named `api/` or `internal/` — those are optional packaging labels. Flag missing *boundaries*, not missing folder names.  
+4. Flag **imports past another component’s public surface** into private paths (same job as hard-rule `HR-private-import`).  
+5. Nested helpers / sub-parts stay **inside** the component; they are not part of the public re-export unless intentional.  
+6. **Data ownership** — who writes which facts/tables; no shared write free-for-all across jobs.  
+7. **Compose at the edge** — app/binary/server wires components; no tangled mesh of private paths.  
+8. **Tool vs product:** small scripts stay local; no package theater for a one-shot.  
+9. When layout is in scope, report `components: ok` (one line: owners + surfaces) or layout findings with path:line.  
 
 ### Type-driven contracts (when APIs/results change)
 
@@ -66,6 +67,7 @@ When APIs/results changed, include `type-driven: ok` (what the type forces) or t
 - Full hard-rule walk (→ hard-rules); still flag private-import as architecture  
 - Newtypes for every list when empty is a valid inventory outcome  
 - Demand multi-crate / multi-module packaging theater for a tiny single-site change  
+- Demand literal `api/` / `internal/` folders when the root module already defines a clear public surface  
 
 ## Output section title
 

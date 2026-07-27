@@ -2,27 +2,39 @@
 
 **This pack’s default** for how to lay out projects and components — when **building** and when **reviewing**. Not a special-case style.
 
-**Portable rules** for job-shaped components with a clear public surface and a private interior.  
-Java/Kotlin packaging is the classic illustration; the **jobs and dependency rules** apply in Rust (modules/crates), Go, TypeScript, etc.
+**Core idea:** a component owns one **job**, exposes a **small public interface** at its boundary, and keeps everything else **private**. Outsiders depend on that interface only.
 
-**Sources (load these if you need the original):**
+**Not required:** directories literally named `api/` or `internal/`. Those names are one optional convention (common in Java so tools like ArchUnit can scan package paths). In Rust, the natural form is often:
+
+```text
+billing/
+  mod.rs          # public interface: pub use / pub fn / pub struct that outsiders may use
+  invoice.rs      # private modules (not re-exported)
+  store.rs
+  batch.rs
+```
+
+or a crate root `lib.rs` that re-exports only the public surface.
+
+**Sources (original packaging examples — optional folder names):**
 
 - Talk: [Let’s build components, not layers](https://www.youtube.com/watch?v=-VmhytwBZVs) (Tom Hombergs, Spring I/O 2019)  
 - Article: [Clean Architecture Boundaries with Spring Boot and ArchUnit](https://reflectoring.io/java-components-clean-boundaries/)  
 - Example repo: [thombergs/components-example](https://github.com/thombergs/components-example) (`check-engine`)
 
-Always-on short form: pack `context/AGENTS.md` § Project layout. This file is the **depth + examples**. Not a Spring tutorial.
+Always-on short form: pack `context/AGENTS.md` § Project layout.
 
 ### When building (default)
 
 Unless the user or an existing tree requires another shape:
 
 1. Place new work in a **job-named** component (create one if the job is new).  
-2. Put only the **public contract** on the surface (`api` / `pub` re-exports).  
-3. Keep implementation and sub-components under **private** (`internal` / private modules).  
-4. Wire components from the **app/binary edge**, not via internal cross-imports.  
+2. Define the **public contract at the component root** (`mod.rs` / `lib.rs` / package exports) — only what outsiders need.  
+3. Keep implementation in **private** modules (do not re-export them).  
+4. Wire components from the **app/binary edge**, not via private cross-imports.  
 5. Do not introduce app-wide layer folders as the primary layout for multi-job code.  
-6. Tiny scripts/tools: keep local; do not invent a component graph for a one-shot.
+6. Tiny scripts/tools: keep local; do not invent a component graph for a one-shot.  
+7. Do **not** invent `api/` / `internal/` folders just to match a blog diagram if the root already is the public interface.
 
 ---
 
@@ -30,7 +42,7 @@ Unless the user or an existing tree requires another shape:
 
 Horizontal layers (`controller` / `service` / `repository` across the whole app) make every feature touch every layer and **blur ownership**. Over time, “anything may depend on anything.”
 
-A **component** owns one **job** end to end (namespace named for that job). Other code may use only its **public API**. Internals stay private so changes stay local and decomposing later (extract a service, split a crate) is cheaper.
+A **component** owns one **job** end to end (namespace named for that job). Other code may use only its **public API**. Internals stay private so changes stay local and decomposing later is cheaper.
 
 Clean dependencies → understandability, maintainability, extensibility, decomposability.
 
@@ -40,153 +52,116 @@ Clean dependencies → understandability, maintainability, extensibility, decomp
 
 1. **One component = one job + one namespace** (package, module tree, or crate).  
 2. **Public surface vs private interior** — outside code may depend on the surface only.  
-3. **Interior may nest sub-components** (each with its own namespace under the parent’s private area).  
-4. **Depend only on other components’ public surfaces** — never reach into `internal` / private modules of another job.  
-5. **Data ownership** — one owner writes a given set of facts/tables; other components go through the owner’s API (not shared “god” tables across jobs).  
+3. **Interior may nest helpers / sub-parts** (private modules under the component).  
+4. **Depend only on other components’ public surfaces** — never dig into another job’s private modules.  
+5. **Data ownership** — one owner writes a given set of facts/tables; other components go through the owner’s API.  
 6. **Compose at the edge** — app/binary/server wires components; components do not form a free-for-all mesh.  
-7. **Prefer enforceable structure** — visibility + one automated rule when possible (see below).
+7. **Prefer enforceable structure** — language visibility first; optional automated rules when useful.
 
-Language visibility alone is not enough when you need **sub-packages/modules** inside a component (public helpers for siblings would leak to the whole world). Structure + tools fix that.
+The rule is the **boundary**, not a particular folder spelling.
 
 ---
 
-## Layout shape (api / internal)
-
-Canonical package shape (Hombergs / reflectoring):
+## Preferred shape (Rust-first): root defines the public interface
 
 ```text
-billing/                    # component: job = billing
-├── api/                    # public — outsiders may use this
-└── internal/               # private — only this component (and its subtrees)
+src/
+  billing/
+    mod.rs           # ← public surface for the billing job
+    invoice.rs       # private unless re-exported from mod.rs
+    store.rs
+    batch.rs
+  check_engine/
+    mod.rs           # ← public surface
+    queue.rs
+    db.rs
+    runner.rs
+  main.rs            # wires components; uses billing::… and check_engine::… only via their roots
+```
+
+```rust
+// billing/mod.rs — the public interface
+mod invoice;
+mod store;
+mod batch;
+
+pub use invoice::{Invoice, InvoiceCalculator};
+// store, batch stay private to this module tree
+```
+
+```rust
+// outside — only the surface
+use crate::billing::{Invoice, InvoiceCalculator};
+
+// not ok: use crate::billing::store::…;  // private path of another job
+```
+
+**Good enough:** one file component (`billing.rs`) with private items unexported, if the job is small.
+
+**Also fine:** multi-crate (`billing` crate, `check_engine` crate) when the boundary must be hard — same idea: crate root is the public interface.
+
+---
+
+## Optional convention: folders named `api` / `internal`
+
+Some codebases (Hombergs / reflectoring Java examples) use explicit packages:
+
+```text
+billing/
+├── api/           # public — outsiders may use this
+└── internal/      # private — only this component
     ├── batchjob/
-    │   └── internal/
-    ├── database/
-    │   ├── api/            # API for *siblings under billing.internal*, not the world
-    │   └── internal/
-    └── …                   # implementation of top-level api
+    └── database/
 ```
 
-| Path | Who may use it |
-|------|----------------|
-| `…/api` | Outside the enclosing component (and sibling code that is allowed to see that surface) |
-| `…/internal` | Only code under that `internal` tree (including nested sub-components) |
+Useful when:
 
-**Sub-components** live under the parent’s `internal` so they stay hidden from the outside world even if they expose their own nested `api` for local wiring.
+- the language has weak privacy across subpackages (classic Java), or  
+- you want a **path-based** rule for ArchUnit / similar (“nothing outside `*.internal` may depend on it”).
 
-### Nested dependency inversion
+In Rust this is **optional**. Prefer root `mod.rs` / `lib.rs` as the surface unless the team already uses `api`/`internal` names or needs path-scanned rules.
 
-Inside a component, invert deps so **internals implement APIs**, not the reverse:
+If you do use the names, same ownership rules apply; nested sub-parts stay under the private side.
 
-```text
-database/
-├── api/          # ReadLineItems, WriteLineItems, LineItem  (interfaces / types)
-└── internal/     # BillingDatabase implements those APIs
-```
+### Nested dependency inversion (language-agnostic)
 
-Callers (invoice calculator, batch job) depend on **api types**, not on DB technology. Swap storage without rewriting callers.
-
-A sub-component may expose **no** public API at all (e.g. a batch job that only runs on a schedule and calls `WriteLineItems`).
+Inside a component, prefer: **callers depend on small interfaces/types; storage/adapters implement them** — not the reverse. Swap DB tech without rewriting the job’s public API.
 
 ### App / server edge
 
 ```text
-server/ (or main binary)
-  → depends on component public APIs only
-  → wires configs / DI / startup
+main / server / app
+  → depends on each component’s public surface only
+  → wires startup, config, DI
 
-components/
-  check-engine/
-  billing/
-  …
+components (modules or crates)
+  billing, check_engine, …
 ```
-
-Optional: one **crate/module per component** for harder boundaries; same rules work in a single module if namespaces and visibility stay clean. Prefer “structure first”; multi-crate when the boundary must be hard.
 
 ---
 
-## Worked sketch — check-engine
+## Worked sketch — check-engine (ideas, not folder dogma)
 
-From [components-example](https://github.com/thombergs/components-example):
+From [components-example](https://github.com/thombergs/components-example) (illustrates jobs; their tree uses `api`/`internal` for Java tooling):
 
-**Job:** run arbitrary checks against a web page (HTML validity, SEO tags, …).
+**Job:** run arbitrary checks against a web page.
 
-**Public API (only this for outsiders):**
+**Public surface (only this for outsiders):**
 
-- Schedule a check (async) — e.g. `CheckScheduler`  
-- Query results — e.g. `CheckQueries`
+- Schedule a check (async)  
+- Query results  
 
-**Sub-components under `internal`:**
+**Private parts (implementation of that job):**
 
-| Sub-component | Role |
-|---------------|------|
-| `queue` | Implements schedule API; talks to a queue |
-| `database` | Implements query API; owns check-result tables |
-| `checkrunner` | Runs scheduled work; stores results; no parent API of its own |
+| Part | Role |
+|------|------|
+| queue | schedule path; talks to a queue |
+| database | query path; owns check-result tables |
+| checkrunner | runs work; stores results |
 
-```text
-check-engine
-├── api/                 # CheckScheduler, CheckQueries, …
-└── internal/
-    ├── queue/…
-    ├── database/…       # only path that touches check tables
-    └── checkrunner/…
-```
+**Data rule:** only the database part of this job touches those tables.
 
-**Data rule:** only the database sub-component touches those tables. Other jobs do not “just join” them.
-
-**Enforcement (example):** one ArchUnit-style rule:
-
-> No class **outside** an `internal` package may depend on a class **inside** that `internal` package.
-
-In the example repo this is a single test that discovers all `*.internal` packages and fails on illegal edges — new components are covered automatically when they follow the naming convention.
-
----
-
-## Rust mapping (same jobs)
-
-| Java / package idea | Rust shape |
-|---------------------|------------|
-| Component package | Crate, or top-level module tree for one job |
-| `api` | `pub` items re-exported as the crate/module surface |
-| `internal` | Private modules; do not `pub use` them from the root for outsiders |
-| Nested sub-component | Child modules under the component; still not part of the public re-export |
-| Cross-component private import | `other_crate::internal::…` or `other_mod::private_path` from outside → **flag** |
-| Compose at edge | `main` / binary / thin app crate depends on component crates and wires them |
-| ArchUnit internal rule | Visibility + optional CI (module graph / deny private paths); hard-rule `HR-private-import` |
-
-```text
-// Good: crate check_engine
-// lib.rs
-pub mod api;           // or re-export only api::*
-mod internal;          // private
-
-// outside:
-use check_engine::api::CheckScheduler;   // ok
-// use check_engine::internal::…;       // not ok
-```
-
-```text
-// Bad: layer folders across jobs
-src/
-  controllers/
-  services/
-  repositories/     // every feature bleeds through the same three buckets
-```
-
-Prefer:
-
-```text
-src/
-  billing/
-    api.rs | mod api
-    internal/…
-  check_engine/
-    api/
-    internal/…
-  main.rs           // wires components
-```
-
-Visibility in Rust is stronger than Java package-private for submodules — **use it**. Still name the public surface so reviewers and tools can see the boundary without reading every file.
+**Enforcement idea:** outsiders must not depend on private modules of the component. In Java examples that is often “no access into `*.internal` packages.” In Rust, **private modules + no re-export** is usually enough.
 
 ---
 
@@ -195,29 +170,30 @@ Visibility in Rust is stronger than Java package-private for submodules — **us
 | Smell | Why |
 |-------|-----|
 | Feature split only by layer (`…/service`, `…/repo` for the whole app) | No job owner; deps sprawl |
-| Outside code imports `…internal…` / private module of another job | Broken encapsulation (`HR-private-import`) |
-| Two jobs write the same tables / shared “utility” persistence of domain facts | Hidden coupling; hard to split |
-| Public type that is only an implementation detail | Surface too large; harden or move inside |
-| Component A reaches through B to B’s dependency | Skip levels; depend on the API you need |
-| “Common” / “shared” bag of domain types for everything | Often a proto-god-module; prefer owned types + small shared kernels |
-| New package theater for a one-shot script | Keep local; no fake component graph |
+| Outside code imports another job’s private module / path | Broken encapsulation (`HR-private-import`) |
+| Public root re-exports everything (no real surface) | Boundary is fake |
+| Two jobs write the same tables | Hidden coupling; hard to split |
+| Component A reaches through B to B’s private dependency | Skip levels; use the public surface |
+| “Common” bag of domain types for everything | Often a proto-god-module |
+| New package theater for a one-shot script | Keep local |
+| **Missing `api/` folder** when `mod.rs` already is the surface | **Not a smell** — do not flag |
 
 | Good signal | Why |
 |-------------|-----|
 | Namespace named for the **job** | Clear owner |
-| Thin public API; fat private tree | Change stays local |
-| Sub-components under private parent | Nest without leaking |
-| Edge binary wires components | No cyclic component mesh |
+| Thin public root; private modules underneath | Change stays local |
+| Edge binary wires components | No cyclic private mesh |
 | One owner for a write-set of data | Decompose-friendly |
 
 ---
 
 ## Review one-liners
 
-- `components: ok` — e.g. “billing only exposes invoice calculator; batch + DB under internal; no cross-internal imports.”  
-- Finding: “handler imports `other_job::internal::…` — use public API or move code.”  
+- `components: ok` — e.g. “billing root re-exports InvoiceCalculator only; store/batch private; no cross-private imports.”  
+- Finding: “handler uses `other_job::store::…` — use the public surface or move code.”  
 - Finding: “layout is controllers/services/repos only; no job-shaped owner for this change.”  
 - Finding: “two crates write `orders` rows — pick one owner.”  
+- Not a finding: “no `internal/` directory.”  
 
 ---
 

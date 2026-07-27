@@ -1,8 +1,9 @@
 # How to write code (detail)
 
 Load when implementing or reviewing code shape — not required for pure Q&A.  
-Same skill: `comments.md`, `design-headers.md`, `rust-craft.md`.  
-Sibling skills: `skeptic-testability/references/testing.md`, `skeptic-hard-rules/references/hard-rules.md`.
+Same skill: `rust-craft.md` (composition / clear style).  
+Comments: `skeptic-comments/references/`. Naming: `skeptic-naming/references/naming.md`.  
+Also: `skeptic-testability/references/testing.md`, `skeptic-hard-rules/references/hard-rules.md`.
 
 ## Optimize for the reader
 
@@ -206,7 +207,7 @@ If something matters to callers, write the real rule in ordinary words (e.g. “
 
 ### Two kinds of comments
 
-(Aligned with language-agnostic parts of [Google C++ Comments](https://google.github.io/styleguide/cppguide.html#Comments); Rust form differs.)
+(Aligned with [Google C++ Comments](https://google.github.io/styleguide/cppguide.html#Comments) — portable; full ideas in `skeptic-comments/references/google-comments.md`.)
 
 | Kind | Form (Rust) | Job |
 |------|-------------|-----|
@@ -214,6 +215,8 @@ If something matters to callers, write the real rule in ordinary words (e.g. “
 | **Implementation** | `//` inside bodies | Justify non-obvious choices, tricky bits, hazards, “why not the obvious alternative” — what they look for **inside** the body |
 
 Do not use documentation comments to restate the implementation line-by-line, or implementation comments to dump API docs that belong on the public signature. If the code is unclear, prefer a clearer rewrite when cheap; comment the remaining hazard.
+
+Also (Google, portable): comment **sentinels/invariants** on fields when the type doesn’t show them; prefer self-describing call sites over arg comments; TODOs with owner/context.
 
 ### Write when real and not forced by types
 
@@ -229,7 +232,8 @@ Do not use documentation comments to restate the implementation line-by-line, or
 
 Non-trivial functions: **design header** (purpose + given/expected). No type-signature lines. Prefer constraints over ticket IDs in comments; tickets only when necessary (e.g. critical bug scar), not on ordinary logic.
 
-**Do not:** narrate control flow; comment obvious leaves; aspirational lies; force the reader into the implementation for a contract that should sit on the API.
+**Do not:** narrate control flow; **state the obvious** (restate the next line); comment obvious leaves; aspirational lies; force the reader into the implementation for a contract that should sit on the API.
 
-Examples: `comments.md`, `design-headers.md`.  
+Comments stage: `skeptic-comments/references/google-comments.md`.  
+Naming stage: `skeptic-naming/references/naming.md`.  
 Hard bans: `skeptic-hard-rules/references/hard-rules.md`.

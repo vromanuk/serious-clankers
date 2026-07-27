@@ -183,4 +183,4 @@ For **benches**: unit-test SQL builders and pure window math; don’t replace A/
 ## Sources
 
 - SE at Google Ch. 12 (unit testing maintainability, public API, unchanging tests) — portable ideas only  
-- `pure-core.md`; composition/comments depth: `skeptic-conventions/references/write-code.md`  
+- `pure-core.md`; composition depth: `skeptic-conventions/references/write-code.md`; comments: `skeptic-comments`  

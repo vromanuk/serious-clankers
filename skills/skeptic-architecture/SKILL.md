@@ -63,7 +63,8 @@ When APIs/results changed, include `type-driven: ok` (what the type forces) or t
 ## Do not
 
 - Pure vs IO placement deep-dive (→ testability) unless it is boundary ownership  
-- Comment wording (→ conventions)  
+- Comment wording (→ comments)  
+- Naming quality alone (→ naming)  
 - Full hard-rule walk (→ hard-rules); still flag private-import as architecture  
 - Newtypes for every list when empty is a valid inventory outcome  
 - Demand multi-crate / multi-module packaging theater for a tiny single-site change  

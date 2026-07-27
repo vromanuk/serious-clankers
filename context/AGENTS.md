@@ -132,7 +132,10 @@ Load when the job matches — not always-on:
 | Skill | When |
 |-------|------|
 | `pr-description` | Draft a PR body (why first, how, testing, diagram if structure) |
-| `skeptic` | Multi-lens code review |
-| `skeptic-architecture` | Component layout (default architecture) + type boundaries — also via skeptic stage 2 |
+| `skeptic` | Multi-lens code review (7 stages) |
+| `skeptic-architecture` | Component layout (default) + type boundaries — also skeptic stage 2 |
+| `skeptic-comments` | Comment quality — also skeptic stage 4 |
+| `skeptic-naming` | Naming quality — also skeptic stage 5 |
+| `skeptic-conventions` | One function per task, plain words, clear Rust style — also skeptic stage 6 |
 | `explain-topic` | Teach a concept from first principles |
 | `unit-tests` | Unit-test craft / review |

@@ -2,7 +2,7 @@
 
 ## Intent
 
-Stage 5 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md` on this skill. No soft taste.
+Stage 7 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md` on this skill. No soft taste.
 
 ## Triggers
 
@@ -29,7 +29,7 @@ The agent SHALL NOT invent hard-rule IDs not present in that hard-rules file.
 
 - **GIVEN** only a naming preference with no rule id
 - **WHEN** reviewing hard rules
-- **THEN** the agent leaves it out of this section (or routes to conventions), not a fake HR id
+- **THEN** the agent leaves it out of this section (or routes to comments/naming/conventions), not a fake HR id
 
 ## Constraints
 

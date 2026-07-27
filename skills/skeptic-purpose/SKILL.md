@@ -27,7 +27,8 @@ description: >
 
 - Pure-core purity deep-dive (→ testability)  
 - Component public/private catalog as the whole review (→ architecture)  
-- Comment form nits (→ conventions)  
+- Comment form nits (→ comments)  
+- Naming nits (→ naming)  
 - Absolute ban checklist (→ hard-rules)  
 
 ## Output section title

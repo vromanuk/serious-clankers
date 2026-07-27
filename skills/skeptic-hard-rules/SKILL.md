@@ -1,7 +1,7 @@
 ---
 name: skeptic-hard-rules
 description: >
-  Stage 5 of skeptic: absolute bans and pass/fail checks only. Use when skeptic
+  Stage 7 of skeptic: absolute bans and pass/fail checks only. Use when skeptic
   runs or the user asks for hard-rules / must-not review. Not for soft style
   taste or product design.
 ---
@@ -30,7 +30,7 @@ description: >
 
 ## Output section title
 
-`## 5. Hard rules`
+`## 7. Hard rules`
 
 Format:
 

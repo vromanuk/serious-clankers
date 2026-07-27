@@ -49,7 +49,8 @@ description: >
 ## Do not
 
 - Redesign whole component graph (→ architecture) unless required for testability  
-- Comment form alone (→ conventions)  
+- Comment form alone (→ comments)  
+- Naming alone (→ naming)  
 - Hard bans (→ hard-rules)  
 - Demand snapshots or properties for every small obvious branch (tables first)  
 

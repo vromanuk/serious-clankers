@@ -12,7 +12,7 @@ description: >
 
 ## Load (on demand)
 
-1. `references/naming.md` — naming ideas (from Google, any language) + review list  
+1. `references/naming.md` — general names (Google) + **public API naming** (The API Book) + review list  
 
 ## Do
 
@@ -24,14 +24,16 @@ description: >
 6. **Plain words** — no made-up pattern labels as names.  
 7. **Match this project’s style** (e.g. Rust: `snake_case` functions, `CamelCase` types). Don’t force another language’s style.  
 8. If a comment only exists to explain a bad name → say **rename**, not “add more comment.”  
-9. When naming is in scope: `naming: ok` (one line) or findings with path:line and a better name when easy.  
+9. **Public / API surface (stronger):** apply `naming.md` § Public API naming — soft nits stay here; absolute API interface bans are hard-rules (`HR-api-*`).  
+10. When naming is in scope: `naming: ok` (one line) or findings with path:line and a better name when easy.  
+11. If a hit is clearly an `HR-api-*` ban, note it and leave the formal id to hard-rules (or report once if running this stage alone).  
 
 ## Do not
 
 - Comment wording as the main job (→ comments)  
 - How big functions should be split (→ conventions)  
 - Invent a new naming style against the local code  
-- Absolute ban list (→ hard-rules)  
+- Full hard-rule walk (→ hard-rules); still flag soft API naming nits  
 
 ## Output section title
 

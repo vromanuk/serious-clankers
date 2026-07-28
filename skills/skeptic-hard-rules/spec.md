@@ -13,13 +13,19 @@ Stage 8 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md
 
 ### Behavior: Checklist only
 
-The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`.
+The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces.
 
 #### Scenario: Private import
 
 - **GIVEN** a diff imports another component’s private path
 - **WHEN** reviewing hard rules
 - **THEN** the agent reports `HR-private-import` with path:line and smallest fix
+
+#### Scenario: Bare duration on public wire type
+
+- **GIVEN** a public JSON/API field `"duration": 5000` with no unit in name or structure
+- **WHEN** reviewing hard rules
+- **THEN** the agent reports `HR-api-bare-quantity` with path:line and smallest fix
 
 ### Behavior: No invented IDs
 

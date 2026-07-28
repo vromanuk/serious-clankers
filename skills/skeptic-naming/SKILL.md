@@ -1,7 +1,7 @@
 ---
 name: skeptic-naming
 description: >
-  Stage 5 of skeptic: are names clear — long enough to say what something is or
+  Stage 6 of skeptic: are names clear — long enough to say what something is or
   does, without being hard to read. Use when skeptic runs or the user asks for
   naming review only. Not for comments, composition, or hard-rules.
 ---
@@ -35,4 +35,4 @@ description: >
 
 ## Output section title
 
-`## 5. Naming`
+`## 6. Naming`

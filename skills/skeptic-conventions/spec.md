@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 6 of skeptic: judge plain words in code, one function per task, and clear Rust style — not comments, naming, architecture, or hard bans.
+Stage 7 of skeptic: judge plain words in code, one function per task, and clear Rust style — not comments, naming, architecture, or hard bans.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 6, or the user asks only for composition or Rust style review.
+- **SHOULD** apply when skeptic runs stage 7, or the user asks only for composition or Rust style review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

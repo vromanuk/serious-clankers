@@ -52,6 +52,7 @@ description: >
 - Comment form alone (→ comments)  
 - Naming alone (→ naming)  
 - Hard bans (→ hard-rules)  
+- Production logging/spans/metrics deep-dive (→ observability)  
 - Demand snapshots or properties for every small obvious branch (tables first)  
 
 ## Output section title

@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 7 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md` on this skill. No soft taste.
+Stage 8 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md` on this skill. No soft taste.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 5, or the user asks only for hard-rules review.
+- **SHOULD** apply when skeptic runs stage 8, or the user asks only for hard-rules review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

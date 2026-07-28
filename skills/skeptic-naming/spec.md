@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 5 of skeptic: judge whether names fully say what items are or do, without excess length or unclear abbreviations. Ideas from Google C++ Naming; spelling style follows the project.
+Stage 6 of skeptic: judge whether names fully say what items are or do, without excess length or unclear abbreviations. Ideas from Google C++ Naming; spelling style follows the project.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 5, or the user asks only for naming review.
+- **SHOULD** apply when skeptic runs stage 6, or the user asks only for naming review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

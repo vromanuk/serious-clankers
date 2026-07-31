@@ -77,5 +77,7 @@ When adding a rule: exact signal, invalid example, valid example, prefer tool en
 | **Ticket IDs in comments** | Prefer stating the **constraint**. Tickets OK for scars/critical bugs. Not on ordinary logic. |
 | **Vague but not false public names** | e.g. `get_time()` when several times exist; short `str` — **naming** stage (API Book “don’t spare letters”) |
 | **Function verb / bool predicate form** | action = verb phrase; bool = `is`/`has`/`can` — **naming** stage (`naming.md` § Function naming), not automatic HR |
+| **Shallow public surface / missing use-case orchestration** | many exported step-helpers or handler-owned workflows — **architecture** (`components.md`, `design-components`), not automatic HR |
+| **Formal DDD/Cosmic stack by default** | repo/UoW/aggregate types without pain — judgment / design-components “good enough”, not HR |
 | **Mismatched pair words** | e.g. `begin`/`stop` — **naming** stage unless it also breaks a hard rule above |
 | **Optional bool default confusion** | prefer clear types — **naming** / architecture, not automatic HR |

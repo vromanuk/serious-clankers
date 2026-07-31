@@ -30,7 +30,7 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 | # | Stage skill | Question |
 |---|-------------|----------|
 | 1 | `../skeptic-purpose/SKILL.md` | Real need? Approach fit? Serious bugs? Alternatives? |
-| 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components? Public vs private? Data ownership? Types at boundaries? |
+| 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components? Use-case surface (not stray helpers)? Data ownership? Types at boundaries? |
 | 3 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Tests for new contracts? |
 | 4 | `../skeptic-observability/SKILL.md` | Logs/spans/metrics useful? Async spans? Safe labels? |
 | 5 | `../skeptic-comments/SKILL.md` | Comments: necessary? why not what? clear English? |
@@ -52,6 +52,9 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 ## Scars (flag when the diff shows them)
 
 - Layer soup / package theater for a one-shot script  
+- Shallow component: many public step-helpers; callers reassemble the use case  
+- Free public orchestration fns that re-pass the same deps (prefer a job struct)  
+- Handler owns multi-step orchestration that belongs on the component struct  
 - Business rules next to sockets/files/clocks  
 - Speculative guards with no contract  
 - Restating comments / type lines in design headers  

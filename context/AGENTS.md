@@ -29,7 +29,8 @@ Always give the high-level idea before details. Lead with intuition: the essence
 When creating or growing a project, prefer this shape unless the user or an existing codebase says otherwise:
 
 - **One component = one job + one namespace** (package / module tree / crate).  
-- **Public surface at the boundary** — outsiders use only what the component root exports (Rust: `mod.rs` / `lib.rs` re-exports the public interface; private modules stay private).  
+- **Public surface = one job struct + use-case methods** — orchestrate once (read → decide → write); hold deps on the struct; not a bag of step-helpers or free `pub fn`s that re-pass the same deps. Not app-wide `services/` folders.  
+- **Private interior** — pure rules (**thinking** / sans-IO) + thin **shell** for IO + helpers; mostly unexported (Rust: root `mod.rs` / `lib.rs` is the surface).  
 - **Depend only on others’ public surfaces** — never dig into another job’s private modules.  
 - **One owner for data** that job writes; other jobs go through its API.  
 - **Compose at the edge** — app/binary/server wires components.  
@@ -37,9 +38,9 @@ When creating or growing a project, prefer this shape unless the user or an exis
 
 **Not required:** folders literally named `api/` or `internal/`. Those are one optional convention (handy in Java for tools). The idea is the **boundary**, not the folder names.
 
-Do **not** default to app-wide `controllers/` + `services/` + `repositories/` as the only structure.
+Do **not** default to app-wide `controllers/` + `services/` + `repositories/` as the only structure. Do **not** treat that ban as “no public orchestration.”
 
-Depth + examples: skill `skeptic-architecture` → `references/components.md`. Review stage **skeptic** judges the same default.
+Depth: `skeptic-architecture` → `references/components.md`. Designing a component (merged story): skill **`design-components`**. Pure vs IO: `pure-core`. Review: **skeptic** stage architecture.
 
 ---
 

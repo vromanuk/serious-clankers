@@ -25,4 +25,4 @@ Only add `references/` or `evals/` when the skill needs them. No pack-level shar
 
 Skeptic stages follow that rule: e.g. hard-rules live under `skeptic-hard-rules/references/`, not under the coordinator.
 
-**Default project architecture** (always-on in `context/AGENTS.md`): job-shaped components, not layers. Depth: `skills/skeptic-architecture/references/components.md`.
+**Default project architecture** (always-on in `context/AGENTS.md`): job-shaped components, not app-wide layers; public face = **one job struct + use-case methods** that orchestrate once; interior = pure-core/shell (sans-IO). Layout: `skills/skeptic-architecture/references/components.md`. Design workflow: skill **`design-components`**.

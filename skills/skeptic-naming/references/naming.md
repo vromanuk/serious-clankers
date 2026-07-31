@@ -24,7 +24,7 @@ Rules are generalizations — don’t apply them blindly if they make an unusabl
    - Avoid ones outsiders won’t know, and don’t drop letters (`cstmr`).  
    - Fine: common ones (`i` for a loop, clear domain `id`).  
    - Prefer whole words when unsure.  
-6. **Functions do work** — name the action (`load_profile`, `resolve_files`).  
+6. **Functions do work** — name the action (verb or verb phrase). See **Function naming** below.  
    **Types and values are things** — use nouns.  
 7. **Plain words** — no made-up pattern nicknames as names.  
 8. Most names are ordinary. Only rare, widely reused types need special shared vocabulary and docs.
@@ -53,6 +53,79 @@ table_name
 max_allowed_connections
 is_already_processed   // or IsAlreadyProcessed — match the language
 ```
+
+---
+
+## Function naming (stronger)
+
+Portable rules for **functions and methods** (any language). Spelling style still follows the project (`snake_case` vs `camelCase`).
+
+Aligned with widespread guides: [.NET Framework Design Guidelines](https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-type-members) (methods = verbs; bools affirmative, often `Is`/`Can`/`Has`); [Google Java Style](https://google.github.io/styleguide/javaguide.html) (methods = verbs / verb phrases); Oracle Java conventions (methods are verbs); common Python practice for predicates (`is_` / `has_` — not a PEP 8 mandate, but the usual readable form); Rust std style (`is_empty`, `is_some`, action methods as verbs).
+
+### 1. Actions start with a verb
+
+A function that **does work** (computes, loads, writes, transforms, sends, cancels, …) is named with a **verb or verb phrase**. The call site should read as an action.
+
+| Bad | Why | Better |
+|-----|-----|--------|
+| `profile_credentials()` | noun phrase — is this a value or work? | `load_profile_credentials()` |
+| `user_stats` as a function | looks like a field | `calculate_user_stats()` / `fetch_user_stats()` |
+| `file_list` | thing, not action | `list_files()` |
+| `notification` | what does it do? | `send_notification()` |
+
+**Prefer concrete verbs** over amoeba words alone: not bare `process`, `handle`, `do`, `manage`, `run` without saying *what*.
+
+| Bad | Better |
+|-----|--------|
+| `process(data)` | `parse_invoice_lines(data)` / `normalize_timestamps(data)` |
+| `handle(event)` | `apply_payment_event(event)` / `route_webhook(event)` |
+| `do_stuff()` | name the real job |
+
+**Types / values stay nouns.** If you need a noun at the call site, that is usually a type, field, or (in languages that have them) a property — not a free function that runs work.
+
+### 2. Boolean returns are predicates (`is` / `has` / `can` / …)
+
+A function or method that returns a **boolean** (or is used only as a yes/no question) must read as a **yes/no question** at the call site.
+
+**Default prefixes** (pick the one that matches the meaning):
+
+| Prefix | Meaning | Examples |
+|--------|---------|----------|
+| **`is_`** | state, identity, condition | `is_ready`, `is_empty`, `is_valid`, `is_authenticated` |
+| **`has_`** | possession, presence, inclusion | `has_permission`, `has_children`, `has_expired_token` |
+| **`can_`** | capability, allowance, feasibility | `can_retry`, `can_seek`, `can_connect` |
+
+Also fine when they fit better: **`should_`** (policy / recommendation), **`are_`** / **`were_`** (plural subject), **`needs_`** (requirement). Same idea: **affirmative question**, not a vague noun.
+
+| Bad | Why | Better |
+|-----|-----|--------|
+| `ready(user)` | not clearly a bool question | `is_ready(user)` |
+| `check_valid(x)` | “check” is vague; often returns more than bool | `is_valid(x)` |
+| `permission(user)` | thing, not question | `has_permission(user, …)` |
+| `status()` → bool | vague (and public `status: bool` is a hard rule) | `is_finished()` / `is_open()` |
+| `not_empty(xs)` | negative form | `is_empty(xs)` and invert at call site, or `has_items(xs)` |
+
+**Rules of thumb**
+
+- Prefer **positive** names (`is_enabled`, not `is_not_disabled`). Callers write `if !is_enabled` when they need the other side.  
+- The name should make `if name(...)` / `if name` read as English: `if is_ready(job)`, `if has_capacity(queue)`, `if can_retry(err)`.  
+- Same prefixes for **bool fields / variables** when the name stands alone (`is_active`, not bare `active` on a public or non-obvious surface). Local `ok` / `found` in a tiny block can stay short when the type and use are obvious.
+
+**Not the same as action functions.** `validate_config` that returns `Result` is an **action** (verb). `is_valid_config` that returns `bool` is a **predicate**. Don’t mix: a `check_*` that returns `bool` is usually weaker than `is_*` / `has_*` / `can_*`.
+
+### 3. Narrow exceptions (do not use these to dodge the rule)
+
+- **Language / framework protocol names** you must implement (`fmt::Display`, `Iterator::next`, serialization hooks).  
+- **Constructors / conversions** by project idiom (`new`, `from_str`, `of`, `default`).  
+- **Operators** and symbol traits.  
+- **Project-local getters** that already follow a clear house style (e.g. Go often drops `Get` on pure accessors — match **this** codebase, don’t invent a second style).  
+- Returning **optional / result types**, not bool — name the action or the value (`find_user`, `load_config`), not a fake `is_*`.
+
+If none of those apply and the name is still a bare noun or a non-predicate bool, **rename**.
+
+### 4. Design and comments
+
+If a `///` exists only to supply the missing verb or the missing “is this a bool?”, **rename** — don’t paper over the name. See write-code § Names carry the action and the comments stage.
 
 ---
 
@@ -177,20 +250,23 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 1. New/changed names: clear to a stranger?  
 2. Public too short? Local too long?  
 3. Odd abbreviations or dropped letters?  
-4. Function name is an action when it does work?  
-5. Would a better name remove a comment that only explains the name?  
-6. Same style as the rest of the file?  
-7. **If public/API surface:** apply § Public API naming (units in names, concrete verbs, pairs match, no double negatives, naming matches type)?  
+4. **Function that does work:** verb / verb phrase (not a bare noun)? Concrete verb (not amoeba `process` / `handle` alone)?  
+5. **Function / field that is a bool:** affirmative predicate (`is_` / `has_` / `can_` / `should_` / …)? Reads as a yes/no at the call site?  
+6. Would a better name remove a comment that only explains the name?  
+7. Same style as the rest of the file?  
+8. **If public/API surface:** apply § Public API naming (units in names, concrete verbs, pairs match, no double negatives, naming matches type)?  
 
 ### Flag
 
 - Unclear public or module-level names  
 - Very long names that only repeat local context  
 - `helper1`, `doStuff`, `process_data` with no real meaning  
+- Action named as a noun (`profile_credentials()`, `user_list()` as work)  
+- Bool without a predicate form (`ready()`, `check_valid()`, bare `status` as bool)  
 - Comment only needed because the name is opaque → rename  
 - Public API smells from § Public API naming (hidden writes, bare units, vague `get`, mismatched pairs, …)  
 
-Not a flag: normal short loop indices; domain words the project already uses.
+Not a flag: normal short loop indices; domain words the project already uses; protocol/constructor names from § Function naming exceptions.
 
 ---
 
@@ -199,5 +275,7 @@ Not a flag: normal short loop indices; domain words the project already uses.
 | Idea | Where |
 |------|--------|
 | Prefer rename over a comment that only explains the name | comments stage |
+| Short form when writing code (verb + bool prefixes) | conventions → `write-code.md` § Names carry the action |
 | Types that force good use | architecture |
 | One function per task (step names) | conventions |
+| Public bare `status: bool` / double-negation flags | hard-rules (`HR-api-bool-status`, `HR-api-double-negation`) |

@@ -195,9 +195,33 @@ This pairs with “optimize for the reader”: pay for clarity at the place peop
 
 ### Names carry the action
 
-Prefer **verb phrases** for functions that do work (`load_profile_credentials`, `resolve_credentials`, `list_remote_parquet`). The name should make the action obvious at the call site.
+When **writing** a function, name it so the call site needs no comment to know what happens.
 
-If a `///` only restates what the name should have said, or is required for the reader to know the verb, **rename the function** instead of padding the comment. Comments remain for contracts, hazards, and non-obvious *why* — not for supplying a missing verb.
+**Actions (do work)** — start with a **verb or verb phrase**:
+
+```text
+load_profile_credentials
+resolve_credentials
+list_remote_parquet
+cancel_order
+parse_invoice_lines
+```
+
+Not bare nouns (`profile_credentials`, `user_list` as a function) and not amoeba verbs alone (`process`, `handle`, `do`) without the real job.
+
+**Booleans (yes/no)** — name as an **affirmative predicate**. Default prefixes: **`is_`**, **`has_`**, **`can_`** (also `should_` / `are_` / `needs_` when they fit):
+
+```text
+is_ready(job)
+has_permission(user, action)
+can_retry(error)
+```
+
+Not `ready()`, `check_valid()`, or a noun that happens to return `bool`. Prefer positive form; invert at the call site (`if !is_enabled`).
+
+Full rules, tables, and narrow exceptions: `skeptic-naming/references/naming.md` § Function naming. Review stage: **skeptic-naming**.
+
+If a `///` only restates what the name should have said, or is required for the reader to know the verb / that it is a yes-no, **rename the function** instead of padding the comment. Comments remain for contracts, hazards, and non-obvious *why* — not for supplying a missing verb.
 
 ### No pure/shell stamps on docs
 

@@ -20,9 +20,10 @@ description: >
 
 1. `references/components.md` — **default component layout** (public use-case face; Hombergs; review flags)  
 2. `../design-components/references/guide.md` — when designing/growing a component interior (orchestration + sans-IO)  
-3. `../skeptic-testability/references/pure-core.md` — when pure vs IO placement is in scope  
-4. `references/type-driven.md` — type-boundary samples when APIs/results change  
-5. `references/rust-apis.md` — misuse-resistant API craft  
+3. `../design-components/references/philosophy-of-design.md` — when shallow vs deep face, leakage, or pass-through APIs are in scope  
+4. `../skeptic-testability/references/pure-core.md` — when pure vs IO placement is in scope  
+5. `references/type-driven.md` — type-boundary samples when APIs/results change  
+6. `references/rust-apis.md` — misuse-resistant API craft  
 
 ## Do
 

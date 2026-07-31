@@ -23,9 +23,10 @@ Cosmic Python’s “service layer” ≈ **that public struct**. We do **not** 
 
 ## Load
 
-1. `references/guide.md` — short merge (required for non-trivial design)  
-2. `../skeptic-architecture/references/components.md` — layout rules  
-3. `../skeptic-testability/references/pure-core.md` — thinking vs shell samples  
+1. `references/guide.md` — component + pure-core/shell merge (required for non-trivial design)  
+2. `references/philosophy-of-design.md` — deep modules, pull complexity down, leakage (required when the face or splits are non-trivial)  
+3. `../skeptic-architecture/references/components.md` — layout rules  
+4. `../skeptic-testability/references/pure-core.md` — thinking vs shell samples  
 
 ## Do
 
@@ -36,9 +37,10 @@ Cosmic Python’s “service layer” ≈ **that public struct**. We do **not** 
 5. **Split thinking vs shell** (sans-IO for rules; time as a parameter).  
 6. **Do not re-export** every private step. “One function per task” is interior.  
 7. Prefer **methods over free `pub fn` orchestration** when the job has collaborators or more than one use case.  
-8. **Data ownership** — this job writes its tables; others use this API.  
-9. **Wire at the app edge** — HTTP/CLI holds the struct and stays thin.  
-10. **Good enough** — skip formal repo/UoW/aggregate unless a real pain appears.  
+8. **Deep face** (Ousterhout): pull complexity down; hide design decisions; no temporal public pipeline; no pass-through-only API — see `philosophy-of-design.md`.  
+9. **Data ownership** — this job writes its tables; others use this API.  
+10. **Wire at the app edge** — HTTP/CLI holds the struct and stays thin.  
+11. **Good enough** — skip formal repo/UoW/aggregate unless a real pain appears.  
 
 ## Do not
 
@@ -46,6 +48,7 @@ Cosmic Python’s “service layer” ≈ **that public struct**. We do **not** 
 - Treat “no layers” as “no public orchestration”  
 - Re-export helpers “for tests”  
 - Default to free public functions that re-pass the same deps every call  
+- Export a temporal pipeline (`load`/`validate`/`save` as the public API)  
 - Invent Cosmic/Clean folder sets by default  
 
 ## Output when designing

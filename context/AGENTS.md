@@ -40,7 +40,7 @@ When creating or growing a project, prefer this shape unless the user or an exis
 
 Do **not** default to app-wide `controllers/` + `services/` + `repositories/` as the only structure. Do **not** treat that ban as “no public orchestration.”
 
-Depth: `skeptic-architecture` → `references/components.md`. Designing a component (merged story): skill **`design-components`**. Pure vs IO: `pure-core`. Review: **skeptic** stage architecture.
+Depth: `skeptic-architecture` → `references/components.md`. Designing a component: skill **`design-components`** (`guide.md` + `philosophy-of-design.md` for deep faces). Pure vs IO: `pure-core`. Review: **skeptic** stage architecture.
 
 ---
 

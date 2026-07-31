@@ -9,7 +9,8 @@ One architecture story. Not two books side by side.
 That is the whole model. Cosmic Python’s “service layer” is just a name for the **public face of a component**. We do **not** adopt their full DDD pattern stack (repository theater, UoW types, aggregates) as default.
 
 Layout rules (folders, Hombergs, no app-wide layers): `skeptic-architecture/references/components.md`.  
-Thinking vs shell detail: `skeptic-testability/references/pure-core.md`.
+Thinking vs shell detail: `skeptic-testability/references/pure-core.md`.  
+**Why the face stays small / deep:** `philosophy-of-design.md` (Ousterhout — load for non-trivial design).
 
 ---
 
@@ -76,7 +77,7 @@ Callers (HTTP handler, CLI, another component) must **not** reassemble that sequ
 | Free `pub fn allocate(store, clock, …)` every call | `Allocation { store, clock }` + `.allocate(…)` |
 | Same 15-line load/check/save copied twice | One method; both call sites use the same handle |
 
-**Deep module** (Ousterhout, short form): simple interface, powerful body. Pull complexity **down** into the component so the call site stays easy. Small private functions for clarity are fine; **exporting** every step is not.
+**Deep module (short):** simple interface, powerful body; pull complexity **down** into the component. Small private functions are fine; **exporting** every step is not. Full rules, leakage, temporal split, pass-throughs, errors: **`philosophy-of-design.md`**.
 
 ### 3. Interior: thinking vs shell (sans-IO)
 
@@ -132,7 +133,7 @@ Full pure-core samples: `skeptic-testability/references/pure-core.md`.
 | Hombergs “components not layers” | Project spine = jobs, not technical tiers |
 | Cosmic “service layer” | **Public struct + use-case methods** — one sentence, not a framework |
 | Sans-IO / pure core / shell | **How the interior is written** so rules are testable |
-| Ousterhout deep modules | Public face stays small; hide the messy steps |
+| Ousterhout (*Philosophy of Software Design*) | Deep face, pull complexity down, hide decisions — `philosophy-of-design.md` |
 | SOLID | Optional checklist: one job, small ports if any, IO not inside pure rules |
 
 We **do not** require Cosmic’s default folder set (`domain/`, `service_layer/`, `adapters/`, `entrypoints/`) or their full pattern ladder. Optional ideas only when a real pain appears — see appendix.
@@ -242,10 +243,11 @@ One-shot scripts: stay local; no component graph.
 
 | Flag | Why |
 |------|-----|
-| Many public step-helpers | Orchestration leaked |
+| Many public step-helpers | Orchestration leaked; shallow module |
 | Free public orchestration fns that re-pass the same deps | Prefer a struct that holds them |
 | Handler owns multi-step load→decide→save | Move onto component struct |
 | Rules mixed with SQL in one blob, untestable | Split thinking vs shell |
+| Pass-through public methods / temporal public pipeline | See philosophy-of-design |
 | Two components write the same tables | Ownership broken |
 | Digging into another job’s private modules | Broken boundary |
 
@@ -263,7 +265,7 @@ One-shot scripts: stay local; no component graph.
 |--------|---------|
 | Hombergs — [components not layers](https://www.youtube.com/watch?v=-VmhytwBZVs) | Job packages, not app-wide layers |
 | Cosmic Python [ch.4 service layer](https://www.cosmicpython.com/book/chapter_04_service_layer.html) | “Use case entrypoint” ≈ our public face — **not** the full book as default |
-| Ousterhout — *Philosophy of Software Design* | Deep modules; pull complexity down |
+| Ousterhout — *Philosophy of Software Design* | Full pack mapping: `philosophy-of-design.md` |
 | Tilkov — [“Good Enough” Architecture](https://www.youtube.com/watch?v=nb0Ru40548U) | Enough modularization for the real problem |
 | Pack pure-core | Thinking vs shell / sans-IO |
 
@@ -289,6 +291,7 @@ Prefer Cosmic Python’s own trade-off tables before adopting the ceremony. Defa
 
 | File | Role |
 |------|------|
+| `philosophy-of-design.md` | Ousterhout: deep modules, leakage, pull complexity down |
 | `skeptic-architecture/references/components.md` | Layout default, review one-liners |
 | `skeptic-testability/references/pure-core.md` | Thinking vs shell |
 | `skeptic-conventions/references/write-code.md` | One function per task (interior) |

@@ -14,7 +14,7 @@ Design and grow **job-shaped components** with a **small public face** — prefe
 
 ### Behavior: One merged model
 
-The agent SHALL treat the component’s public API as preferably **one job struct** whose **methods** are the use cases, holding collaborators as fields when the job has IO or shared deps. The agent SHALL keep multi-step load→decide→save **inside** those methods (or private helpers only they call). The agent SHALL place business rules in **thinking code** (no IO) where they are pure decisions, and IO in thin shell paths. The agent MUST NOT introduce app-wide `controllers/` / `services/` / `repositories/` as the primary project structure. The agent MUST NOT present Cosmic Python’s full pattern stack as the default. The agent SHOULD prefer methods on a struct over free public orchestration functions that re-pass the same dependencies on every call.
+The agent SHALL treat the component’s public API as preferably **one job struct** whose **methods** are the use cases, holding collaborators as fields when the job has IO or shared deps. The agent SHALL keep multi-step load→decide→save **inside** those methods (or private helpers only they call). The agent SHALL place business rules in **thinking code** (no IO) where they are pure decisions, and IO in thin shell paths. The agent SHALL apply deep-module judgment from `philosophy-of-design.md` when the public face is non-trivial: pull complexity down, hide design decisions, avoid temporal public pipelines and pass-through-only APIs. The agent MUST NOT introduce app-wide `controllers/` / `services/` / `repositories/` as the primary project structure. The agent MUST NOT present Cosmic Python’s full pattern stack as the default. The agent SHOULD prefer methods on a struct over free public orchestration functions that re-pass the same dependencies on every call.
 
 #### Scenario: Stray public helpers
 
@@ -39,6 +39,12 @@ The agent SHALL treat the component’s public API as preferably **one job struc
 - **GIVEN** a simple job with one use case  
 - **WHEN** designing  
 - **THEN** the agent does not invent empty adapter packages or formal UoW without need
+
+#### Scenario: Temporal public pipeline
+
+- **GIVEN** a design that exports public load / validate / save stages callers must order  
+- **WHEN** designing  
+- **THEN** the agent folds them into a use-case method on the job struct and keeps stages private
 
 ## Constraints
 

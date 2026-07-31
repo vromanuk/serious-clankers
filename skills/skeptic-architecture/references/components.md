@@ -73,7 +73,7 @@ The banned idea is **horizontal ownership soup**. The sound idea is a **deep pub
 7. **Data ownership** — one owner writes a given set of facts/tables; other components go through the owner’s API.  
 8. **Compose at the edge** — app/binary/server wires components (construct the struct, pass it around); components do not form a free-for-all mesh.  
 9. **Prefer enforceable structure** — language visibility first; optional automated rules when useful.  
-10. **Deep over shallow** — simple interface relative to power; pull complexity down into the component (Ousterhout).  
+10. **Deep over shallow** — simple interface relative to power; pull complexity down into the component; hide design decisions; do not export a temporal step pipeline. Detail: `design-components/references/philosophy-of-design.md` (Ousterhout).  
 
 The rule is the **boundary**, not a particular folder spelling.
 

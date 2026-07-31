@@ -11,6 +11,7 @@ Prefer encoding as lint/CI when stable.
 | `HR-new-behavior-no-test` | New behavior in thinking code without a test that asserts the contract | Diff adds decision logic, no test update |
 | `HR-private-import` | Do not import another component’s private path (past its public surface) | Cross-component use of private modules / non-exported paths; not merely “missing an `internal/` folder name” |
 | `HR-io-in-decision-core` | No network/disk/env/clock/random inside pure decision helpers under review | `std::fs`, `Instant::now`, env, sockets inside functions documented as pure/thinking |
+| `HR-io-timeout` | Every **external** call / remote IO must have a **timeout or deadline** | HTTP/DB/gRPC/Redis/queue/S3/SMTP/DNS/client SDK call with no client timeout, per-request timeout, or wrapping deadline; connect-only timeout with unbounded body wait when the stack supports request timeout |
 | `HR-prefer-battle-tested-lib` | Prefer a standard, battle-tested crate over hand-rolled code for well-solved domains (especially **date/time/calendar**, also UUID, URL, crypto primitives, compression, etc.) when the crate is already in the workspace or is the normal Rust ecosystem choice | Custom leap-year / `days_in_month` / manual `YYYY-MM-DD` validation; home-grown base64/UUID; reinventing parsers already covered by `chrono`/`time`/`uuid`/… |
 | `HR-api-get-mutates` | Public **mutating** operations must not look like pure reads | `get_*` / `fetch_*` / HTTP `GET` that create/update/delete or have real side effects |
 | `HR-api-bare-quantity` | Public quantities must name the **unit or standard** (or carry currency) | Public field/param `duration` / `date` / `amount` / `price` as bare number/string with no unit/standard in name or structure |
@@ -27,6 +28,70 @@ Prefer encoding as lint/CI when stable.
 **Not a hit:** tiny pure helpers that are the product domain; one-liners that only format after a library parse.
 
 **Fix:** replace with the standard crate; drop parallel calendar math.
+
+### `HR-io-timeout` (detail)
+
+**Why:** A hung peer, black hole route, or stuck DB connection without a bound ties up threads/tasks and cascades outages. Timeouts are not optional polish.
+
+**Scope — “external / remote IO” (must have a timeout or deadline):**
+
+- Outbound **HTTP / HTTPS** (clients, webhooks)  
+- **gRPC / RPC** to another process or host  
+- **Database** connections, pool acquire, and queries/commands  
+- **Caches / brokers / object storage** (Redis, Kafka, SQS, S3, …)  
+- **SMTP**, DNS lookups used for service discovery, other remote SDKs  
+- **Subprocess** waits that can block forever on external tools  
+- Any **async future** whose completion depends on the above  
+
+**What counts as a timeout (any one is enough if it actually bounds the wait):**
+
+- Client / pool builder defaults: connect timeout **and** request/operation timeout (or an overall deadline that covers both)  
+- Per-call / per-request timeout or deadline (gRPC deadline, HTTP timeout, SQL `statement_timeout`, …)  
+- Explicit wrapper: `tokio::time::timeout`, `select!` with sleep, context with deadline, etc.  
+- Shared client constructed **once** with timeouts, then reused (timeout lives at construction; call sites may omit a second timeout)
+
+**Invalid:**
+
+```rust
+// HTTP with no timeout on the client or the call
+let client = reqwest::Client::new();
+let body = client.get(url).send().await?;
+
+// DB query with no acquire/query/statement timeout and no wrapping deadline
+let row = sqlx::query_as::<_, Row>("SELECT …").fetch_one(&pool).await?;
+
+// “Retry forever” with no overall deadline
+loop {
+    if try_call().await.is_ok() { break; }
+}
+```
+
+**Valid:**
+
+```rust
+let client = reqwest::Client::builder()
+    .connect_timeout(Duration::from_secs(3))
+    .timeout(Duration::from_secs(10))
+    .build()?;
+let body = client.get(url).send().await?;
+
+// or per call / wrapper
+tokio::time::timeout(Duration::from_secs(10), client.get(url).send()).await??;
+
+// gRPC: deadline on the call; DB: pool acquire_timeout + statement_timeout / query timeout
+```
+
+**Not a hit:**
+
+- Pure thinking code; in-process channels, mutexes, local memory  
+- Unit-test fakes / mocks that do not touch a real network  
+- Call site using a **shared client/pool** that already has timeouts configured in the same codebase (construction site is the place that must satisfy the rule)  
+- Local `std::fs` / temp files in one-shot tools when no remote filesystem API is involved (if you open network mounts or remote FS APIs, treat as external)  
+- Timeouts that are **zero / infinite / disabled** on purpose only if product docs and config make that an explicit, rare escape hatch — default product paths still need a finite bound  
+
+**Fix:** set connect + operation timeouts on the client/pool (preferred), or wrap the await in a deadline; fail with a clear timeout error; avoid unbounded retries without a total deadline.
+
+**Review tip:** when the diff **adds** a new outbound dependency, check the **construction** of the client/pool in the same PR or the module that owns it — not only the call site.
 
 ### API / interface hard rules (detail)
 

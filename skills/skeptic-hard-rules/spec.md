@@ -13,7 +13,7 @@ Stage 8 of skeptic: pass/fail absolute bans only, from `references/hard-rules.md
 
 ### Behavior: Checklist only
 
-The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces.
+The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces and IO rules such as `HR-io-timeout` for external/remote calls.
 
 #### Scenario: Private import
 
@@ -26,6 +26,12 @@ The agent SHALL walk `references/hard-rules.md` against the diff and report only
 - **GIVEN** a public JSON/API field `"duration": 5000` with no unit in name or structure
 - **WHEN** reviewing hard rules
 - **THEN** the agent reports `HR-api-bare-quantity` with path:line and smallest fix
+
+#### Scenario: External call without timeout
+
+- **GIVEN** a new or changed outbound HTTP/DB/gRPC (or similar remote IO) with no client timeout, per-request timeout, or wrapping deadline
+- **WHEN** reviewing hard rules
+- **THEN** the agent reports `HR-io-timeout` with path:line and smallest fix
 
 ### Behavior: No invented IDs
 

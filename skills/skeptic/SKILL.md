@@ -66,6 +66,7 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 - One opaque mega-diff / squash of many ideas  
 - Contract only in a second helper — caller can forget  
 - `println!` as production logging; unentered spans; metric labels with unbounded values  
+- External HTTP/DB/RPC call with no timeout or deadline  
 
 Hard-rule IDs only from stage 8 / `skeptic-hard-rules/references/hard-rules.md`. Soft scars go to the matching stage with evidence.
 

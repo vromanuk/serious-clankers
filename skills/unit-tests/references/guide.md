@@ -57,6 +57,15 @@ Brittle suites stop being “automated” if every change needs manual test surg
 
 ## 3. Preventing brittle tests
 
+**Two helper traps (read this first):**
+
+| Trap | Symptom | Fix |
+|------|---------|-----|
+| **Testing production helpers** | Direct calls to private/`pub` for-test-only methods, serialization guts | §3.2 — public API only |
+| **Helpers *in* tests that hide the case** | Short body, meaning in `createX`/`runScenario`/`setUp` | §4.1 + **§5 DAMP over DRY** |
+
+Both look like “helpers”; they fail differently (brittleness vs unclarity). Prefer neither.
+
 ### 3.1 Strive for unchanging tests
 
 **Ideal:** after a test is written, it **never changes** unless the **requirements / public behavior** of the system under test change.
@@ -480,6 +489,16 @@ Production often optimizes **DRY**. Tests optimize **clarity and stability** (th
 **DRY** = Don’t Repeat Yourself.  
 DAMP **complements** DRY: helpers are fine when they make tests *clearer*, not only shorter.
 
+**Highlight — prefer DAMP so you avoid “helpers in tests” that obscure the case:**
+
+| OK test helper | Not OK test helper |
+|----------------|--------------------|
+| Boring defaults: `newCalculator()`, `newContact().setFirstName(...)` | Scenario drivers: `createUsers(false, true)`, `runHappyPathAndAssert()` |
+| One named fact: `assertUserHasAccessToAccount(user, account)` | Kitchen-sink: `validateForumAndUsers(...)` that hides which assert matters |
+| Values that matter stay **in the test body** | Values that matter live only inside the helper / shared `setUp` |
+
+If a pure refactor of production should not break tests, still prefer that a **reader** can diagnose a failure without reverse-engineering test helpers. DAMP is about the **test** surface; §3.2 is about not testing the **production** helper surface.
+
 ### Example 12-19 — too DRY (bad)
 
 ```java
@@ -673,13 +692,13 @@ Unit tests need not always be “smallest possible size,” but narrow scope + s
 When reviewing or writing unit tests, ask:
 
 1. **Unchanging?** Would a pure internal refactor force this test to change? If yes → too low-level.  
-2. **Public API?** Does it call the unit like a user of that unit?  
+2. **Public API?** Does it call the unit like a user of that unit — not private production helpers?  
 3. **State vs interaction?** Are we asserting outcomes/state, or only mock call sequences?  
 4. **One behavior?** Name and body about a single story?  
 5. **Complete + concise?** All needed context present; no clutter?  
 6. **Straight-line?** No production-duplicating logic in the test?  
 7. **Failure message?** Expected vs actual clear?  
-8. **DAMP?** Shared setup still leaves important values obvious?  
+8. **DAMP?** Can you understand the case without opening test helpers / distant setUp? Important values in the body?  
 9. **New behavior covered?** Feature/bugfix added tests without rewriting the world?  
 
 ---
@@ -689,7 +708,7 @@ When reviewing or writing unit tests, ask:
 | Idea | Where else |
 |------|------------|
 | Thinking code vs shell (what is easy to unit-test) | `skeptic-testability/references/pure-core.md` |
-| Property / snapshot **when** | `skeptic-testability/references/testing.md` (still obey public-API + unchanging rules) |
+| Property / snapshot **when** | `skeptic-testability/references/testing.md` (still obey public-API + unchanging + DAMP rules) |
 | Hard ban: new thinking behavior without tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-new-behavior-no-test` |
 
 ---
@@ -697,7 +716,7 @@ When reviewing or writing unit tests, ask:
 ## 9. TL;DRs (from the chapter)
 
 1. Strive for **unchanging** tests.  
-2. Test via **public APIs**.  
+2. Test via **public APIs** — **don’t test production helpers**.  
 3. Test **state**, not interactions.  
 4. Make tests **complete and concise**.  
 5. Test **behaviors**, not methods.  
@@ -705,7 +724,7 @@ When reviewing or writing unit tests, ask:
 7. **Name** tests after the behavior.  
 8. Don’t put **logic** in tests.  
 9. Write **clear failure messages**.  
-10. Follow **DAMP over DRY** when sharing test code.  
+10. Follow **DAMP over DRY** — **don’t hide cases in test helpers**.  
 
 ---
 

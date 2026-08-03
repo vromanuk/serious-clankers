@@ -49,8 +49,21 @@ If every small refactor forces a wall of test edits, the tests are brittle.
 - Exercise the unit the way a **caller** would: public API / exported functions / decision function inputs and outputs.  
 - Prefer not to make private helpers `pub` only for tests, or assert serialization layout / field order of internal structs unless that **is** the contract.  
 - Tests that dig into private methods break on renames and extractions with **no user impact** — classic brittleness.
+- **Do not test production helpers** as if they were the unit; cover their behavior through the public surface.
 
 “Public” here means the boundary of the **unit you chose** (function, module, crate API) — not necessarily every `pub` keyword in the language.
+
+### DAMP over DRY (helpers in tests)
+
+Tests optimize **clarity**, not shared lines (**DAMP** = Descriptive And Meaningful Phrases). Prefer slightly longer, readable cases over DRY helpers that hide the point.
+
+| Don’t | Do |
+|-------|-----|
+| `runHappyPath()` / `createUsers(false, true)` as the whole body | Inputs, action, and expected outcome visible in the test |
+| Silent `setUp` values the assert depends on | State values that matter **in the body** (or named overrides) |
+| Kitchen-sink `validateEverything(...)` | Assert the one behavior this test owns |
+
+Helpers are fine for **boring** defaults (`newCalculator()`, blank fixtures). They are bad when understanding the case requires opening the helper. Full craft: skill **`unit-tests`**.
 
 ### Clarity when tests fail
 
@@ -63,7 +76,8 @@ If every small refactor forces a wall of test edits, the tests are brittle.
 
 | Pattern | Why it hurts |
 |---------|----------------|
-| Asserting internal structure / private helpers | Refactors for clarity break tests |
+| Asserting internal structure / private production helpers | Refactors for clarity break tests |
+| Scenario helpers / DRY fixtures that hide the case | Unclear failures; helper bugs mask product bugs |
 | Over-mocking internal modules | Tests lock implementation, not behavior |
 | Order-dependent tests / shared mutable globals | Flakes; hard to run alone |
 | Sleeps for “eventual” success | Flakes; prefer fake clocks / pure cores |
@@ -171,12 +185,13 @@ For **benches**: unit-test SQL builders and pure window math; don’t replace A/
 
 ## Checklist when adding tests
 
-1. Does this lock a **user-visible or public** contract, or only a private rename? Prefer the former.  
+1. Does this lock a **user-visible or public** contract, or only a private rename / production helper? Prefer the former.  
 2. Will this test still make sense after a pure refactor?  
-3. On failure, is the next step obvious?  
-4. Wide input space or long-lived state → consider **property / sequence + invariant**.  
-5. Stable complex blob → consider **snapshot** with normalization.  
-6. New behavior → new test (`HR-new-behavior-no-test` for thinking code).
+3. On failure, is the next step obvious **without opening test helpers**?  
+4. **DAMP?** Important inputs and expected outcomes visible in the body?  
+5. Wide input space or long-lived state → consider **property / sequence + invariant**.  
+6. Stable complex blob → consider **snapshot** with normalization.  
+7. New behavior → new test (`HR-new-behavior-no-test` for thinking code).
 
 ---
 

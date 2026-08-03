@@ -2,7 +2,7 @@
 
 ## Intent
 
-Make the agent write pull-request descriptions that always use the same labeled structure a reviewer can scan: **Why** (real need), **How** (mechanism), then **Testing** when applicable. This exists because unguided agents invent freeform layouts, dump file lists, bury the need, and put empty testing placeholders.
+Make the agent write pull-request descriptions that always use the same labeled structure a reviewer can scan: **Why** (real need **and** high-level idea/intuition first), **How** (mechanism), then **Testing** when applicable. This exists because unguided agents invent freeform layouts, dump file lists, bury the need, skip the core idea, and put empty testing placeholders.
 
 ## Triggers
 
@@ -18,8 +18,8 @@ Make the agent write pull-request descriptions that always use the same labeled 
 
 The agent SHALL always emit the PR body with these exact line-start labels in this order, each on its own line as `Label: ` followed by content (or a short block starting on the next line):
 
-1. `Why:` — real need / problem in plain words
-2. `How:` — what changed and how it works
+1. `Why:` — real need / problem **and** high-level idea / intuition (essence before mechanism)
+2. `How:` — what changed and how it works (mechanism detail)
 3. `Testing:` — what was run or what the reviewer should run (required unless the user explicitly asked for Why/How only)
 
 Optional after those, still as a labeled line: `Risks:` or `Notes:` when material. The agent MUST NOT use freeform `## Summary` / `## How` markdown section titles as a substitute for these labels. The agent MUST NOT reorder or rename the required labels.
@@ -30,15 +30,21 @@ Optional after those, still as a labeled line: `Risks:` or `Notes:` when materia
 - **WHEN** the user asks for a PR description
 - **THEN** the body starts with `Why:` stating the sites were not whitelisted, then `How:` stating the IDs were added to the named config list, using those exact labels
 
-### Behavior: Why before how
+### Behavior: Why before how (need + intuition first)
 
-The agent SHALL put the real need under `Why:` and the mechanism under `How:`. `Why:` MUST come first. Content under `How:` MUST NOT appear before `Why:`.
+The agent SHALL put under `Why:` both (1) the real need / problem and (2) the high-level idea or intuition of the approach (explain-diff spirit: model before detail, PR-short). The agent SHALL put mechanism detail under `How:`. `Why:` MUST come first. Content under `How:` MUST NOT appear before `Why:`. `Why:` MUST NOT be only a file list or only a synonym of the implementation without stating the problem and core idea when the change is non-trivial. Tiny one-line fixes may keep `Why:` to one or two short sentences still covering need and idea.
 
 #### Scenario: Feature branch PR
 
 - **GIVEN** a branch that adds input validation to a public API
 - **WHEN** the user asks for a PR description
-- **THEN** `Why:` states the need and high-level idea before `How:` gives implementation detail
+- **THEN** `Why:` states the need and the high-level idea (e.g. reject invalid input at the boundary) before `How:` gives implementation detail
+
+#### Scenario: Why is only a file dump
+
+- **GIVEN** a multi-file feature branch
+- **WHEN** the user asks for a PR description
+- **THEN** the agent does not put only changed paths under `Why:`; it states the problem and essence first, mechanism under `How:`
 
 ### Behavior: Component diagram when structure matters
 

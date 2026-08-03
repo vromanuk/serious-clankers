@@ -16,9 +16,9 @@ Write a PR body a reviewer can use. **Inspect committed branch changes first**
 **Always the same structure** — fixed labels, same order, every time:
 
 ```text
-Why: <real need / problem>
+Why: <real need + high-level idea / intuition — not file dump, not mechanism>
 
-How: <what changed and how it works>
+How: <what changed and how it works (mechanism)>
 
 Testing: <what was run or what to run>
 ```
@@ -26,7 +26,7 @@ Testing: <what was run or what to run>
 When structure matters, add a **separate** diagram/components block between `---` lines (not inside `How:`):
 
 ```text
-Why: <real need / problem>
+Why: <need + intuition>
 
 How: <prose mechanism only>
 
@@ -50,16 +50,16 @@ Testing: <what was run or what to run>
    - **Diff:** `git diff <merge-base>...HEAD` (full or by important paths). Read enough of the real patches to explain the change — do not invent from commit subjects alone when the diff is available.
    - Issue / ticket text only if the user gave it.
    - Uncommitted dirty files: ignore for the PR body unless the user asked to include WIP; if you skip them, do not claim they are in the PR.
-2. **Analyze** — from that file list + diff: real need, mechanism, whether multiple components need a diagram, what testing evidence exists (new tests in the diff, session commands).
-3. **Draft** using `references/shape.md` (load it). Labels must match exactly.
-4. **Check** — grounded in committed files/diff; `Why:` → `How:` → optional `---` diagram → `Testing:`; no invented runs.
+2. **Analyze** — from that file list + diff: real need, **high-level idea/intuition**, mechanism, whether multiple components need a diagram, what testing evidence exists (new tests in the diff, session commands).
+3. **Draft** using `references/shape.md` (load it). Labels must match exactly. `Why:` = need + idea; `How:` = mechanism.
+4. **Check** — grounded in committed files/diff; `Why:` (need + intuition) → `How:` → optional `---` diagram → `Testing:`; no invented runs; `Why:` is not a bare file dump.
 5. **Deliver** the full body (and put it in the PR if the user asked to open/update one).
 
 ## Fixed structure (mandatory)
 
 | Label | Job |
 |-------|-----|
-| `Why:` | Real need / problem in plain words |
+| `Why:` | Real need **and** high-level idea / intuition (essence) — before mechanism |
 | `How:` | Prose mechanism only (no diagram here) |
 | `---` … `---` | Diagram / changed components when structure matters |
 | `Testing:` | Commands, cases, or honest manual check |
@@ -72,14 +72,20 @@ Optional after those when material: `Risks:` or `Notes:`.
 - **Do not** replace them with `## Summary` or freeform headings, or reorder them.
 - Tiny one-liner PRs still use the same labels. No empty `---` pair.
 
-### Why
+### Why (need + intuition first)
 
-- Restate the real need from the change (and ticket if given). Label *assumed* if only inferred from the diff.
-- Not a file dump.
+Borrow the spirit of **explain-diff** “intuition before detail” — but stay short (PR body, not a teaching essay).
+
+1. **Real need / problem** in plain words (and ticket if given). Label *assumed* if only inferred from the diff.  
+2. **High-level idea / intuition** — essence of the approach in one or two sentences (what the change *is*, not path-by-path). A tiny before/after or analogy is fine when it helps; skip essay length.  
+3. **Not** a file dump, not the full mechanism (that is `How:`).
+
+Order inside `Why:`: problem → core idea. A reader should grasp *why this PR exists* and *what the idea is* before any implementation prose.
 
 ### How
 
-- Mechanism from the **committed** diff: what changed and where (paths / symbols when useful).
+- Mechanism from the **committed** diff: what changed and where (paths / symbols when useful).  
+- Detail **after** the idea in `Why:` — do not restate only the need without adding how it was built.  
 - **No** diagram inside this paragraph.
 
 ### Diagram / changed components
@@ -114,9 +120,10 @@ Optional after those when material: `Risks:` or `Notes:`.
 ## Example (small fix — no diagram)
 
 ```text
-Why: `Tesla - Lynx` site data (STST-SM-30162, STST-SM-30164) is not whitelisted.
+Why: `Tesla - Lynx` site data (STST-SM-30162, STST-SM-30164) is not mirrored into the target env.
+  Idea: extend the existing kafka producer whitelist so those gateways are treated like the other Tesla sites.
 
-How: Added both `Tesla - Lynx` gateway IDs (STST-SM-30162, STST-SM-30164) to the kafkaProducerMirroringCriteria list in `kcr-mirroring-config.yaml`.
+How: Added both gateway IDs to the kafkaProducerMirroringCriteria list in `kcr-mirroring-config.yaml`.
 
 Testing: Config review only — confirm both gateway IDs appear in the mirrored criteria list for the target env.
 ```
@@ -124,9 +131,10 @@ Testing: Config review only — confirm both gateway IDs appear in the mirrored 
 ## Example (structure matters — diagram fenced)
 
 ```text
-Why: Callers get silent empty success when the planner receives an empty file list; we need a clear reject at construction.
+Why: Callers get silent empty success when the planner receives an empty file list.
+  Idea: reject empty input at the type boundary so “no files” cannot look like a valid plan — fail closed at construction, not deep in planning.
 
-How: `NonEmptyFiles` is built only via `try_from`; the shell maps the error to the API.
+How: `NonEmptyFiles` is built only via `try_from`; the shell maps that error to the API response.
 
 ---
 

@@ -95,6 +95,6 @@ One line: “You should be able to …” — understanding check, **not** a qui
 
 | Job | Skill |
 |-----|--------|
-| Short PR body | `pr-description` |
+| Short PR body (Why = need + intuition; How = mechanism) | `pr-description` |
 | Multi-lens review | `skeptic` |
 | Concept only | `explain-topic` |

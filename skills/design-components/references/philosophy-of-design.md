@@ -179,13 +179,14 @@ When fixing a bug under time pressure, still avoid **exporting** a new step-help
 
 ## Comments as part of the interface (link only)
 
-Ousterhout treats **interface documentation** as part of the module (what callers must know). This pack already has that under **skeptic-comments** (public `///` = how to use; body `//` = non-obvious why).
+Ousterhout treats **interface documentation** as part of the module (what callers must know). This pack: **skeptic-comments** — public docs = how to use **and why this shape**; body = non-obvious why. Module template: `comments.md` (role → intuition → why → rules → entrypoints).
 
 When designing a job struct:
 
 - Document **methods** for contracts, failure, and non-obvious ordering **if any remains**.  
 - Prefer **removing** ordering from the interface (rule 2–4) over documenting a fragile sequence.  
-- Do not use comments to paper over a shallow API — **deepen** the API first.
+- Do not use comments to paper over a shallow API — **deepen** the API first.  
+- Do not leave “do X, not Y” on the module without the **benefit** or rejected alternative.
 
 ---
 

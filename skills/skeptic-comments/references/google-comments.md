@@ -16,20 +16,22 @@ Comments help the **next person** (often you later). Be generous when something 
 
 **Best code explains itself.** Clear names beat obscure names that need a comment. Prefer rename over a comment that only supplies the missing verb.
 
+**Prefer why over bare facts.** A comment that only states a non-obvious rule (“do X, not Y”) is incomplete if the reader cannot see the **benefit** or **what fails** if they ignore it. Google’s “higher-level” guidance is the same idea: explain **intent / why**, not a paraphrase of syntax. This pack’s full bar and module template: `comments.md`.
+
 ### Two places, two jobs
 
 | Place | Job |
 |-------|-----|
-| **Public type / function / module** | How to **use** it: purpose, inputs/outputs, rules, failure, who owns args, threading if it matters. **Not** a full how-it-works essay. |
-| **Inside the body** | How it **works** when tricky: odd steps, why this approach, lock/order hazards. **Do not** paste the public blurb again. |
+| **Public type / function / module** | How to **use** it **and why this shape** when that is a design choice: purpose, benefit / rejected alternative, inputs/outputs, rules, failure, ownership. **Not** a full how-it-works essay. |
+| **Inside the body** | **Why** this approach when tricky; odd steps, lock/order hazards. **Do not** paste the public blurb again. |
 
 Rust: `///` / `//!` on the item vs `//` inside the body.
 
 ### File / module
 
-If a file or module holds related public pieces, a short top note can say what belongs here and what does **not**. Detail lives on each type/function, not a novel at the top.
+If a file or module holds related public pieces, a short top note: **role**, **intuition**, **why** (when the layout is a choice), what belongs here / what does **not**, entrypoints. Detail lives on each type/function, not a novel at the top.
 
-Rust: module `//!` for **purpose**, key rules, **entrypoints** (what to call first), related modules, and a short multi-step flow when useful — see `comments.md` § Module docs. Skip empty filler.
+Rust: module `//!` — see `comments.md` § Module docs (template: role → intuition → why → rules → entrypoints → related → flow). Skip empty filler.
 
 ### Types / classes / structs
 
@@ -160,8 +162,9 @@ If a good name or extract makes the “why” obvious, **delete** the comment. D
 | Idea | Where |
 |------|--------|
 | Clear names first | Naming stage |
+| Why / benefit / why-not bar | `comments.md` (top) |
 | Public docs vs body comments | `comments.md`; this file |
-| Module purpose | `comments.md` |
+| Module template (intuition first) | `comments.md` § Module docs |
 | Purpose + examples | `design-headers.md` |
 | Hazards, ownership, scars | `comments.md` examples |
 | Don’t restate the next line | This file § Do not state the obvious |
@@ -175,14 +178,16 @@ Use this when judging comments on a diff:
 
 1. **Clear English?** Normal readable writing.  
 2. **Actually needed?** If the code already says it, delete or simplify the code.  
-3. **Why, not what?** Good comments explain **why** the code exists or a decision. They should not restate **what** the next lines do.  
-4. **Unclear code → simplify first.** Don’t paper over hard code with a long comment.  
-5. **Exceptions (short *what* is OK):** regex, dense bit/math, hard algorithms, odd protocols. Still prefer a clear name + one line of *why* when both fit.  
-6. **Only what code can’t say:** reasoning, product rule, scar, ownership, “do not change to X” — not a paraphrase of the syntax.
+3. **Why, not what?** Good comments explain **why** the code exists, the **benefit**, or **why not** the obvious alternative — not only a bare rule, and not a restate of **what** the next lines do.  
+4. **Module docs:** if the module encodes a design choice, can a stranger recover the reason (not only the rule list)? See `comments.md` template.  
+5. **Unclear code → simplify first.** Don’t paper over hard code with a long comment.  
+6. **Exceptions (short *what* is OK):** regex, dense bit/math, hard algorithms, odd protocols. Still prefer a clear name + one line of *why* when both fit.  
+7. **Only what code can’t say:** reasoning, product rule, scar, ownership, “do not change to X” — not a paraphrase of the syntax.
 
 ### Flag
 
 - Comment only restates the next line (**what**, not **why**)  
+- Design rule / module policy with **no why, benefit, or rejected alternative**  
 - Comment only needed because the code is overcomplicated → simplify, don’t add more docs  
 - Body repeats the full public blurb  
 - Field comment is “this is a count” with no special rule  
@@ -191,4 +196,4 @@ Use this when judging comments on a diff:
 - Missing *why* on truly non-obvious code  
 - Comment text that is hard to read  
 
-Not a flag: short ownership, special values, concurrency, decision rationale, or “why not the obvious alternative”; brief *what* on regex/hard algorithms when it really helps.
+Not a flag: short ownership, special values, concurrency, decision rationale, or “why not the obvious alternative”; brief *what* on regex/hard algorithms when it really helps; tiny modules whose name is the whole story.

@@ -2,7 +2,7 @@
 
 ## Intent
 
-Stage 5 of skeptic: judge comment quality only — needed?, clear English, why not what, public docs vs body comments, design headers. Not naming, composition, or hard bans.
+Stage 5 of skeptic: judge comment quality only — needed?, clear English, why/benefit not bare what or unexplained rules, module `//!` shape, public docs vs body comments, design headers. Not naming, composition, or hard bans.
 
 ## Triggers
 
@@ -13,7 +13,7 @@ Stage 5 of skeptic: judge comment quality only — needed?, clear English, why n
 
 ### Behavior: Why not what; necessary comments
 
-The agent SHALL flag restating and unnecessary comments, prefer *why* or clearer code, and SHALL apply the comment review checklist (clear English; simplify unclear code; short *what* OK for regex/hard algorithms; keep decision/scar info).
+The agent SHALL flag restating and unnecessary comments, prefer *why* / benefit / rejected alternative or clearer code, and SHALL apply the comment review checklist (clear English; simplify unclear code; short *what* OK for regex/hard algorithms; keep decision/scar info). The agent SHALL flag module or API docs that state design rules without explaining why when that rule is a non-obvious choice.
 
 #### Scenario: Obvious restatement
 
@@ -21,9 +21,15 @@ The agent SHALL flag restating and unnecessary comments, prefer *why* or clearer
 - **WHEN** reviewing comments
 - **THEN** the agent flags it as stating the obvious
 
+#### Scenario: Rule without why
+
+- **GIVEN** a module `//!` that only states “clients query views, not raw keys” (or similar) with no benefit or alternative explained
+- **WHEN** reviewing comments
+- **THEN** the agent flags it and prefers intuition + why + rules that follow (`comments.md` template)
+
 ### Behavior: Design headers
 
-The agent SHALL flag design headers that only restate types and SHALL prefer purpose + given/expected without type lines.
+The agent SHALL flag design headers that only restate types or only restate the function name and SHALL prefer purpose (with why when the shape is a choice) + given/expected without type lines.
 
 #### Scenario: Type-line design header
 

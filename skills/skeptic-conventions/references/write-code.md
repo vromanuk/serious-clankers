@@ -237,7 +237,7 @@ If something matters to callers, write the real rule in ordinary words (e.g. “
 
 | Kind | Form (Rust) | Job |
 |------|-------------|-----|
-| **Documentation** | `//!` module, `///` on types and functions | Design and **intent** of what follows: purpose, contracts, given/expected on non-trivial decisions, public failure/no-op — what another engineer looks for **before** reading the body. Module docs state the job in plain words (and entrypoints / short flow when multi-step); do **not** require an “owns / does not own” template. |
+| **Documentation** | `//!` module, `///` on types and functions | Design and **intent**: purpose, **why this shape** when non-obvious, contracts, given/expected, failure/no-op. Module docs: role → intuition → why → rules → entrypoints → related → flow when multi-step (`skeptic-comments/references/comments.md`); do **not** require an “owns / does not own” template or bare rule lists with no reason. |
 | **Implementation** | `//` inside bodies | Justify non-obvious choices, tricky bits, hazards, “why not the obvious alternative” — what they look for **inside** the body |
 
 Do not use documentation comments to restate the implementation line-by-line, or implementation comments to dump API docs that belong on the public signature. If the code is unclear, prefer a clearer rewrite when cheap; comment the remaining hazard.

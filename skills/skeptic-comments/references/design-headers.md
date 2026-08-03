@@ -1,11 +1,16 @@
 # Design headers (purpose + given/expected)
 
-On non-trivial functions: purpose (what/why), then **given / expected**.  
+On non-trivial functions: **purpose** (what it does **and why this shape** when that is a design choice), then **given / expected**.  
 **No type-signature line** — types live in the type system.
+
+Purpose is not a synonym of the function name. If the reader might ask “why not the obvious alternative?”, answer in one phrase (see `comments.md` § why bar).
+
 ## Good (Rust)
 
 ```rust
 /// Half-open read window from data range and optional span/end.
+///
+/// End-exclusive so adjacent windows tile without double-counting the boundary sample.
 ///
 /// given: range min=0 max=200_000_000, no window, no explicit end
 /// expected: start=0, end=200_000_001
@@ -17,6 +22,9 @@ fn window(...) -> Window { ... }
 
 ```rust
 /// Scale each signal class to target packs; hold per-series sample rate.
+///
+/// Holds rates so cardinality stays realistic when pack count changes (avoids
+/// “tiny packs, huge series” that mis-trains query plans).
 ///
 /// given: measured 489 packs, 1000 signals, total_samples = 489*1000*100, target 250 packs
 /// expected: samples_per_series = 100, packs = 250
@@ -31,7 +39,14 @@ fn scale_plan(...) -> Vec<ClassPlan> { ... }
 fn window(...) -> Window { ... }
 ```
 
-Why bad: type line + restates the name; no examples of the contract.
+Why bad: type line + restates the name; no **why**, no examples of the contract.
+
+```rust
+/// Returns a half-open window.
+fn window(...) -> Window { ... }
+```
+
+Why weak: pure restatement of the name; no contract examples and no reason for half-open.
 
 ## When to skip
 

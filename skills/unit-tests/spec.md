@@ -8,7 +8,7 @@ Give engineers and agents a concrete contract for writing and reviewing **unit t
 
 - **SHOULD** apply when adding, changing, or reviewing unit tests.
 - **SHOULD** apply when judging brittleness, mock-heavy tests, or unclear test failures.
-- **SHOULD** apply when skeptic-testability (or a local review testability stage) needs unit-test depth.
+- **SHOULD** apply when skeptic stage 4 (`skeptic-unit-tests`) runs — always in a full skeptic pipeline.
 - **SHOULD NOT** apply as the only guide for pure integration/E2E strategy (broader tests still exist; this skill is unit-focused).
 - **SHOULD NOT** replace product implementation skills when the user only wants production code with no test discussion.
 

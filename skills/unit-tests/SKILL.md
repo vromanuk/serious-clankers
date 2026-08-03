@@ -5,8 +5,8 @@ description: >
   (Google SE Ch.12-style: unchanging tests, public API, state not interactions,
   behaviors not methods, DAMP over DRY — do not test production helpers; do not
   hide the case behind test helpers). Use when adding/changing unit tests,
-  reviewing test quality or brittleness, or when skeptic/testability stage needs
-  unit-test depth. Not for pure integration/E2E strategy alone.
+  reviewing test quality or brittleness, or when skeptic stage 4 (skeptic-unit-tests)
+  runs. Not for pure integration/E2E strategy alone.
 ---
 
 # Unit tests
@@ -71,5 +71,6 @@ Flag with path:line:
 
 ## Related
 
-- Skeptic: `skeptic-testability` loads this for unit depth; its `references/testing.md` for property/snapshot shapes.  
-- Local review pack: `review-testability` loads the same skill under `~/agents/skills/unit-tests/`.  
+- Skeptic **stage 4** `skeptic-unit-tests` **always** loads this during a full skeptic run.  
+- Pure-core / property-snapshot *placement*: `skeptic-testability` (`references/testing.md`, `pure-core.md`).  
+- Local review pack may still load this skill under `~/agents/skills/unit-tests/`.  

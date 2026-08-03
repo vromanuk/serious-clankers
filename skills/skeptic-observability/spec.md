@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 4 of skeptic: judge production observability of the change — structured logs, spans for units of work, metrics label safety, panic reporting, async/thread span attachment. Depth from the `observability` skill (Zero to Production + telemetry flashcards).
+Stage 5 of skeptic: judge production observability of the change — structured logs, spans for units of work, metrics label safety, panic reporting, async/thread span attachment. Depth from the `observability` skill.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 4, or the user asks only for observability/telemetry review.
+- **SHOULD** apply when skeptic runs stage 5, or the user asks only for observability/telemetry review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

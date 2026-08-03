@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 5 of skeptic: judge comment quality only — needed?, clear English, why/benefit not bare what or unexplained rules, module `//!` shape, public docs vs body comments, design headers. Not naming, composition, or hard bans.
+Stage 6 of skeptic: judge comment quality only — needed?, clear English, why/benefit not bare what or unexplained rules, module `//!` shape, public docs vs body comments, design headers. Not naming, composition, or hard bans.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 5, or the user asks only for comment review.
+- **SHOULD** apply when skeptic runs stage 6, or the user asks only for comment review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

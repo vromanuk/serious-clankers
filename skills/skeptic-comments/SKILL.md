@@ -1,7 +1,7 @@
 ---
 name: skeptic-comments
 description: >
-  Stage 5 of skeptic: are comments clear, needed, and about why (benefit /
+  Stage 6 of skeptic: are comments clear, needed, and about why (benefit /
   design reason) — not restating the code or bare rules without explanation.
   Use when skeptic runs or the user asks for comment review only. Not for
   naming, composition, or hard-rules.
@@ -47,4 +47,4 @@ description: >
 
 ## Output section title
 
-`## 5. Comments`
+`## 6. Comments`

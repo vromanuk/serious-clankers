@@ -2,12 +2,12 @@
 
 ## Intent
 
-Stage 3 of skeptic: judge whether decisions are pure and testable, whether IO stays at the edge, and whether new contracts have the right test shape.
+Stage 3 of skeptic: judge whether decisions are pure and testable, whether IO stays at the edge, and whether new contracts have the right test shape (table / property / snapshot). Unit-test craft (DAMP, unchanging, public API) is stage 4 and always runs separately.
 
 ## Triggers
 
 - **SHOULD** apply when skeptic runs stage 3, or the user asks only for testability / pure-core review.
-- **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
+- **SHOULD NOT** apply as a substitute for the full skeptic pipeline or replace stage 4 unit-tests.
 
 ## Behaviors
 
@@ -35,6 +35,6 @@ When pure contracts gain behavior, the agent SHALL prefer table, property, or sn
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT turn this stage into architecture redesign or hard-rule walks.
+The agent MUST NOT turn this stage into architecture redesign, hard-rule walks, or a full unit-test craft review (that is stage 4).
 
 <!-- skillet-version: 1.7.0 -->

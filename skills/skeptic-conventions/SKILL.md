@@ -1,7 +1,7 @@
 ---
 name: skeptic-conventions
 description: >
-  Stage 7 of skeptic: plain words in code, one function per task, clear Rust
+  Stage 8 of skeptic: plain words in code, one function per task, clear Rust
   style. Use when skeptic runs or the user asks for composition or Rust style
   review only. Not for comments, naming, or hard-rules.
 ---
@@ -40,4 +40,4 @@ Comments → stage **comments**. Naming → stage **naming**.
 
 ## Output section title
 
-`## 7. Conventions`
+`## 8. Conventions`

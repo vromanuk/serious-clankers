@@ -1,7 +1,7 @@
 ---
 name: skeptic-observability
 description: >
-  Stage 4 of skeptic: production observability — structured logs, spans, metrics,
+  Stage 5 of skeptic: production observability — structured logs, spans, metrics,
   panic hooks, async span attachment. Use when skeptic runs or the user asks for
   telemetry/observability review only. Loads the observability skill for depth.
 ---
@@ -12,7 +12,7 @@ description: >
 
 ## Load (on demand)
 
-1. `../observability/SKILL.md` + `../observability/references/guide.md` — full rules (Zero to Production + telemetry flashcards)  
+1. `../observability/SKILL.md` + `../observability/references/guide.md` — full rules  
 
 ## Do
 
@@ -25,11 +25,11 @@ description: >
 
 ## Do not
 
-- Pure unit-test design (→ testability / unit-tests)  
+- Pure unit-test design (→ testability / unit-tests stage)  
 - Comment/naming style as the main pass (→ comments / naming)  
 - Absolute ban walk except secrets overlap (→ hard-rules)  
 - Invent a full observability platform redesign unless the diff already goes there  
 
 ## Output section title
 
-`## 4. Observability`
+`## 5. Observability`

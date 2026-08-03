@@ -11,8 +11,7 @@ description: >
 
 Make production systems **askable**: useful logs, spans, and metrics — without coupling to one sink, without silent span bugs, without unbounded metric labels.
 
-**Full rules:** load `references/guide.md` for non-trivial work.  
-**Sources:** Zero to Production in Rust (telemetry chapter); Rust Telemetry flashcards (`tracing`, metrics, panics).
+**Full rules:** load `references/guide.md` for non-trivial work.
 
 ## First rules (always)
 

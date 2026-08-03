@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 6 of skeptic: judge whether names fully say what items are or do, without excess length or unclear abbreviations. General names from Google C++ Naming; **functions** use a stronger bar (actions = verb phrases; bools = `is`/`has`/`can` predicates); **public/API surface** names use a stronger bar from The API Book (units in names, concrete verbs, pairs match, naming matches type). Spelling style follows the project.
+Stage 7 of skeptic: judge whether names fully say what items are or do, without excess length or unclear abbreviations. General names from Google C++ Naming; **functions** use a stronger bar (actions = verb phrases; bools = `is`/`has`/`can` predicates); **public/API surface** names use a stronger bar from The API Book (units in names, concrete verbs, pairs match, naming matches type). Spelling style follows the project.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 6, or the user asks only for naming review.
+- **SHOULD** apply when skeptic runs stage 7, or the user asks only for naming review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

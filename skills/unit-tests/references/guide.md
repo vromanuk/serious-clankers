@@ -382,9 +382,25 @@ Most unit tests need only one when + one then. If you need “and” in the **na
 
 ### 4.4 Name tests after the behavior
 
-Names show up first in failure reports. Describe **action + expected outcome** (and setup when needed).
+**Method-oriented** tests are usually named after the production method (`updateBalance` → `testUpdateBalance`). That wastes the best place to communicate intent when a test fails.
 
-#### Example 12-13 — nested naming (e.g. Jasmine)
+**Behavior-driven** names have more flexibility and more duty: the name is often the **first or only** token in failure reports. It is the best place to say **what broke** and the most direct way to express **what the test is for**.
+
+#### What a good name contains
+
+Summarize the **behavior**:
+
+| Include | Meaning |
+|---------|---------|
+| **Action** | What is done to the system |
+| **Expected outcome** | What should happen (or not happen) |
+| **Setup / environment** (when needed) | State before the action (empty balance, positive inputs, …) |
+
+Reading all test names in a suite should sketch the behaviors of the unit under test.
+
+#### Example 12-13 — nested naming (e.g. Jasmine / similar)
+
+Some languages let you nest suites and use string titles:
 
 ```javascript
 describe("multiplication", function() {
@@ -397,11 +413,21 @@ describe("multiplication", function() {
       expect(positiveNumber * -10).toBeLessThan(0);
     });
   });
-  // ...
+  describe("with a negative number", function() {
+    var negativeNumber = -10;
+    it("is negative with a positive number", function() {
+      expect(negativeNumber * 10).toBeLessThan(0);
+    });
+    it("is positive with another negative number", function() {
+      expect(negativeNumber * -10).toBeGreaterThan(0);
+    });
+  });
 });
 ```
 
-#### Example 12-14 — method-name patterns
+#### Example 12-14 — method-name patterns (Java, Go, Rust, …)
+
+Other languages encode the whole story in one identifier. **Verbose is fine** — nothing calls these methods; humans read them in CI.
 
 ```text
 multiplyingTwoPositiveNumbersShouldReturnAPositiveNumber
@@ -409,10 +435,52 @@ multiply_positiveAndNegative_returnsNegative
 divide_byZero_throwsException
 ```
 
-Verbose is OK: tests aren’t called from production. Trick: start with **should…** so class + name read as a sentence  
-(`BankAccount` + `shouldNotAllowWithdrawalsWhenBalanceIsEmpty`).
+**Rust / snake_case** (same idea):
 
-Avoid: `test1`, `testProcessTransaction`, `works`. Word **and** in a name → maybe split tests.
+```text
+multiplying_two_positives_returns_positive
+multiply_positive_and_negative_returns_negative
+divide_by_zero_returns_error   // or panics if that is the contract
+```
+
+| Weak (method-shaped) | Strong (behavior) |
+|----------------------|-------------------|
+| `testUpdateBalance` | `shouldNotAllowWithdrawalsWhenBalanceIsEmpty` |
+| `test_process_transaction` | `process_transaction_rejects_when_sender_balance_too_low` |
+| `test1` / `works` / `happy_path` | name the **specific** action + outcome |
+| `testDisplayTransactionResults` (many asserts) | split: `…_shows_item_name` and `…_shows_low_balance_warning` |
+
+#### “Should…” trick (reads as a sentence)
+
+If stuck, start the name with **should** (or encode it in snake_case). Together with the type under test, it reads as English:
+
+```text
+BankAccount + shouldNotAllowWithdrawalsWhenBalanceIsEmpty
+→ “BankAccount should not allow withdrawals when balance is empty.”
+```
+
+Rust:
+
+```rust
+// mod bank_account tests
+#[test]
+fn should_not_allow_withdrawals_when_balance_is_empty() { /* … */ }
+```
+
+Many naming strategies are OK **if consistent inside one module/class**. Prefer one pattern per suite (e.g. always `should_…` or always `verb_when_x_then_y`).
+
+#### “And” in the name → maybe two tests
+
+If you need **and** in the test name, you may be covering **two behaviors**. Prefer two focused tests over one multi-story name (same rule as §4.2 / §4.3).
+
+#### What not to do
+
+| Avoid | Why |
+|-------|-----|
+| Name only the production method (`testFoo`) | Failure report says nothing about the scenario |
+| Opaque ids (`test1`, `case_a`) | No intent |
+| Vague happy path (`works`, `ok`, `basic`) | Which guarantee? |
+| Inconsistent schemes in one file | Harder to scan the suite as documentation |
 
 ### 4.5 Don’t put logic in tests
 
@@ -695,11 +763,12 @@ When reviewing or writing unit tests, ask:
 2. **Public API?** Does it call the unit like a user of that unit — not private production helpers?  
 3. **State vs interaction?** Are we asserting outcomes/state, or only mock call sequences?  
 4. **One behavior?** Name and body about a single story?  
-5. **Complete + concise?** All needed context present; no clutter?  
-6. **Straight-line?** No production-duplicating logic in the test?  
-7. **Failure message?** Expected vs actual clear?  
-8. **DAMP?** Can you understand the case without opening test helpers / distant setUp? Important values in the body?  
-9. **New behavior covered?** Feature/bugfix added tests without rewriting the world?  
+5. **Name after behavior?** Action + outcome (+ setup if needed)? Not `testFoo` / method-only? “And” → split? Suite of names readable as the unit’s guarantees?  
+6. **Complete + concise?** All needed context present; no clutter?  
+7. **Straight-line?** No production-duplicating logic in the test?  
+8. **Failure message?** Expected vs actual clear?  
+9. **DAMP?** Can you understand the case without opening test helpers / distant setUp? Important values in the body?  
+10. **New behavior covered?** Feature/bugfix added tests without rewriting the world?  
 
 ---
 

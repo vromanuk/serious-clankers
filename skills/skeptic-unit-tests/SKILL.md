@@ -26,7 +26,8 @@ This stage **always runs** in the skeptic pipeline. It is not optional depth und
 2. Flag (with path:line):  
    - tests of private / production helpers / serialization guts  
    - interaction-only asserts (`verify(mock)…` as the main check)  
-   - multi-behavior tests; method-shaped names (`testFoo`)  
+   - multi-behavior tests  
+   - **names** that are method-only (`testFoo`, `test_update_balance`), opaque (`test1`, `works`), or multi-story (**and** two independent behaviors) — prefer action + outcome (+ setup); see unit-tests guide §4.4  
    - DAMP failures: case buried in helpers / silent `setUp` / `runScenario` as the whole test  
    - logic in tests that reimplements production  
    - over-mocked internals; weak failure messages  

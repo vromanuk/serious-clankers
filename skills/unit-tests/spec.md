@@ -42,13 +42,19 @@ The agent SHALL prefer asserting system state after the act over verifying exact
 
 ### Behavior: Behaviors, structure, naming
 
-The agent SHALL prefer one behavior per test, Given/When/Then (or arrange/act/assert) structure, and names that describe the behavior, not the production method name alone.
+The agent SHALL prefer one behavior per test, Given/When/Then (or arrange/act/assert) structure, and names that summarize the behavior (action + expected outcome, plus setup when needed), not the production method name alone. The agent SHALL treat test names as failure-report documentation and SHALL flag method-only names (`testFoo`, `test_process_transaction`), opaque names (`test1`, `works`), and multi-story names that need **and** for independent behaviors.
 
 #### Scenario: testProcessTransaction
 
 - **GIVEN** a single test named after a method covering several outcomes
 - **WHEN** advising
 - **THEN** the agent suggests splitting into behavior-named cases (e.g. sufficient balance vs insufficient)
+
+#### Scenario: Method-shaped name only
+
+- **GIVEN** a focused test named `testUpdateBalance` or `test_update_balance` with no scenario in the name
+- **WHEN** reviewing
+- **THEN** the agent flags it and prefers a name that states action + outcome (e.g. `should_not_allow_withdrawals_when_balance_is_empty`)
 
 ### Behavior: Clarity and DAMP (do not hide cases in test helpers)
 

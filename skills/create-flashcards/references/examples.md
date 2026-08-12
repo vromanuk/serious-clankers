@@ -32,7 +32,7 @@ Use spaced repetition; formulation quality multiplies retention speed.
 | 14 | **Personalize / examples** | Domain-true: HTTP concurrency, orders, graph nodes — not random kitchen scenes for systems. |
 | 15 | **Emotional / vivid cues** | Optional; don’t invent fake drama. A real production panic message can stick. |
 | 16 | **Context cues** | Theme tags on the HTML deck (`contrast`, `rust`, `ddd`) so similar terms stay disambiguated. |
-| 17 | **Useful redundancy** | Same fact from two angles (definition spine + when-to-use + contrast) is OK. |
+| 17 | **Useful redundancy** | Same fact from two angles (plain definition + when-to-use + contrast) is OK. |
 | 18 | **Provide sources** | Deck header or card footer: book/talk/chapter when non-obvious. |
 | 19 | **Date / version stamp** | Volatile APIs: note version if it matters. |
 | 20 | **Prioritize** | Card the 20% that carries judgment; skip trivia. |
@@ -82,7 +82,7 @@ What works in decks like **Rust smart pointers**, **DDD / events-first**, **syst
 
 ## D. Worked examples (good / bad)
 
-Use these as **templates** when drafting. Bold = important on HTML page and as `**…**` in copy payload.
+Use these as **templates** when drafting. Bold = important on the HTML page (`<strong>`); keep `**…**` markers in the card *source* only — Copy turns them into **real bold** rich text and strips them from the plain-text fallback (see `html-deck.md` § "Copy = formatted text"). Pasted output must never show literal `**`.
 
 ---
 
@@ -296,7 +296,7 @@ A: An aggregate is a cluster of entities treated as **one unit for data changes*
 - Keeps invariants inside the boundary; other aggregates interact via the root’s API / messages, not by poking internals.
 ```
 
-**Principles:** definition spine + why (atomicity of failure); moderate depth.
+**Principles:** plain definition + why (atomicity of failure); moderate depth.
 
 ---
 
@@ -340,6 +340,130 @@ Use RefCell when you are sure the dynamic pattern is sound and the compiler is t
 ```
 
 **Principles:** first-principles tradeoff; interference-safe vs “what is interior mutability?”.
+
+---
+
+### D11. Technical vocabulary — granular + self-contained (electricity)
+
+For a foundations chapter, cover **every** load-bearing item, each card standing alone (no “the book says…”), each definition carrying a why/example. This is the style to match.
+
+**Bad** — one mega-card that interferes and grades half-right:
+
+```text
+Q: Explain voltage, current, and resistance from the chapter.
+A: Voltage is pressure, current is flow, resistance fights it, and Ohm's law ties them together…
+```
+
+**Good** — split into atomic, self-contained cards, each answer a short story in **prose** (no bullet chopping):
+
+```text
+Q: What is an **amp** (ampere)?
+A: An amp is the **unit of current** — it tells you **how much charge flows past a point each second**. More amps means more electrons streaming past, which means more **power** delivered: a small LED sips a few **milliamps**, while a toaster pulls several **amps**.
+```
+
+```text
+Q: What is a **watt**, and why does it matter?
+A: A watt is the unit of **power** — the **rate** at which energy is used, equal to **voltage × current**. It answers "how fast is energy being converted?", not how much in total, so a **100 W** bulb runs brighter and hotter than a **40 W** one. It's what sizes everything: how bright a bulb is, how much a device draws, and, over time, your electricity bill in **kilowatt-hours**.
+```
+
+**Good — worked-number card for a law (prose, numbers plugged in):**
+
+```text
+Q: By **Ohm's law**, what current flows from 1.5 V through **air** vs a **copper short**?
+A: The push is the same 1.5 V both times, but the resistance is wildly different, and **current = voltage ÷ resistance (I = E / R)** decides the rest. Through **air** the resistance is enormous, so 1.5 divided by a huge number is **about zero amps** — the voltage is real but nothing flows. Through a **copper short** the resistance is tiny, so 1.5 divided by a very small number is **huge** — a flood of electrons, and the wire heats up fast. Voltage alone tells you nothing; **resistance decides** how much of it becomes current.
+```
+
+**Good — overview and purpose cards (emit one of each per system):**
+
+```text
+Q: **How does electricity work**, in one high-level picture?
+A: In a metal, each atom holds its outer electrons **loosely**, so they can drift from atom to atom. A battery makes one terminal **electron-rich (−)** and the other **electron-poor (+)**, and that imbalance — the **voltage** — pushes those free electrons around any **closed loop** you connect. Their steady drift is the **current**, and where it meets **resistance** like a bulb's filament, the push turns into **heat and light**. Break the loop and it all stops: with no complete path, the voltage just sits there.
+```
+
+```text
+Q: Why do you even need a **battery** in a circuit?
+A: The battery is the **source of the push**. A wire is already full of free electrons, but with nothing driving them they just jiggle in place and go nowhere. The battery holds one end **electron-rich** and the other **electron-poor**, so there is a steady **voltage** pulling electrons around the loop — and it keeps topping up that imbalance, so the flow stays steady instead of fizzling out like a one-off static spark.
+```
+
+**Principles:** coverage sweep (term / unit / law / overview / purpose); self-contained fronts; prose answers that teach; worked numbers; no `Need:`/`Constraint:` labels or bullet-chopping.
+
+---
+
+## D12–D17. Exemplars in the user's own voice (match this)
+
+These are lightly cleaned from the user's real decks (Rust, web servers, latency, sharding, Bayesian). They show the target voice: **answer first → deeper why → analogy → concrete → real lists only where needed.** Fronts are self-contained; acronyms expanded; canonical slogans kept.
+
+### D12. Definition + analogy (answer first, then a picture)
+
+```text
+Q: **Channel** (concurrency)
+
+A: A **channel** carries data from one thread to another. One half is a **transmitter**, the other a **receiver**; you send on one end and read on the other, and the channel is **closed** once either half is dropped.
+
+Picture a directional stream of water: drop a rubber duck in upstream (send) and it travels to whoever is waiting downstream (receive).
+
+Rust's std channel is **mpsc** = multiple producer, single consumer: many senders, one receiver.
+```
+
+### D13. Analogy card (name it, map it)
+
+```text
+Q: **Mutex** — analogy
+
+A: A **mutex** (mutual exclusion) lets only **one thread at a time** touch the data. A thread must **acquire the lock** before access, and the mutex "guards" the data via that lock.
+
+Think of a panel discussion with a **single microphone**: before you speak you ask for the mic, you hold it while you talk, then hand it on. If someone forgets to pass it back, **no one else can speak** — the classic deadlock.
+```
+
+### D14. Why it exists / first-principles (the backbone type)
+
+```text
+Q: Why does the **binomial distribution** exist — what problem does it solve?
+
+A: It answers "how likely are **k successes in n independent tries**?" without you listing every sequence by hand.
+
+Without it you'd enumerate all outcomes: for 3 heads in 10 flips there are 120 orderings (HHHTTTTTTT, HHTHTTTTTT, …). The formula collapses that counting into one expression — the **binomial coefficient** counts the orderings, and **p^k (1−p)^(n−k)** gives each one's probability.
+
+Use it only when the four assumptions hold: **fixed n, independent trials, constant p, two outcomes.**
+```
+
+### D15. Elaborate this code (compiler/runtime walkthrough)
+
+```text
+Q: Elaborate — why doesn't this compile?
+
+enum List { Cons(i32, Box<List>), Nil }
+let a = Cons(5, Box::new(Nil));
+let b = Cons(3, Box::new(a));
+let c = Cons(4, Box::new(a)); // error
+
+A: **Cons owns its tail.** Building `b` **moves** `a` into `b`, so using `a` again for `c` is a **use-after-move** — Rust allows only one owner.
+
+References would force lifetime annotations (every element living as long as the whole list), which is usually wrong. The fix is **Rc<List>**: `clone` the Rc so `a` and `b` **share** ownership, and the refcount tracks the last user.
+```
+
+### D16. Scenario + options with pros/cons (✅/❌ is fine here)
+
+```text
+Q: A client must route a request to the right shard. How does it learn the **shard → node** mapping?
+
+A: Four common options, trading simplicity for freshness:
+
+- **Hardcoded list** — ✅ trivial, no infra; ❌ adding a node means a redeploy everywhere.
+- **Static config file** (reloaded on signal) — ✅ scale without code change; ❌ must push it to every server in sync.
+- **Central registry** (ZooKeeper/etcd/Consul) — ✅ single source of truth, real-time, handles failure detection; ❌ a SPOF and a hard dependency.
+- **Gossip** (SWIM = Scalable Weakly-consistent Infection-style Membership) — ✅ no coordinator, resilient; ❌ eventually consistent, brief disagreement.
+```
+
+### D17. How-to (practical, mechanism-backed)
+
+```text
+Q: How do you make sure a **Mutex** is always released in Rust?
+
+A: You don't call unlock — you let **scope** do it. `lock()` returns a **MutexGuard** smart pointer that **Derefs** to the inner data and, on **Drop** (end of scope), releases the lock automatically.
+
+So the lock can't be forgotten. Watch the scope, though: `while let Ok(job) = rx.lock().unwrap().recv()` holds the guard for the whole loop body, serializing everyone; `let job = rx.lock().unwrap().recv().unwrap();` drops the temporary guard immediately, freeing the mutex before the work runs.
+```
 
 ---
 

@@ -59,7 +59,7 @@ The agent SHALL keep one primary idea per card. Independent guarantees SHALL be 
 
 ### Behavior: HTML deck with copy and bold
 
-Unless the user requests chat-only or another export format, the agent SHALL write a self-contained HTML file under `~/explanations/YYYY-MM-DD-flashcards-<slug>.html`. Every card SHALL show Q and A at once, SHALL include a **Copy** control that puts plain text on the clipboard with newlines and bullets preserved, and SHALL render important terms in bold (`<strong>`), with matching emphasis in the copy payload (e.g. `**term**`). The agent SHALL load `references/html-deck.md` when building that page.
+Unless the user requests chat-only or another export format, the agent SHALL write a self-contained HTML file under `~/explanations/YYYY-MM-DD-flashcards-<slug>.html`. Every card SHALL show Q and A at once, SHALL render important terms in bold (`<strong>`) on the page, and SHALL include a **Copy** control that copies the card as **formatted rich text, not markdown**: it SHALL write a `text/html` flavor with real `<strong>`/`<code>` and a clean `text/plain` fallback with `**`/backtick markers stripped, both preserving newlines and bullets. Literal `**`/backticks SHALL NOT appear in pasted output. The agent SHALL load `references/html-deck.md` when building that page.
 
 #### Scenario: Default deck request
 
@@ -69,9 +69,15 @@ Unless the user requests chat-only or another export format, the agent SHALL wri
 
 #### Scenario: Copy formatting
 
-- **GIVEN** a card answer with lead sentence and bullets  
-- **WHEN** the user hits Copy  
-- **THEN** the clipboard text includes blank lines and `-` bullets so paste into notes/Quizlet keeps structure
+- **GIVEN** a card answer with bold phrases, a lead sentence, and bullets  
+- **WHEN** the user hits Copy and pastes into a **rich editor** (Docs/Notion/Slack)  
+- **THEN** important phrases appear as **real bold** (and code as code), with blank lines and bullets preserved — **no literal `**` or backticks**
+
+#### Scenario: Copy into a plain field
+
+- **GIVEN** the same card  
+- **WHEN** the user pastes into a **plain-text** field  
+- **THEN** the text is clean (markdown markers stripped) with blank lines and `-` bullets kept
 
 ## Constraints
 

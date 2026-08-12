@@ -14,7 +14,7 @@ Load with `guide.md` when building the page.
 
 Create `~/explanations/` if needed. Use **today’s local date**. Do not put the file in a code repo unless the user asks.
 
-Optional: also paste a short markdown summary in chat (path + card count + spine). Do **not** make chat-only markdown the main product unless the user says chat-only.
+Optional: also paste a short markdown summary in chat (path + card count + one-line summary). Do **not** make chat-only markdown the main product unless the user says chat-only.
 
 ---
 
@@ -24,8 +24,8 @@ Optional: also paste a short markdown summary in chat (path + card count + spine
 |------|--------|
 | Self-contained | Inline CSS + JS only. No CDN, fonts, images, packages. |
 | Always-visible Q/A | No flip, no click-to-reveal, no hide-answer (unless user asks for flip UI). |
-| **Copy on every card** | Button copies full card as plain text with newlines and bullets preserved. |
-| **Bold important text** | Key terms, type names, outcomes, constraints in `<strong>` on the page; same emphasis reflected in copied text as `**…**` or kept as readable emphasis. |
+| **Copy on every card** | Button copies the full card as **formatted rich text — real bold/code, not markdown** (see "Copy = formatted text" below). Newlines and bullets preserved. |
+| **Bold important text** | Key terms, type names, outcomes, constraints in `<strong>` on the page. Copied output carries the emphasis as **real bold** in the rich (`text/html`) flavor; the plain-text fallback has the `**`/backtick markers **stripped** (clean text, no markdown). |
 | Themed groups | Sections by theme (`## Smart pointers`, …) with card list under each. |
 | Readable on phone | Responsive layout. |
 | Selectable text | Normal `user-select: text` on Q and A. |
@@ -34,13 +34,13 @@ Optional: also paste a short markdown summary in chat (path + card count + spine
 
 ## Bold what matters
 
-On **Q and A**, wrap in `<strong>` (and use `**…**` in the copy payload):
+On **Q and A**, wrap in `<strong>` on the page. Keep `**…**` markers in the **card source** only — they are used to build the two copy flavors (real bold in `text/html`, stripped in `text/plain`), never pasted as-is:
 
 - Type / API names: `Box<T>`, `RefCell`, `Rc`  
 - Critical outcomes: **panic at runtime**, **compile error**, **single owner**  
 - Constraints: **single-threaded only**, **heap not stack**  
 - Contrast poles: **compile time** vs **runtime**  
-- The one-line spine of the answer (or its key phrase)
+- The one-line main point of the answer (or its key phrase)
 
 Do **not** bold entire paragraphs. Prefer a few strong anchors per card so the eye finds the model.
 
@@ -72,38 +72,86 @@ Do **not** bold entire paragraphs. Prefer a few strong anchors per card so the e
 </article>
 ```
 
-- Store a plain-text payload for copy in `data-copy` on the article **or** build it in JS from Q text + A text (prefer `data-copy` so bold becomes `**bold**` and bullets stay clean).  
-- `card-a-body` uses `white-space: normal` with real `<p>`/`<ul>` for display; copy string uses newlines + `- ` bullets.
+- Keep the card source (Q text + A text, with `**bold**` / `` `code` `` markers) in JS data, and build **both** copy flavors from it at click time.  
+- `card-a-body` uses `white-space: normal` with real `<p>`/`<ul>` for display.
 
-### Recommended `data-copy` format
+**Recommended: one data array as source of truth.** Put all cards in a single JS array (`const CARDS = [{theme, tag, q, a}, …]`) and **render the visible cards, the search index, and both copy flavors from it**. This avoids duplicating Q/A between display and copy, and makes incremental adds a one-line change. `a` uses `\n` for line breaks and `- ` for bullets; a small renderer turns it into `<p>`/`<ul>` for display and into the two copy flavors.
 
-```text
-Q: Box vs Cell — when each?
-
-A:
-**Box<T>** is single ownership of heap data (or a fixed-size handle to unsized/recursive data).
-
-**Cell<T>** is interior mutability for **Copy** values: mutate through `&T` when you need replace/get, not shared ownership.
-
-- Reach for **Box** when the issue is where data lives / recursive size.
-- Reach for **Cell** when mutating behind a shared reference for Copy payloads.
-```
-
-Quizlet and notes apps paste this cleanly. Preserve blank lines between blocks.
+**Validate before shipping/opening.** After writing or editing the array, confirm the embedded script parses (e.g. extract the `<script>` body and evaluate the array with a `node -e` one-liner, or open the file) so a stray quote or backtick never silently breaks the whole page. Note: keep backticks and `${` out of card text if the array uses template literals.
 
 ---
 
-## Copy button JS (required pattern)
+## Copy = formatted text, not markdown (required)
 
-Every `.copy-btn` must:
+The copy button must put the card on the clipboard so it **pastes as formatted rich text** (real bold and code) in rich editors (Docs, Notion, Slack, email), and as **clean plain text with no markdown markers** everywhere else. Never paste literal `**` or backticks.
 
-1. Read that card’s full text (prefer `article.dataset.copy`, else assemble from DOM).  
-2. Write with `navigator.clipboard.writeText(text)`.  
-3. Fallback: temporary `<textarea>`, `select()`, `document.execCommand('copy')`.  
-4. Show brief feedback on the button (“Copied”) then restore label.  
-5. Work offline; no network.
+Write **two clipboard flavors** in one copy:
 
-Escape HTML in page content. Do not put unescaped `</script>` in strings.
+- `text/html` — render `**bold**` → `<strong>`, `` `code` `` → `<code>`, newlines → `<br>`, `- ` → bullets. This is what gives real formatting on paste.  
+- `text/plain` — **strip** the `**`/backtick markers; keep newlines, blank lines, and `- ` bullets. This is the fallback for plain fields.
+
+### Required pattern
+
+```html
+<script>
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toHtml(s){ // escaped text -> real <strong>/<code>, <br>, bullets
+  return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+               .replace(/`([^`]+)`/g,'<code>$1</code>')
+               .split('\n').map(l => l.replace(/^- /,'&bull;&nbsp;')).join('<br>');
+}
+function stripMd(s){ return s.replace(/\*\*([^*]+)\*\*/g,'$1').replace(/`([^`]+)`/g,'$1'); }
+
+function cardHtml(q,a){
+  return '<div style="font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;line-height:1.5">'
+       + '<p style="margin:0 0 8px"><strong>Q:</strong> ' + toHtml(q) + '</p>'
+       + '<p style="margin:0"><strong>A:</strong><br>' + toHtml(a) + '</p></div>';
+}
+function cardPlain(q,a){ return 'Q: ' + stripMd(q) + '\n\nA:\n' + stripMd(a); }
+
+function copyRich(html, plain, btn){
+  const done = () => { btn.textContent = 'Copied'; setTimeout(()=>btn.textContent='Copy',1200); };
+  if (navigator.clipboard && window.ClipboardItem) {
+    try {
+      const item = new ClipboardItem({
+        'text/html':  new Blob([html],  {type:'text/html'}),
+        'text/plain': new Blob([plain], {type:'text/plain'})
+      });
+      navigator.clipboard.write([item]).then(done, () => execFallback(html, plain, done));
+      return;
+    } catch(e) {}
+  }
+  execFallback(html, plain, done);
+}
+// Fallback keeps formatting: select a hidden contenteditable, then execCommand('copy').
+function execFallback(html, plain, done){
+  const d = document.createElement('div');
+  d.contentEditable = 'true';
+  d.style.position='fixed'; d.style.left='-9999px'; d.style.whiteSpace='pre-wrap';
+  d.innerHTML = html; document.body.appendChild(d);
+  const r = document.createRange(); r.selectNodeContents(d);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  let ok=false; try { ok = document.execCommand('copy'); } catch(e){}
+  sel.removeAllRanges(); document.body.removeChild(d);
+  if (ok) return done();
+  const ta = document.createElement('textarea'); ta.value = plain;    // last resort: clean plain text
+  ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta); done();
+}
+</script>
+```
+
+Every `.copy-btn` calls `copyRich(cardHtml(q,a), cardPlain(q,a), btn)`, shows brief “Copied” feedback, and works offline. A "Copy all" button joins the visible cards (rich flavor with `<hr>` between; plain flavor with a text divider). Escape page content; do not put unescaped `</script>` in strings.
+
+### Rendering rules (or the copy mangles code / loses spacing)
+
+- **Protect `` `code` `` first**, then `**bold**`, then `*italic*`. Otherwise a `*` inside code (e.g. `` `*mut T` ``, `` `*const` ``, `` `*b` ``) gets eaten as italics and leaves stray `*` in the paste. Extract code spans to placeholders, transform, then restore. Applies to **both** the page renderer and the plain-text stripper.  
+- **Bold may wrap italics**: match bold non-greedy (`/\*\*([\s\S]+?)\*\*/`) before italics; match italics as `/\*([^*\n]+?)\*/`.  
+- **Rich (`text/html`) flavor = real blocks**: build `<p>` paragraphs and a real `<ul><li>` list from the answer — **not** a run of `<br>`. `<br>` runs collapse into one line when pasted into some editors.  
+- **Plain flavor = readable spacing**: put a **blank line between adjacent bullets** and keep blank lines between blocks, so notes/Quizlet paste stays structured.  
+- **Tags are for the search filter only** (`data-search`). Do **not** render tag chips on the card — they repeat words already in the question/section and read as redundant.
 
 ---
 
@@ -144,7 +192,7 @@ Ideas:
 ## Page skeleton
 
 ```text
-header     title, one-line spine, card count, source note
+header     title, one-line summary, card count, source note
 nav        jump links to themes (optional)
 main
   section#theme-…
@@ -161,8 +209,11 @@ Optional top **table of themes** with counts.
 ## Quality checklist (HTML)
 
 - [ ] File under `~/explanations/YYYY-MM-DD-flashcards-*.html`  
-- [ ] Every card has a **Copy** control that preserves newlines and bullets  
-- [ ] Important terms use `<strong>` on page and `**…**` in copy payload  
+- [ ] Every card has a **Copy** control; it pastes as **formatted rich text (real bold/code), not markdown** — verify by pasting into a rich editor  
+- [ ] Copy writes both `text/html` (real formatting) and a clean `text/plain` fallback (no `**`/backticks); newlines + bullets preserved in both  
+- [ ] Important terms use `<strong>` on page (source keeps `**…**` markers only to build the two copy flavors)  
+- [ ] Copy protects `` `code` `` before bold/italics (no stray `*` from `*mut`/`*const`/`*b`); rich flavor uses real `<p>`/`<ul>`, plain flavor has blank lines between bullets  
+- [ ] No visible tag chips (tags only in `data-search`); no coined nicknames/metaphors; no redundant “(plain)”-style qualifiers in questions  
 - [ ] Q and A both always visible  
 - [ ] No external assets  
 - [ ] Mobile-readable  
@@ -174,5 +225,5 @@ Optional top **table of themes** with counts.
 
 - Absolute path to the HTML file.  
 - Card count + theme list.  
-- One-sentence spine of the deck.  
+- One-sentence summary of the deck.  
 - Do not dump every card into chat (user opens the page / copies from there).

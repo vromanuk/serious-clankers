@@ -73,7 +73,7 @@ A card protects intuition when the answer:
 |-------|--------|
 | Glossary-only: “What is SSO?” → one jargon sentence | “Where do the bytes of `"ok"` live with SSO vs heap?” |
 | Random toy domain for a systems idea | Domain-true story (web server + concurrent requests for concurrency; family TV for Rc — *if* it maps) |
-| Mega-card that dumps a whole chapter | Several cards: definition spine → when to use → contrast → one code story |
+| Mega-card that dumps a whole chapter | Several cards: plain definition → when to use → contrast → one code story |
 | Metaphor that is cuter than accurate | Accurate short mechanism; metaphor only if it carries the constraint |
 
 ---
@@ -84,7 +84,7 @@ From sets like **Rust smart pointers**, **DDD / events-first**, **latency**, **s
 
 1. **Front can be a term, a contrast, a “when,” or a code puzzle** — not only “Define X.”  
    - *Box vs Cell*, *Rc vs Box vs RefCell*, *When to use Box?*  
-2. **Backs teach** — lead with the spine, then bullets for cases, then a “why compile time vs runtime” style payoff.  
+2. **Backs teach** — start with the main point, then the cases in prose, then a “why compile time vs runtime” style payoff.  
 3. **Comparisons are first-class** — three-way tables of ownership/borrow checking are more useful than three isolated definitions.  
 4. **“When to use” cards** turn knowledge into judgment.  
 5. **Analogies are short and structural** (TV in the family room for Rc) — they encode *shared use until last owner leaves*, not fluff.  
@@ -150,13 +150,15 @@ Rules:
 
 ## Back (answer) quality
 
-Structure (same family as explain-topic study cards):
+**Write the back as a short teaching *story* in prose — not a bullet list.** This is the default shape:
 
-1. **Lead sentence** — spine of the answer.  
-2. **Why / constraints** (short) — need or rule that forces this shape.  
-3. **Bullets** — cases, steps, comparison rows, traps (one idea per bullet).  
-4. **Relevant example** when it helps prediction.  
-5. **Optional close** — consequence or “not when.”
+1. **First sentence** — the main point, key claim in bold.  
+2. **Flowing explanation** (2–5 short sentences) that builds the picture and the *why*, with a concrete example woven into the prose.  
+3. **Optional close** — a consequence or “not when.”
+
+**Prose is the default; bullets are welcome where they genuinely help** — a real **enumeration** (silver / copper / gold; the three particles of an atom), a **sharp contrast** (fixed vs variable), or a few clear **steps** — just not as the automatic shape for every card. Do **not** chop one explanation into bullet fragments, and never write `Label: text` narration (`Push:`, `Flow:`, `Work:`) — those read as scaffolding, not teaching. If bullets are just the steps of a single thought, turn them into sentences.
+
+Model the tone on how a person explains out loud: “Current is like the amount of water flowing through a pipe, voltage is the pressure pushing it, and resistance is how skinny the pipe is — so more pressure means more flow, and a skinnier pipe means less.” That is one flowing card, not five bullets.
 
 **Language:** plain words; common word first; jargon defined on first use. No corporate padding.
 
@@ -194,10 +196,44 @@ Aim for a **balanced deck** after a chapter/talk:
 | **Intuition / picture** | Heavy | Portable model |
 | **Contrast / when** | Heavy | Decision skill |
 | **Mechanism / elaborate code** | As needed | Make model load-bearing |
-| **Definition spine** | Sparse | Only when a term is load-bearing and easy to misuse |
+| **Plain definition** | Sparse | Only when a term is load-bearing and easy to misuse |
 | **Process / order** | When design method matters | “Start with events / data, not service behavior” |
 
-Do **not** emit a deck of pure definitions.
+Do **not** emit a deck of pure definitions. But for a **technical** chapter, do **not** under-cardize either: a bare definition is bad, a *missing* one is worse. Give each core term its own card **with** a why/example.
+
+---
+
+## Coverage & granularity (technical material)
+
+Few dense synthesis cards feel elegant but leave the learner unable to recall the pieces. For a foundations/technical chapter, prefer **broad atomic coverage**: sweep the source and make a card for **each load-bearing item**.
+
+**Coverage sweep — one card (often two) per:**
+
+| Item in the source | Card(s) to emit |
+|--------------------|-----------------|
+| Each **key term** (conductor, insulator, resistor) | definition + *why / how it works* |
+| Each **unit / quantity** (volt, amp, watt, ohm) | what it measures + a scale example |
+| Each **component / part** (battery, filament, switch) | its **purpose** + its **mechanism** |
+| Each **law / relationship** (Ohm's law) | the formula + a **worked-number** card + the intuition |
+| Each **analogy the source uses** (water in pipes) | one card, incl. the proportional relationship and where it breaks |
+| Each **“why does X work / why not Y”** (series vs reversed cells) | a why/contrast card |
+| The **whole system** | one **overview** “how does it all work” card, before the parts |
+| The **reason it exists** | one **purpose** “why do you even need X” card |
+
+**Granularity rule:** one card = one *questionable* idea. If a term, a unit, and a law appear together, that is **three** cards, not one “voltage/current/resistance” mega-card (mega-cards cause interference and half-right grading). Count follows concepts: a dense chapter is routinely **25–40 cards**.
+
+**Worked-number cards:** for every formula, add a card that plugs in **real values** and shows the result, plus a contrast of extremes (e.g. 1.5 V through air → R huge → I ≈ 0; through a copper short → R tiny → I huge). Numbers make the model load-bearing.
+
+---
+
+## Growing an existing deck (incremental adds)
+
+Decks are built up over a reading, card by card. When adding:
+
+- Keep **one source-of-truth data array** (e.g. a `CARDS` list) that drives both the visible card and the copy payload — never hand-duplicate Q/A.
+- **Validate after each edit** (open the file, or parse the embedded data) so a stray quote never silently breaks the page.
+- **Guard against near-duplicates:** before adding, check the new card against existing ones. If it blurs into another, either **sharpen it into a contrast** or **fold** the point into the existing card. Twins without a sharp difference cause interference (SuperMemo rule 11).
+- Place the new card under the **right theme**; add a new theme section if a cluster forms (e.g. batteries, conductors).
 
 ---
 
@@ -209,15 +245,15 @@ Do **not** emit a deck of pure definitions.
 4. **Draft cards** by type (why / intuition / contrast / when / code / process).  
 5. **Edit** for plain language, relevant examples, one idea, moderate length; mark phrases that must be **bold**.  
 6. **Self-check** (below).  
-7. **Deliver HTML deck** — default visualization (see `html-deck.md`): themed page, always-visible Q/A, **Copy on every card** (newlines + bullets + `**bold**` preserved), important text in `<strong>`.  
-8. Path: `~/explanations/YYYY-MM-DD-flashcards-<slug>.html`. Chat: path + count + spine only.
+7. **Deliver HTML deck** — default visualization (see `html-deck.md`): themed page, always-visible Q/A, **Copy on every card** that pastes as **formatted rich text, not markdown** (real bold/code via `text/html`, clean `text/plain` fallback; newlines + bullets kept), important text in `<strong>`.  
+8. Path: `~/explanations/YYYY-MM-DD-flashcards-<slug>.html`. Chat: path + count + one-line summary only.
 
 ### Output shape (default = HTML)
 
 Self-contained HTML page. Each card:
 
 - Q and A always visible  
-- **Copy** button → clipboard plain text:
+- **Copy** button → **formatted rich text, not markdown** (see `html-deck.md` § "Copy = formatted text"). The card *source* below drives both flavors: `**bold**`/`` `code` `` become real `<strong>`/`<code>` in the `text/html` flavor and are **stripped** in the clean `text/plain` fallback.
 
 ```text
 Q: Box vs Cell — when each?
@@ -231,7 +267,7 @@ A:
 - Reach for **Cell** when the issue is mutating behind a shared reference for Copy payloads.
 ```
 
-- On the page, the same important words use `<strong>…</strong>`.
+- On the page, the same important words use `<strong>…</strong>`. Paste-test in a rich editor: the result must show **real bold**, never literal `**`.
 
 Markdown-only or CSV/YAML only if the user explicitly wants that instead of (or in addition to) the HTML page.
 
@@ -246,17 +282,22 @@ For **each** card:
 3. Is the example **domain-true** for this topic?  
 4. One idea? If “and” joins two tests, split.  
 5. Front is a **real question** (contrast / when / why / what happens), not “discuss X”?  
-6. Plain language?  
+6. Plain language — **ordinary words, no coined nicknames/metaphors** (e.g. not “safe disciplines”, “the one brick”)?  
+6a. Front has **no redundant qualifier** (“(plain)”, “(walk-through)”) and does not restate the deck/section theme?  
+6b. **Self-contained** — no reference to the source (“the book/chapter/author”); answerable without it in hand?  
+6c. **No scaffolding words** in the back — search for `Need:` / `Constraint:` / `Mechanism:` / `Drop it:` / `Wrong default:` and remove?  
+6d. **Reads as flowing prose (a short story)**, not a chopped bullet list or `Label: text` narration? Bullets only for a real list/contrast?  
 7. Moderate length — not a tweet, not a chapter?  
 8. Important terms marked for **bold** (page + copy payload)?  
-9. **Copy** works and keeps formatting (newlines, bullets, emphasis)?
+9. **Copy** pastes as **formatted rich text, not markdown** (real bold in a rich editor; clean plain text with no `**`/backticks elsewhere), keeping newlines and bullets?
 
 For the **deck**:
 
 1. Early cards build the **picture**; later cards add edges.  
 2. At least some **why** and **contrast** cards, not only terms.  
 3. No two cards that blur into each other without a sharp difference.  
-4. HTML file opens locally; no external assets; every card has Copy.
+4. **Coverage:** for a technical chapter, did the sweep hit every key term, unit, quantity, component, law (with a worked-number card), and analogy — plus one overview and one purpose card?  
+5. HTML file opens locally; no external assets; every card has Copy.
 
 ---
 

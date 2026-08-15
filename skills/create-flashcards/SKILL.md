@@ -69,6 +69,7 @@ Sparse pure definitions. Heavy intuition, contrast, and judgment.
 | **Scenario / apply it** | A concrete situation, then a choice | Apply the concept; often options with pros/cons |
 | **Worked number** | Compute it (use the formula) | Real values plugged in → the answer, then the intuition |
 | **Enumeration** | Name N … | The short list, each item one line + a word of why |
+| **Connection / bonus** | How does this relate to X you already know? | A link to another field, tool, or everyday thing (or an extra insight/analogy) — take teaching opportunities |
 
 ## Front / back rules (always)
 
@@ -117,6 +118,7 @@ Implementation pattern and CSS: **`references/html-deck.md`** (load when writing
 - Understand → then cardize.  
 - Prefer **why / intuition / contrast / when** over definition spam.  
 - **Lead with why-it-exists and analogies** — that is how the user's own decks build intuition, not memorization. Expand acronyms; include the canonical slogan when one exists.  
+- **Take every teaching opportunity.** When there's a chance to be educational — an extra insight, a connection to another field or to something the learner already knows (databases, code, everyday life), or a clarifying analogy — take it. Add it as a short woven paragraph, or as its own **bonus / connection** card when it's a distinct idea. Keep it plain and relevant; do not pad.  
 - Plain language; moderate meaningful backs.  
 - **Plain, ordinary words only** — no coined pattern nicknames or invented metaphors.  
 - **Domain-true, concrete examples**: prefer the source’s own canonical example (names, shape, story) over a weaker invented one; add a short **code walkthrough** when the model must survive the compiler/runtime.  

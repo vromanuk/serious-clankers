@@ -59,7 +59,7 @@ Use spaced repetition; formulation quality multiplies retention speed.
 | **Holistic before isolated facts** | “Holistic then Anki” style posts | Model pass before cardization |
 | **Process cards carefully** | Process/Anki writeups | Prefer ordered steps or “first step” principle, not 15-item dumps |
 
-**Conflict with pure minimum-info culture:** pure SuperMemo wants ultra-short answers. This pack’s learner wants **intuition and why**. Resolution: **one idea**, answer **moderate and scannable** (lead + bullets + bold), not a slogan and not a chapter.
+**Conflict with pure minimum-info culture:** pure SuperMemo wants ultra-short answers. This pack’s learner wants **intuition and why**. Resolution: **one idea**, answer **moderate and scannable** (prose by default, bold on key terms; bullets only when the content is a real list or contrast), not a slogan and not a chapter.
 
 ---
 
@@ -83,6 +83,8 @@ What works in decks like **Rust smart pointers**, **DDD / events-first**, **syst
 ## D. Worked examples (good / bad)
 
 Use these as **templates** when drafting. Bold = important on the HTML page (`<strong>`); keep `**…**` markers in the card *source* only — Copy turns them into **real bold** rich text and strips them from the plain-text fallback (see `html-deck.md` § "Copy = formatted text"). Pasted output must never show literal `**`.
+
+> **Read the bullets in D1–D11 as earned, not as a template.** Several of these examples end with a short bullet list — but only because the content is a genuine list or contrast (two named options, pros/cons, ordered steps). **Do not staple a 2–4 item bullet "summary" onto every card.** That reflexive trailing summary is the single most common failure. Most cards should be **pure prose with zero bullets**. Before copying the *shape* of any example here, apply the **bullet test**: would the items still read fine as sentences, or do they just restate the prose above? If either is true, they don't belong. For the prose-first target style, look at **D12–D17** — they mostly carry the whole idea in flowing prose with no trailing list at all.
 
 ---
 
@@ -494,7 +496,7 @@ Before shipping a card, ask:
 | One idea? | Rule 4 | Atomic idea, moderate A OK |
 | Sharp vs similar cards? | Rule 11 | Contrast fronts |
 | Example real for learner? | Rule 14 | Domain-true table |
-| Short front, scannable back? | Rule 12 | Lead + bullets + bold |
+| Short front, scannable back? | Rule 12 | Prose + bold; bullets only if a real list |
 | Not a set dump? | Rules 9–10 | When-to-use / split |
 | Why present for designs? | — | Intuition bar |
 

@@ -86,6 +86,8 @@ Sparse pure definitions. Heavy intuition, contrast, and judgment.
 
 **Lists are for real lists** — pros/cons (✅/❌ is fine), options with trade-offs, ordered steps, or “name N” enumerations. In a **longer** card a genuine section header is fine (**The core idea**, **Why it exists**, **Takeaway**, **Pros/Cons**). What's banned is chopping one flowing thought into `Label:` stage-narration (`Push:`, `Flow:`, `Work:`, `Need:`, `Constraint:`). Include the canonical **slogan** when one exists (“Do not communicate by sharing memory; instead, share memory by communicating”).
 
+**No reflexive trailing bullets.** Do not staple a 2–4 item bullet summary onto the end of every card. Most cards should be **pure prose** — many good cards have **zero** bullets. Before adding a list, apply the **bullet test**: would these items still read fine as sentences, or do they just restate the prose above? If either is true, **delete the bullets** or fold them into the prose. Keep bullets only for a genuine parallel set (options, pros/cons, ordered steps, “name N”) where the parallel structure itself carries meaning — not as a habitual closer.
+
 **Bold (page + copy payload):** type names, critical outcomes, constraints, contrast poles — not whole paragraphs. See `html-deck.md`.
 
 **Length:** one focused screen. **Atomic:** one *idea* per card.
@@ -132,7 +134,7 @@ Implementation pattern and CSS: **`references/html-deck.md`** (load when writing
 - **Coined pattern nicknames / invented metaphors** in cards (e.g. “safe disciplines”, “the one brick”, “blessed path”, “sanctioned”). Use plain words.  
 - **Redundant qualifiers in the front** (“(plain)”, “(walk-through)”) or **visible tag chips** that repeat words already in the question/section — keep tags for the search filter only (`data-search`), do not render them.  
 - **Leak first-principles scaffolding into card text.** The `Need:` / `Constraint:` / `Mechanism:` / `Drop it:` / `Wrong default:` analysis stays in your **notes** — never render those labels in a back. (Before shipping, scan every back for those words and delete them.)  
-- **Default to bullets / chop an explanation into fragments.** A back should read as **flowing prose** (a short story). Reach for bullets only for a real list or a sharp contrast — not as the standard shape.  
+- **Default to bullets / chop an explanation into fragments.** A back should read as **flowing prose** (a short story). Reach for bullets only for a real list or a sharp contrast — not as the standard shape. In particular, do **not** end every card with a 2–4 bullet “summary” — that reflex is the most common failure; if the bullets could be sentences or just echo the prose, cut them.  
 - **Reference the source in a card** (“the book/chapter/author”, “we open with…”) or write a front that only makes sense with the source in hand — every card must stand alone.  
 - Skip the HTML page when building a real deck (unless chat-only).  
 - Cards without a working Copy control.  

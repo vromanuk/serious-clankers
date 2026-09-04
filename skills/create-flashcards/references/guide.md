@@ -158,11 +158,13 @@ Rules:
 
 **Prose is the default; bullets are welcome where they genuinely help** — a real **enumeration** (silver / copper / gold; the three particles of an atom), a **sharp contrast** (fixed vs variable), or a few clear **steps** — just not as the automatic shape for every card. Do **not** chop one explanation into bullet fragments, and never write `Label: text` narration (`Push:`, `Flow:`, `Work:`) — those read as scaffolding, not teaching. If bullets are just the steps of a single thought, turn them into sentences.
 
+**No reflexive trailing bullets.** The most common failure is stapling a 2–4 item bullet "summary" onto the end of every card. Do not do this. Most cards should be **pure prose with zero bullets**. Before you add a list, apply the **bullet test**: would these items still read fine as sentences, or do they just restate the prose above? If either is true, delete the bullets or fold them into the prose. Keep bullets only when the parallel structure itself carries meaning (options, pros/cons, ordered steps, "name N") — never as a habitual closer.
+
 Model the tone on how a person explains out loud: “Current is like the amount of water flowing through a pipe, voltage is the pressure pushing it, and resistance is how skinny the pipe is — so more pressure means more flow, and a skinnier pipe means less.” That is one flowing card, not five bullets.
 
 **Language:** plain words; common word first; jargon defined on first use. No corporate padding.
 
-**Length:** roughly **one screen** of focused prose (about 4–12 short bullets or a short para + bullets). Too short if the “why” is missing. Too long if it rewrites the whole chapter — split.
+**Length:** roughly **one screen** of focused prose (a short paragraph or two — think 3–8 sentences). Too short if the “why” is missing. Too long if it rewrites the whole chapter — split.
 
 **Code on the back:** only when the point is how the compiler or runtime treats that shape. Keep snippets minimal; explain the *failure or win* in words.
 
@@ -286,7 +288,7 @@ For **each** card:
 6a. Front has **no redundant qualifier** (“(plain)”, “(walk-through)”) and does not restate the deck/section theme?  
 6b. **Self-contained** — no reference to the source (“the book/chapter/author”); answerable without it in hand?  
 6c. **No scaffolding words** in the back — search for `Need:` / `Constraint:` / `Mechanism:` / `Drop it:` / `Wrong default:` and remove?  
-6d. **Reads as flowing prose (a short story)**, not a chopped bullet list or `Label: text` narration? Bullets only for a real list/contrast?  
+6d. **Reads as flowing prose (a short story)**, not a chopped bullet list or `Label: text` narration? Bullets only for a real list/contrast — **not a reflexive 2–4 item summary stapled onto the end**? Apply the bullet test: if the items would read fine as sentences or just restate the prose above, delete or fold them.  
 7. Moderate length — not a tweet, not a chapter?  
 8. Important terms marked for **bold** (page + copy payload)?  
 9. **Copy** pastes as **formatted rich text, not markdown** (real bold in a rich editor; clean plain text with no `**`/backticks elsewhere), keeping newlines and bullets?

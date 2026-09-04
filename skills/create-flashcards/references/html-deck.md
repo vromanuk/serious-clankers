@@ -150,6 +150,19 @@ Every `.copy-btn` calls `copyRich(cardHtml(q,a), cardPlain(q,a), btn)`, shows br
 - **Protect `` `code` `` first**, then `**bold**`, then `*italic*`. Otherwise a `*` inside code (e.g. `` `*mut T` ``, `` `*const` ``, `` `*b` ``) gets eaten as italics and leaves stray `*` in the paste. Extract code spans to placeholders, transform, then restore. Applies to **both** the page renderer and the plain-text stripper.  
 - **Bold may wrap italics**: match bold non-greedy (`/\*\*([\s\S]+?)\*\*/`) before italics; match italics as `/\*([^*\n]+?)\*/`.  
 - **Rich (`text/html`) flavor = real blocks**: build `<p>` paragraphs and a real `<ul><li>` list from the answer — **not** a run of `<br>`. `<br>` runs collapse into one line when pasted into some editors.  
+- **Code blocks in the copy flavor must carry inline styles + explicit breaks** or the paste loses indentation and line breaks (Google Docs is the worst offender). The clipboard `text/html` is a standalone fragment with **no page CSS**, so a bare `<pre><code>` renders as one collapsed line. In the copy flavor render each code block as an **inline-styled** block (monospace font, background, padding) with **newlines → `<br>`** and **leading/every space → `&nbsp;`** so shape survives everywhere. Likewise give inline `` `code` `` and `**bold**` inline styles in the copy flavor. Keep the display renderer on CSS classes; only the copy path needs inline styles. Pattern:
+
+```js
+function codeCopyHtml(codeText){
+  var lines = codeText.split('\n').map(l => esc(l).replace(/ /g,'&nbsp;'));
+  return '<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;'
+       + 'line-height:1.5;background:#2b2a27;color:#f3efe6;padding:10px 12px;border-radius:8px;'
+       + 'white-space:pre-wrap;word-break:break-word;margin:8px 0">' + lines.join('<br>') + '</pre>';
+}
+// blocksHtml(a, copy): when copy, emit codeCopyHtml(...) and inline-styled <strong>/<code>; else use CSS classes.
+```
+
+  The `text/plain` fallback keeps real spaces for code indentation (do not turn them into `&nbsp;` there).  
 - **Plain flavor = readable spacing**: put a **blank line between adjacent bullets** and keep blank lines between blocks, so notes/Quizlet paste stays structured.  
 - **Tags are for the search filter only** (`data-search`). Do **not** render tag chips on the card — they repeat words already in the question/section and read as redundant.
 
@@ -213,6 +226,7 @@ Optional top **table of themes** with counts.
 - [ ] Copy writes both `text/html` (real formatting) and a clean `text/plain` fallback (no `**`/backticks); newlines + bullets preserved in both  
 - [ ] Important terms use `<strong>` on page (source keeps `**…**` markers only to build the two copy flavors)  
 - [ ] Copy protects `` `code` `` before bold/italics (no stray `*` from `*mut`/`*const`/`*b`); rich flavor uses real `<p>`/`<ul>`, plain flavor has blank lines between bullets  
+- [ ] **Code blocks paste with formatting**: copy flavor styles code inline with `<br>` line breaks + `&nbsp;` indentation (bare `<pre><code>` collapses) — verify by pasting a code card into a rich editor  
 - [ ] No visible tag chips (tags only in `data-search`); no coined nicknames/metaphors; no redundant “(plain)”-style qualifiers in questions  
 - [ ] Q and A both always visible  
 - [ ] No external assets  

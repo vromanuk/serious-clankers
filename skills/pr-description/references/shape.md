@@ -5,9 +5,9 @@ Load after you have inspected **committed** branch changes (changed file list + 
 **Always the same structure.** Labels and order are fixed — do not invent headings.
 
 ```text
-Why: <real need + high-level idea / intuition>
+Why: <why we need this — missing contract + short intuition>
 
-How: <what changed and how it works (mechanism)>
+How: <intuition for the approach, then the mechanism>
 
 Testing: <commands run, cases covered, or honest manual check>
 ```
@@ -17,7 +17,7 @@ When there is a **diagram or changed-components** sketch, put it in its **own bl
 ```text
 Why: <need + intuition>
 
-How: <mechanism in prose>
+How: <approach intuition, then mechanism>
 
 ---
 
@@ -44,8 +44,8 @@ Notes: <same idea>
 
 | Label | Required | Content |
 |-------|----------|---------|
-| `Why:` | always | Real need **and** high-level idea / intuition. Not a file list or full mechanism. |
-| `How:` | always | Mechanism in prose: what changed, where, how it works. No diagram here. |
+| `Why:` | always | Why we need this: named missing value, so the caller cannot fetch it. Intuition in the same paragraph. |
+| `How:` | always | Intuition for the approach, then the mechanism. No diagram here. |
 | `---` block | when structure matters | Diagram and/or changed components only, between two `---` lines. |
 | `Testing:` | always* | What was run or what to run. |
 | `Risks:` / `Notes:` | when material | Compat, rollout, follow-ups. |
@@ -53,29 +53,32 @@ Notes: <same idea>
 \*Omit `Testing:` only if the user explicitly asked for Why/How only.
 
 - Line starts with the label exactly: `Why:`, `How:`, `Testing:`.
-- One-line form OK for tiny PRs if need + idea fit: `Why: …; idea: ….`  
-- Multi-line form: label line, then continuation (problem, then idea).  
+- One-line form OK for tiny PRs.  
 - **Do not** use `## Summary` / `## How` / freeform titles as substitutes.
+- Do not add an `Idea:` line. Put that explanation under `Why:` / `How:`.
 
-## Why (need + intuition — explain-diff spirit, PR length)
+## Why (need + intuition)
 
-Same priority as explain-diff § Intuition: **model first, mechanics later** — but keep a PR body short.
+`Why:` is **why we need this change**. Model first, PR-short.
 
-1. **Real need** — problem in plain words (first principles; strip ticket jargon if you can). Label *assumed* if only inferred from the diff.  
-2. **High-level idea / intuition** — essence of the change: what approach solves the need (one or two sentences). Optional tiny before/after or analogy.  
-3. **Not** paths, function-by-function walkthrough, or a diagram (those belong in `How:` / `---` block).  
-4. Order: **problem → idea**. A reviewer should understand the story before the implementation.
+1. **What is not there** — named signal / field / row in the system's names.  
+2. **So the caller cannot fetch it** — which store/RPC lookup fails even though producers send it.  
+3. **Who needs it** — one line + ticket if fetched. Label *assumed* if only inferred from the diff.
 
 | Weak `Why:` | Strong `Why:` |
 |-------------|---------------|
-| Only “add NonEmptyFiles” | Problem (silent empty success) **then** idea (fail closed at type construction) |
-| File list of what moved | Need + essence of the design move |
+| “never saw firmware” | Wall-connector `SITE_SM_customerVersion` was not in the latest text store, so `GetLatestTextTelemetryByDin` could not return it |
+| File list of what moved | Named missing value + who cannot fetch it |
 | Full how-to of the patch | Leave that for `How:` |
 
-## How
+## How (approach intuition, then mechanism)
 
-- Explain the **mechanism** in plain words (what you did + key names) **after** `Why:` has set the idea.  
-- **Do not** put diagrams or component maps inside this paragraph.
+1. **Intuition** — how we are going about it: the existing layout this extends (one ingest deployment per product; the other value type already served).  
+2. **Mechanism** — ingest path, keep policy, routing. A few sentences. Paths / symbols when they help.
+
+Not: env-var / metric / clone inventory. Not a “please review” list. Name what a component does (parquet to S3; recover by load snapshot then Kafka replay), not a slogan.
+
+**Do not** put diagrams or component maps inside this paragraph.
 
 ## Diagram / changed components (`---` block)
 
@@ -100,16 +103,15 @@ When the change crosses components or boundaries:
 
 ## Language
 
-- Plain words. No corporate filler.  
+- Technical names, human sentences. No corporate filler.  
 - Short. Facts vs assumptions.  
 
 ## Tiny-fix shape (no diagram)
 
 ```text
-Why: `Tesla - Lynx` site data (STST-SM-30162, STST-SM-30164) is not mirrored into the target env.
-  Idea: extend the existing kafka producer whitelist so those gateways match other Tesla sites.
+Why: `Tesla - Lynx` site data (STST-SM-30162, STST-SM-30164) is not on the kafka producer whitelist, so it is not mirrored into the target env.
 
-How: Added both gateway IDs to the kafkaProducerMirroringCriteria list in `kcr-mirroring-config.yaml`.
+How: Same whitelist as the other Tesla sites — add both gateway IDs to kafkaProducerMirroringCriteria in `kcr-mirroring-config.yaml`.
 
 Testing: Confirm both IDs are present in the criteria list after deploy / config apply.
 ```
@@ -117,10 +119,9 @@ Testing: Confirm both IDs are present in the criteria list after deploy / config
 ## Structure-matters shape (with `---` block)
 
 ```text
-Why: Callers get silent empty success when the planner receives an empty file list.
-  Idea: reject empty input at the type boundary so “no files” cannot look like a valid plan.
+Why: An empty file list is accepted, so callers get silent empty success instead of a construction error.
 
-How: `NonEmptyFiles` is built only via `try_from`; the shell maps that error to the API.
+How: Fail closed at the type boundary: `NonEmptyFiles` is built only via `try_from`; the shell maps that error to the API.
 
 ---
 

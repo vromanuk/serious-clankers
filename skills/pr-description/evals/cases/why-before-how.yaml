@@ -17,7 +17,8 @@ checks:
   - shell: grep -Eq '^Why:' PR_DESCRIPTION.md
   - shell: grep -Eq '^How:' PR_DESCRIPTION.md
   - judge: >
-      Why: states the need (reject empty items) and a short high-level idea
-      (e.g. fail closed / require items at the boundary). How: states the
-      implementation change. Why appears before How.
+      Why: states why the change is needed (empty items are accepted so
+      callers get ok without items). How: states the approach intuition
+      then the implementation change. Why appears before How. No separate
+      Idea: heading.
 timeout: 300

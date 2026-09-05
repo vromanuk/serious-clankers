@@ -2,7 +2,7 @@
 
 ## Intent
 
-Make the agent write pull-request descriptions that always use the same labeled structure a reviewer can scan: **Why** (real need **and** high-level idea/intuition first), **How** (mechanism), then **Testing** when applicable. This exists because unguided agents invent freeform layouts, dump file lists, bury the need, skip the core idea, and put empty testing placeholders.
+Make the agent write pull-request descriptions that always use the same labeled structure a reviewer can scan: **Why** (why we need this: missing contract + short intuition), **How** (intuition for the approach, then mechanism), then **Testing** when applicable. This exists because unguided agents invent freeform layouts, dump file lists, bury the need, skip intuition, and put empty testing placeholders.
 
 ## Triggers
 
@@ -18,8 +18,8 @@ Make the agent write pull-request descriptions that always use the same labeled 
 
 The agent SHALL always emit the PR body with these exact line-start labels in this order, each on its own line as `Label: ` followed by content (or a short block starting on the next line):
 
-1. `Why:` — real need / problem **and** high-level idea / intuition (essence before mechanism)
-2. `How:` — what changed and how it works (mechanism detail)
+1. `Why:` — why we need this: named missing value, so the caller cannot fetch it, plus a short intuition (no separate `Idea:` line)
+2. `How:` — intuition for the approach, then the mechanism
 3. `Testing:` — what was run or what the reviewer should run (required unless the user explicitly asked for Why/How only)
 
 Optional after those, still as a labeled line: `Risks:` or `Notes:` when material. The agent MUST NOT use freeform `## Summary` / `## How` markdown section titles as a substitute for these labels. The agent MUST NOT reorder or rename the required labels.
@@ -32,13 +32,13 @@ Optional after those, still as a labeled line: `Risks:` or `Notes:` when materia
 
 ### Behavior: Why before how (need + intuition first)
 
-The agent SHALL put under `Why:` both (1) the real need / problem and (2) the high-level idea or intuition of the approach (explain-diff spirit: model before detail, PR-short). The agent SHALL put mechanism detail under `How:`. `Why:` MUST come first. Content under `How:` MUST NOT appear before `Why:`. `Why:` MUST NOT be only a file list or only a synonym of the implementation without stating the problem and core idea when the change is non-trivial. Tiny one-line fixes may keep `Why:` to one or two short sentences still covering need and idea.
+The agent SHALL put under `Why:` why the change is needed: the named missing contract (what is not in the store/API) and that the caller cannot fetch it, plus a short intuition. The agent SHALL NOT use a separate `Idea:` sub-label — that explanation belongs in `Why:` / `How:` prose. The agent SHALL put under `How:` first the intuition for the approach (existing pattern this extends), then the mechanism. `Why:` MUST come first. Content under `How:` MUST NOT appear before `Why:`. `Why:` MUST NOT be only a file list. Tiny one-line fixes may keep `Why:` to one or two short sentences still covering need and intuition.
 
 #### Scenario: Feature branch PR
 
 - **GIVEN** a branch that adds input validation to a public API
 - **WHEN** the user asks for a PR description
-- **THEN** `Why:` states the need and the high-level idea (e.g. reject invalid input at the boundary) before `How:` gives implementation detail
+- **THEN** `Why:` states empty/invalid input is accepted so callers get a bad success, before `How:` gives the approach and implementation detail
 
 #### Scenario: Why is only a file dump
 
@@ -86,7 +86,7 @@ The agent SHALL inspect **committed** branch changes before drafting: find the m
 
 ### Constraint: No corporate fluff
 
-The agent MUST NOT write padded HR/corporate language, vague slogans, or long file inventories that replace the why/how narrative.
+The agent MUST NOT write padded HR/corporate language, vague slogans, “please review” checklists, or long file / env-var inventories that replace the why/how narrative.
 
 ### Constraint: No invented validation
 

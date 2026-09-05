@@ -2,86 +2,73 @@
 
 ## Intent
 
-Explain a concept, technology, or pattern so the user builds a solid mental model. Teaching uses first principles: derive from fundamentals and real need, not habit or slogans. Answers give background (deep then narrow), lead with intuition and concrete examples, then add detail only as needed. Teaching is the job — not shipping an implementation.
+Teach a concept, technology, or pattern so the user builds a solid mental model.
+Thinking is first principles: real need, constraints, smallest mechanism — not slogans.
+Default deliverable is a self-contained HTML page under `~/explanations/`, with
+background, why, intuition (and **static** simple HTML figures) before mechanism
+detail, plus a five-question quiz.
 
 ## Triggers
 
 - **SHOULD** apply when the user asks to explain, teach, or understand a concept, technology, or pattern.
-- **SHOULD** apply when the user wants a deeper model of an idea even if they do not say “explain”.
-- **SHOULD NOT** apply when the main ask is a line-by-line walkthrough of a specific source file (explain the *idea* if useful, but do not treat that as this skill’s full job).
-- **SHOULD NOT** apply when the primary goal is shipping code or running a task with no teaching ask.
-- **SHOULD NOT** apply when the user only wants hands-on pair implementation without an explain/understand ask.
+- **SHOULD** apply for deeper mental-model asks even without the word “explain”.
+- **SHOULD NOT** apply when the main ask is implement/refactor with no teach ask.
+- **SHOULD NOT** apply when the main ask is a PR/diff walkthrough (use a diff-explanation skill).
 
 ## Behaviors
 
 ### Behavior: Restate the question
 
-The agent SHALL restate the real question in plain words, and SHALL ask a short clarifying question when the topic or depth is ambiguous instead of guessing silently.
+The agent SHALL restate the real question in plain words and SHALL clarify depth when ambiguous.
 
-#### Scenario: Ambiguous depth
+### Behavior: First principles narrative
 
-- **GIVEN** the user says "tell me about Kafka"
-- **WHEN** depth is unclear
-- **THEN** the agent names likely angles in plain words and asks which depth they want, or starts with a beginner model and offers to go deeper
+The agent SHALL derive the explanation from need and constraints before listing features or APIs. The agent SHALL apply need → constraints → mechanism (and “what you would drop if the need were smaller”) to every major section, figure, signature, and example — not only the “Why it exists” section. Slogan-only captions without a visible need SHALL be rewritten.
 
-### Behavior: Background deep then narrow
+### Behavior: Required section order
 
-The agent SHALL give deep background for beginners (marked skippable if the reader already knows it) and then narrow background directly relevant to the question, exploring surrounding context before focusing.
+The agent SHALL produce a single continuous HTML page with: Background (deep skippable, then narrow), Why it exists, Intuition, How it works, Compare when useful, Quiz (five interactive MC questions).
 
-#### Scenario: Explaining a pattern in a larger system
+### Behavior: Static HTML diagrams
 
-- **GIVEN** the user asks how backpressure fits in their pipeline
-- **WHEN** the agent explains
-- **THEN** the answer first orients a beginner to the surrounding flow (skippable if known), then narrows to the part that answers the question
+The agent SHALL use simple HTML/CSS diagram families (before/after, flow with example data, component cards, tables, fully visible numbered steps). The agent SHALL NOT default to Play/Next/chip diagram players. The agent SHALL NOT use ASCII as the primary figure.
 
-### Behavior: Intuition before detail
+### Behavior: Familiar teaching examples
 
-The agent SHALL lead with the core intuition (essence, not full detail), a concrete toy example, and diagrams when structure or flow helps, and SHALL put deeper mechanism after that.
+The agent SHALL make every example relevant, simple, teaching-first, and familiar. When a famous standard text already has a classic example for the idea (e.g. The Rust Book for ownership/borrowing), the agent SHALL prefer that example over inventing a weaker custom one, and SHALL attribute it briefly. Otherwise the agent SHALL use familiar named roles/situations and beginner-facing APIs — not bare abstract labels with pseudo-allocator snippets.
 
-#### Scenario: User asks how backpressure works
+### Behavior: Flashcards separate from visuals
 
-- **GIVEN** the user asks "how does backpressure work?"
-- **WHEN** the agent explains
-- **THEN** the answer starts with the problem, a small example, and a simple diagram if useful, before protocol or API specifics
+When flashcards are included, the agent SHALL use a Quizlet-style format: question on the front, natural prose answer on the back (with optional short code). The agent SHALL NOT use labeled template fields (Scene, Remember, Trap, etc.) on card backs, and SHALL NOT embed the page’s diagram shells in cards. Figures belong only in the main article sections.
 
-### Behavior: First principles
+### Behavior: HTML artifact
 
-The agent SHALL treat first principles as the primary teaching method: derive from fundamentals and the real need; restate the question in plain terms; prefer why and mechanisms over slogans; verify analogies; and drop content that does not change understanding. The agent SHALL NOT rely on “best practice” labels without saying when they apply and when they fail.
+For non-trivial topics the agent SHALL write `~/explanations/YYYY-MM-DD-explanation-<slug>.html` with inline CSS/JS only and return the path in chat.
 
-#### Scenario: User asks why immutability is used
+### Behavior: Quiz quality
 
-- **GIVEN** the user asks "why do people use immutable data?"
-- **WHEN** the agent explains
-- **THEN** the answer starts from the problem and the mechanism, not a list of trendy rules
+Five medium-difficulty MC questions; comparable option length; randomized order; immediate feedback with explanations.
 
-### Behavior: Layered depth
+### Behavior: Understanding not shipping
 
-The agent SHALL build from the simple case to complications, match length to the ask, and offer a clear path to go deeper instead of dumping every edge case up front.
+The agent SHALL NOT treat an explain-topic request as a full implementation request unless the user also asks for that.
 
-#### Scenario: User wants a short comparison
+### Behavior: Plain language
 
-- **GIVEN** the user asks "what's the difference between threads and async briefly?"
-- **WHEN** the agent explains
-- **THEN** the answer stays short, contrasts what each optimizes for, and offers deeper follow-ups
-
-### Behavior: Understanding check
-
-The agent SHALL end with a brief check that the idea landed and invite a focused follow-up.
-
-#### Scenario: Finished explanation
-
-- **GIVEN** the agent has explained the main model
-- **WHEN** the explanation closes
-- **THEN** it includes a short "you should be able to …" check or one question that tests the core idea
+The agent SHALL use plain words, define jargon on first use, and separate fact from guess.
 
 ## Constraints
 
-### Constraint: Teaching not shipping
+### Constraint: Self-contained HTML
 
-The agent MUST NOT treat an explain-topic request as a request to implement a full solution unless the user also clearly asks for that work.
+No external CDNs, fonts, or JS packages for the default HTML deliverable.
 
-### Constraint: Plain language
+### Constraint: No ASCII primary diagrams
 
-The agent MUST use plain words, avoid corporate or padded tone, and separate facts from guesses.
+MUST NOT use ASCII diagrams as the primary visual for non-trivial topics.
 
-<!-- skillet-version: 1.7.0 -->
+### Constraint: Code whitespace
+
+Every code block’s CSS MUST use `white-space: pre` or `pre-wrap`.
+
+<!-- skillet-version: 2.1.0 -->

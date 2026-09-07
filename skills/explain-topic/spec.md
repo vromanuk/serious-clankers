@@ -3,7 +3,7 @@
 ## Intent
 
 Teach a concept, technology, or pattern so the user builds a solid mental model.
-Thinking is first principles: real need, constraints, smallest mechanism — not slogans.
+Thinking is first-thinking principles: real need, constraints, smallest mechanism — not slogans.
 Default deliverable is a self-contained HTML page under `~/explanations/`, with
 background, why, intuition (and **static** simple HTML figures) before mechanism
 detail, plus a five-question quiz.
@@ -21,9 +21,19 @@ detail, plus a five-question quiz.
 
 The agent SHALL restate the real question in plain words and SHALL clarify depth when ambiguous.
 
-### Behavior: First principles narrative
+### Behavior: First-thinking-principles narrative
 
 The agent SHALL derive the explanation from need and constraints before listing features or APIs. The agent SHALL apply need → constraints → mechanism (and “what you would drop if the need were smaller”) to every major section, figure, signature, and example — not only the “Why it exists” section. Slogan-only captions without a visible need SHALL be rewritten.
+
+The agent SHALL distinguish design choices that are **forced** by a constraint from those that were **chosen**, and SHALL NOT present a judgement call as if it were necessary. Where several traits share a cause, the agent SHALL show the consequence chain from the root fact rather than listing the traits. The agent SHALL name the assumption each mechanism depends on and when it stops holding. The agent SHALL mark every figure as fixed-by-format, measured-and-published, or vendor-claim/own-inference, and SHALL NOT repeat a vendor benchmark as a measured property.
+
+### Behavior: Model before mechanism in every section
+
+The agent SHALL open every section that explains something with a plain-language statement of what it is, anchored on a familiar everyday instance, before any syntax, config, file layout, byte diagram, or code. Reading only the first paragraph of each section in order SHALL tell a coherent story. For pages covering several systems or components, the agent SHALL provide an orientation block summarising each in two or three sentences before the deep dives.
+
+### Behavior: Derive rather than assert
+
+Where a design would look arbitrary if stated flat, the agent SHALL build it up from the naive approach, fixing one problem at a time, and SHALL name the result once derived. Each step SHALL state what was gained, what remains broken, and what that forces next.
 
 ### Behavior: Required section order
 

@@ -4,9 +4,11 @@ description: >
   Create a rich, self-contained HTML explanation of a concept, technology, or
   pattern. Use when the user asks to explain, teach, or understand something —
   e.g. "explain how X works", "what is Y", "teach me about Z", "why does X
-  exist?", "how does X compare to Y?", or any deeper mental-model ask. Produces
-  a dated HTML file under ~/explanations/. First principles, why it exists, and
-  intuition (with simple HTML figures) before detail.
+  exist?", "how does X compare to Y?", or any deeper mental-model ask. Also use
+  when asked for "first-thinking principles", "first principles", intuition,
+  high-level ideas, or a mental model of something — those all mean this skill.
+  Produces a dated HTML file under ~/explanations/. First-thinking principles,
+  why it exists, and intuition (with simple HTML figures) before detail.
 ---
 
 # Explain Topic
@@ -21,7 +23,7 @@ The job is a **mental model**, not an API dump and not an implementation.
 
 1. **Name the real question** in plain words. If the topic or depth is ambiguous,
    ask one short clarifying question (or state a clear assumption on the page).
-2. **Think from first principles before writing HTML** (see below). Build a
+2. **Think from first-thinking principles before writing HTML** (see below). Build a
    narrative: what need exists, what goes wrong without this idea, the smallest
    useful mental model, how the mechanism meets the need, what people confuse.
 3. **Explore enough context** to be accurate: docs, surrounding code, a talk
@@ -30,15 +32,22 @@ The job is a **mental model**, not an API dump and not an implementation.
    where interaction is needed — e.g. quiz). No external fonts, CDNs, images, or
    packages. Save under `~/explanations/YYYY-MM-DD-explanation-<slug>.html`
    using today’s local date so files sort by time and stay out of repos.
-5. **Validate before handoff:** complete HTML document; no external deps; every
-   code block has `white-space: pre` or `pre-wrap`; quiz works if present; JS has
-   no parse errors; open the file when practical.
+5. **Validate before handoff:** read *only the first paragraph of each section,
+   in order* — it must tell a coherent story on its own (§ *Intuition before
+   mechanism*); no section opens with syntax, config, a file layout or code;
+   complete HTML document; no external deps; every code block has
+   `white-space: pre` or `pre-wrap`; quiz works if present; JS has no parse
+   errors; open the file when practical.
 
 **Tiny asks only:** a one-notion trivia question may stay in chat. Offer a page
 if they want depth. If they say chat-only, still use the same teaching order
 without forcing a file.
 
-## First principles (how to think) — applies *everywhere*
+## First-thinking principles (how to think) — applies *everywhere*
+
+Asked for “first-thinking principles”, “first principles”, “the intuition”, “the
+high-level idea”, or “why is it like this” — all the same request, and all mean
+this section plus § *Intuition before mechanism*.
 
 Prefer this over habit, “best practice,” and pattern-matching.
 This is not only the “Why it exists” section. **Every** major claim, figure,
@@ -63,6 +72,106 @@ Also:
 - Fail bar: if a caption could be swapped for “best practice” with no loss of
   meaning, rewrite it until the need is visible.
 
+### Separate what is forced from what was chosen
+
+The most useful thing an explanation can do is say which parts of a design *had*
+to be that way and which were judgement calls.
+
+- **Forced** — follows necessarily from a constraint. *“Once values are
+  compressed they are variable length, so a position can no longer be computed —
+  an index becomes unavoidable.”*
+- **Chosen** — defensible, could have gone the other way; usually about scope,
+  risk or cost. *“It could average old data during a merge. It deliberately
+  doesn’t, to stay small and dependable.”*
+
+Blur the two and arbitrary decisions look like laws of nature, which hides where
+the reader’s own situation might justify a different answer.
+
+### Follow the consequence chain from one root fact
+
+Where several traits share a cause, show the chain instead of listing the traits:
+
+> series are unpredictable and short-lived → nothing can be reserved in advance →
+> data must be written after the fact → each batch carries its own index →
+> expiry becomes deleting a whole batch → churn costs nothing
+
+One fact, five consequences. That reads as understanding; a feature list doesn’t.
+
+**Shared-root test:** if one structural change fixes several problems that looked
+unrelated, say so — it is strong evidence the diagnosis is right, and far more
+convincing than three separate fixes.
+
+### Name the assumption that could be false
+
+Every mechanism rests on something being true about the data or the world. State
+it, and state when it stops holding.
+
+> This compression assumes monitoring data is repetitive — fixed intervals,
+> values that rarely move. On genuinely random data it barely compresses at all.
+
+**Fail bar:** a mechanism presented with no conditions under which it fails is
+being sold, not explained.
+
+### Mark the status of every number
+
+When describing real systems keep three things visibly apart: **fixed by the
+format** (state it plainly), **measured and published** (cite it), and **vendor
+benchmark or your own inference** (label it as such, in place — not only in the
+footer). A project’s performance claims about its own product are direction, not
+measurement. In the footer, also separate what you verified from what you recalled.
+
+## Intuition before mechanism — the most common failure
+
+This skill fails most often by delivering **correct detail too early**: syntax,
+config, file layouts, byte diagrams or numbered steps arriving before the reader
+knows what the thing *is*. The detail is accurate and reads as trivia. Three
+mechanisms prevent it.
+
+### 1. Every section leads with the model, not the mechanism
+
+“Whole picture before parts” applies **recursively — to every section**, not once
+per page. It is easy to satisfy it in the Intuition section and then open each
+later section with a config file. Don’t.
+
+Order inside any section that explains something:
+
+1. **What it is** — plain words, anchored on something the reader already uses.
+2. **Why it must be that shape** — the constraint that forces it.
+3. **What breaks without it** — the failure it exists to prevent.
+4. **How it works** — mechanism, syntax, layout, steps, bytes.
+5. **What it costs** — the honest trade, so it reads as engineering, not a pitch.
+
+For a page covering several systems or components, add an **orientation block
+before the deep dives**: each one in two or three sentences, so the reader has a
+map before any of them is opened up.
+
+**Fail bar:** read *only the first paragraph of each section, in order*. If that
+alone doesn’t tell a coherent story, the models are buried inside the mechanisms.
+
+### 2. Derive it — don’t announce it
+
+When a design would look arbitrary if simply stated, **start from the naive thing
+the reader would do and fix one problem at a time** until the real design falls
+out. Then name what was built: “you have just invented X.”
+
+Each step says: what we gained, what is still broken, what that forces next. The
+target feeling is “I’d have got here myself,” not “I have been told this.”
+
+This also produces the strongest first-principles writing available, because the
+constraint is *demonstrated* before the conclusion instead of asserted after it.
+
+**Fail bar:** if the page says “X does A, B and C” without ever showing what goes
+wrong when you skip A, the reader has facts and no model.
+
+### 3. One familiar anchor per part, not one per page
+
+Each major component earns its own everyday instance. Do not stretch a single
+metaphor across the whole page, and do not build an invented world (see
+Examples § *Analogies*). A reader dropping into any section cold should meet
+something recognisable within two sentences.
+
+**Fail bar:** a section whose opening only makes sense if you read the one before.
+
 ## Required page structure
 
 One continuous page (no top-level tabs). Title, short summary (the spine in one
@@ -75,7 +184,8 @@ or two sentences), table of contents, then these sections **in order**:
 
 2. **Why it exists**  
    The real need and the failure mode without it. Concrete situation, not abstract fear.  
-   End with the first-principles link: constraints → why this shape of solution appears.
+   End with the first-thinking-principles link: constraints → why this shape of
+   solution appears, and which parts of it were forced versus chosen.
 
 3. **Intuition**  
    The **core idea** before full detail. Essence only.  
@@ -92,7 +202,8 @@ or two sentences), table of contents, then these sections **in order**:
    - Name the parts and the order of events in plain words.  
    High-level idea first; mechanism detail after — not the reverse.
 
-   **Whole picture before parts.** For any multi-step mechanism (lifecycle,
+   **Whole picture before parts** — and see § *Intuition before mechanism*, which
+   applies this to **every** section, not only this one. For any multi-step mechanism (lifecycle,
    protocol, API), first show **one figure or paragraph that is the entire
    story** (what the thing *is*, what is owned, when cleanup runs, how it
    differs from the usual alternative). Only then zoom into numbered steps or
@@ -426,7 +537,16 @@ the user asks.
 ## Do not
 
 - Lead with API catalogs, flag lists, or jargon maps.
+- Open any section with syntax, config, a file layout, byte diagrams or code
+  before the reader knows what the thing is and why it exists.
+- Assert a design you could have derived. If it looks arbitrary stated flat,
+  build it up from the naive version instead.
+- Satisfy “whole picture first” once at the top and then dive straight into
+  mechanism in every section after it.
 - Recite “best practice” without when it helps and when it fails.
+- Present a judgement call as if it were forced by physics, or a hard constraint
+  as if it were a preference.
+- Repeat a vendor’s benchmark as though it were a measured property of the world.
 - Implement a full solution when they asked to understand.
 - Use formal, padded language or empty slogans.
 - Default to animated / Play-based diagram players.

@@ -45,6 +45,24 @@ Prefer cards that force a **picture**:
 
 Sparse pure definitions. Heavy intuition, contrast, and judgment.
 
+## Cover what people get wrong, not only what the source says
+
+The source tells you what is **true**. It does not tell you what people **believe that is false**, what they **see when it breaks**, or **where they run into it**. A deck built only from the source can explain everything well and still leave the learner unable to spot the problem in real life.
+
+So go through the ideas a second time and ask three questions:
+
+1. **What does a sensible person believe here that is wrong?**
+2. **What will they actually see on screen when this goes wrong?**
+3. **Where will they run into it — in their code, their tools, their job?**
+
+Each real answer becomes a card, and it goes on the **front**:
+
+- **Wrong belief** → ask the wrong question so the learner has to reject it. *“How many bits is Unicode?”* → **“None. Unicode is not an encoding.”**
+- **What they see** → put the broken output itself on the front. A line of garbled text → **“something read these bytes with the wrong table.”** This teaches them to recognize it, not just to explain it.
+- **Where they hit it** → *“My app is UTF-8 everywhere, but the database admin page shows garbage.”* → **“The database is set to latin-1.”**
+
+Explaining the idea correctly somewhere else in the deck does **not** do this job: being told the right answer and having to reject the wrong one are different things. These fronts often come from **outside** the source — the learner's own tools, common bug reports, what people argue about. That is where they should come from.
+
 ## Workflow
 
 1. **Ingest source** — notes, chapter, talk, code, prior explanation, or user paste.  
@@ -61,12 +79,14 @@ Sparse pure definitions. Heavy intuition, contrast, and judgment.
 |------|-----------|-------------------|
 | **Why it exists / first-principles** | Why does X exist? What problem does it solve? What did people do before? | The real need and what breaks without X — **the backbone of the deck; use it a lot** |
 | **Plain definition** | A precise term on its own (**Mutex**, **Pin**, **Bandwidth**) | Crisp definition + why it matters; **expand acronyms**, note a naming origin when it helps |
-| **Contrast** | X vs Y | Decision table or sharp difference |
+| **Contrast** | X vs Y | Decision table or sharp difference; a plain relational statement counts (**“ASCII is an English-language subset of Unicode”**) |
+| **Misconception** | A question built on the **wrong belief** (“How many bits is Unicode?”) | Reject the premise in the first words, then give the right model |
+| **Symptom → diagnosis** | The raw broken thing itself — garbled text, an error line, a wrong number | What it means and the single cause; trains recognition in the wild |
 | **When to use / how-to** | When X? How do you do X? | Triggers + one “not when”; or the practical steps |
 | **Intuition** | Picture / analogy / “how does this work?” | Portable model + where analogy breaks if needed |
 | **Elaborate this code** | A code snippet → “why does this work / fail?” | Step through what the compiler/runtime does, and why |
 | **Overview** | How does the whole thing work? | One high-level chain end to end, before the parts |
-| **Scenario / apply it** | A concrete situation, then a choice | Apply the concept; often options with pros/cons |
+| **Scenario / apply it** | A concrete situation, then a choice — **including a real bug from outside the source** (“app is UTF-8, database admin shows garbage”) | Apply the concept; often options with pros/cons |
 | **Worked number** | Compute it (use the formula) | Real values plugged in → the answer, then the intuition |
 | **Enumeration** | Name N … | The short list, each item one line + a word of why |
 | **Connection / bonus** | How does this relate to X you already know? | A link to another field, tool, or everyday thing (or an extra insight/analogy) — take teaching opportunities |
@@ -79,7 +99,7 @@ Sparse pure definitions. Heavy intuition, contrast, and judgment.
 
 **Back — teach it like you'd say it out loud, not a bullet dump.** This shape (derived from the user's own decks):
 
-1. **Answer first** — one or two crisp sentences that directly answer (the definition or key claim), key term in **bold**. **Expand acronyms** (**mpsc** = multiple producer, single consumer) and note a naming origin when it helps (**Cow** = Clone-On-Write).  
+1. **Answer first** — one or two crisp sentences that directly answer (the definition or key claim), key term in **bold**. Make it a sentence the learner could **say back in one breath**, and pick the wording that stops the most likely mistake rather than the most complete wording: *“Unicode is a big table mapping characters to numbers; the UTF encodings say how those numbers turn into bits”* beats a fuller definition that leaves the reader still thinking Unicode is an encoding. **Expand acronyms** (**mpsc** = multiple producer, single consumer) and note a naming origin when it helps (**Cow** = Clone-On-Write).  
 2. **Then the deeper idea in flowing prose** — build the *why*: what problem it solves, what breaks without it, what people did before. This first-principles angle *is* the point.  
 3. **Analogy when it lands** — name it, map it, note where it breaks (a channel is a river you drop a rubber duck into; a mutex is a panel with one microphone).  
 4. **Make it concrete** — a short code walkthrough, worked numbers, or a real example when that makes the model load-bearing.
@@ -90,7 +110,9 @@ Sparse pure definitions. Heavy intuition, contrast, and judgment.
 
 **Bold (page + copy payload):** type names, critical outcomes, constraints, contrast poles — not whole paragraphs. See `html-deck.md`.
 
-**Length:** one focused screen. **Atomic:** one *idea* per card.
+**Length follows the idea, not a house style.** One focused screen is the **ceiling, not the target**. When the idea genuinely is one line, write one line — *“ASCII: 7 bits = 1 character.”* / *“UTF-32: every character in 32 bits; the encoding is just the code point. Downside: bloated.”* A deck where every card is four paragraphs has no anchors, flattens what matters, and is punishing to review. Mix short, moderate and long; let the hard ideas be the long ones.
+
+**Atomic:** one *idea* per card.
 
 ## Examples must be relevant
 
@@ -119,6 +141,8 @@ Implementation pattern and CSS: **`references/html-deck.md`** (load when writing
 
 - Understand → then cardize.  
 - Prefer **why / intuition / contrast / when** over definition spam.  
+- **Ask the wrong question at least a few times per deck** — misconception, symptom and real-bug cards, drawn from outside the source when needed.  
+- **Vary the length.** Some cards are one line. If every card looks the same size, the deck has no anchors.  
 - **Lead with why-it-exists and analogies** — that is how the user's own decks build intuition, not memorization. Expand acronyms; include the canonical slogan when one exists.  
 - **Take every teaching opportunity.** When there's a chance to be educational — an extra insight, a connection to another field or to something the learner already knows (databases, code, everyday life), or a clarifying analogy — take it. Add it as a short woven paragraph, or as its own **bonus / connection** card when it's a distinct idea. Keep it plain and relevant; do not pad.  
 - Plain language; moderate meaningful backs.  

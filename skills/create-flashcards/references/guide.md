@@ -222,6 +222,17 @@ Few dense synthesis cards feel elegant but leave the learner unable to recall th
 | The **whole system** | one **overview** “how does it all work” card, before the parts |
 | The **reason it exists** | one **purpose** “why do you even need X” card |
 
+**Second pass — what the source does not contain.** The table above only finds cards the source suggests, so it can only ever produce a deck that explains the source. Go through the ideas again from the learner's side:
+
+| Ask | Card to emit |
+|-----|--------------|
+| What does a sensible person **believe that is wrong**? | A question built on the false belief, answered by rejecting it first (“How many bits is Unicode?” → “None. Unicode is not an encoding.”) |
+| What will they **see on screen** when it breaks? | The broken output on the front, the cause on the back (a line of mojibake → “read with the wrong table”) |
+| Where will they **run into it** in real work? | A concrete situation from their stack, even if the source never mentions it (“app is UTF-8, database admin shows garbage” → “the database is latin-1”) |
+| What is the **one sentence** they should be able to repeat? | A short card whose whole answer is that sentence — no build-up, no paragraphs |
+
+These are usually the cards a learner remembers, because they match how the knowledge actually gets used: you meet a symptom, not a chapter. Expect a handful per deck, and do not skip them because the source never raised them.
+
 **Granularity rule:** one card = one *questionable* idea. If a term, a unit, and a law appear together, that is **three** cards, not one “voltage/current/resistance” mega-card (mega-cards cause interference and half-right grading). Count follows concepts: a dense chapter is routinely **25–40 cards**.
 
 **Worked-number cards:** for every formula, add a card that plugs in **real values** and shows the result, plus a contrast of extremes (e.g. 1.5 V through air → R huge → I ≈ 0; through a copper short → R tiny → I huge). Numbers make the model load-bearing.
@@ -299,6 +310,8 @@ For the **deck**:
 2. At least some **why** and **contrast** cards, not only terms.  
 3. No two cards that blur into each other without a sharp difference.  
 4. **Coverage:** for a technical chapter, did the sweep hit every key term, unit, quantity, component, law (with a worked-number card), and analogy — plus one overview and one purpose card?  
+4a. **Second pass done?** At least a few cards where the front is a **wrong belief**, a **symptom the learner will see**, or a **real situation** — including ones the source never mentions. A deck with none of these explains well and prepares nobody.  
+4b. **Length varies?** If every card is the same size, the one-line ideas got padded. Check that the simplest facts got the shortest answers.  
 5. HTML file opens locally; no external assets; every card has Copy.
 
 ---

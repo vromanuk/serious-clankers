@@ -467,6 +467,77 @@ A: You don't call unlock — you let **scope** do it. `lock()` returns a **Mutex
 So the lock can't be forgotten. Watch the scope, though: `while let Ok(job) = rx.lock().unwrap().recv()` holds the guard for the whole loop body, serializing everyone; `let job = rx.lock().unwrap().recv().unwrap();` drops the temporary guard immediately, freeing the mutex before the work runs.
 ```
 
+### D18. Misconception (ask the wrong question)
+
+The strongest card type for a widely misunderstood idea. The front repeats the false belief as if it were reasonable; the back rejects it in the first word.
+
+```text
+Q: How many bits is **Unicode**?
+
+A: **None — Unicode is not an encoding.** Unicode is a big table mapping characters to numbers. The **UTF** encodings (UTF-8, UTF-16, UTF-32) are what say how those numbers turn into bits.
+
+So "how many bits" is only answerable once you name the encoding: in UTF-32 always 32, in UTF-8 anywhere from 8 to 32.
+```
+
+**Why it beats a correct explanation elsewhere:** a card that says "Unicode assigns numbers, encodings assign bytes" teaches the fact. This one makes the learner *reject* the belief they arrived with. Being told the right answer and having to reject the wrong one are different acts of memory.
+
+---
+
+### D19. Symptom → diagnosis (put the broken thing on the front)
+
+```text
+Q: You open a document and it reads:
+
+ÉGÉìÉRÅ[ÉfÉBÉìÉOÇÕìÔÇµÇ≠Ç»¢
+
+What is wrong?
+
+A: **The program reading it assumed the wrong encoding.** That is the one and only cause — the bytes are almost certainly fine.
+
+Nothing is corrupted and nothing needs repairing at the source. The text was written with one table and is being read with another, so each byte gets looked up in the wrong row. Point the reader at the right encoding and the text comes back intact.
+```
+
+**Principle:** the learner meets a symptom, not a chapter. Train the recognition, not only the theory.
+
+---
+
+### D20. Real bug from outside the source
+
+Nothing in the book mentions databases. That is not a reason to skip it.
+
+```text
+Q: My site is UTF-8 end to end — the app handles UTF-8 and stores UTF-8 — and it works fine, but the database admin page shows garbled text. What is going on?
+
+A: **The database is set to latin-1 while the app speaks UTF-8.**
+
+The app writes UTF-8 bytes, the database stores them without complaint, and reading them back through the app works because the same wrong assumption cancels out. The admin interface is the one place that honestly applies the database's declared encoding — so it is the only thing telling you the truth.
+```
+
+**Principle:** cards should come from where the learner will actually stand, not only from where the author stood.
+
+---
+
+### D21. One-line anchors (do not pad these)
+
+Some ideas are one line. Making them four paragraphs hides which ideas are hard.
+
+```text
+Q: How many bits is **ASCII**?
+A: **7 bits = 1 character.**
+```
+
+```text
+Q: **UTF-32**
+A: The simplest encoding: every character in **32 bits**, so the encoding *is* the code point. Downside: bloated — four bytes for a letter that needs one.
+```
+
+```text
+Q: **Unicode** vs **ASCII**
+A: **ASCII is an English-language subset of Unicode** — every ASCII character exists in Unicode, at the same number.
+```
+
+**Principle:** length follows the idea. A deck of uniformly moderate cards has no anchors and flattens the difference between a hard idea and a small one.
+
 ---
 
 ## E. Mini-deck sketch (how many of each)

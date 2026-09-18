@@ -17,10 +17,8 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 
 - **Read-only** unless the user explicitly asked to fix.
 - Run stages **1→9 always**, in report order. Never freestyle a product essay first. **Do not skip** unit-tests (stage 4) — it is not optional depth under testability.
-- **Execution mode (prefer subagents, never block on them):**
-  - **With subagents:** one no-edit subagent per stage; at most **3** open at once; rolling spawn / wait / collect / refill; drain before handoff.
-  - **Without subagents (or capacity too low):** run every stage **in this same session**, in order 1→9, still loading each stage `SKILL.md` and keeping stage boundaries. Same report shape. Do not invent a one-lens freestyle essay.
-- **Coordinator** (same either mode): reject weak, preference-only, or evidence-free findings; label facts vs assumptions.
+- **Execution:** run the full review **in this same session**. Do not spawn subagents. Load each stage `SKILL.md`, keep stage boundaries, same report shape. Do not invent a one-lens freestyle essay.
+- **Coordinator:** reject weak, preference-only, or evidence-free findings; label facts vs assumptions.
 - Findings: numbered issues with evidence; **LETTER options** only for material design forks (real alternatives — no “do nothing”). Per option: what / pros / cons / gain / worse when. No time estimates.
 - Ask before implementing fixes.
 - Deterministic tools (`rustfmt`, `clippy`, tests) are validation notes — not stages and not taste debates.
@@ -88,44 +86,12 @@ Material design forks: NUMBER the issue, then LETTER real options (recommended f
 
 1. **Snapshot** — base/dirty tree, real need (mark assumed if needed), non-goals, changed files, validation commands available  
 2. **Load** each stage `SKILL.md` (and that stage’s `references/` as the stage says). Do not skip a stage because the slice “looks safe.”  
-3. **Choose mode** — subagents if available; else same-session sequential stages  
-4. **Run stages 1→9** — subagent-per-stage (max 3 concurrent) **or** sequential in this window  
-5. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
-6. **Optional validation note** — smallest relevant checks; not a tenth stage  
-7. **Handoff** — one merged report; do not implement unless asked  
+3. **Run stages 1→9** in this session — sequential, one stage at a time, no spawned agents  
+4. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
+5. **Optional validation note** — smallest relevant checks; not a tenth stage  
+6. **Handoff** — one merged report; do not implement unless asked  
 
 One full pass unless the user asks for re-review after fixes. Not an implement→review loop.
-
-## Stage subagent prompt
-
-```markdown
-Review only. Do not edit. Return findings only for this one stage.
-
-Stage: <1-9 name>
-Stage contract (full text of the stage SKILL.md):
-<paste stage SKILL.md>
-
-Care priority (highest first): real contract → decision testability → clarity → small surface → meaning-DRY → perf last by default.
-
-User goal / real need: <sentence; mark assumed if needed>
-Scope: <base, changed files>
-Non-goals: <or none>
-Intentional tradeoffs: <or none>
-Validation already run: <or not run>
-Stage reference paths (read if stage says so): <list from that stage’s SKILL>
-
-Rules:
-- Stay inside this stage’s Do / Do not.
-- Findings need path:line (or command/artifact locator) and evidence labels.
-- Hard-rule IDs only in stage 9, from hard-rules.md — do not invent IDs.
-- No time estimates. No implementing.
-- If no material concerns: `none` plus one-line why.
-
-Output:
-- Section title as required by the stage skill
-- Zero or more concern lines in skeptic format
-- For material design forks only: NUMBER + LETTER options
-```
 
 ## Handoff report
 
@@ -153,16 +119,14 @@ Real need: …
 (ordered by gain and risk of leaving as-is; ask what to implement)
 ```
 
-Final line: `skeptic: complete` or `skeptic: blocked` (scope/need missing — not “no subagents”).  
-Note in the report which mode ran: `mode: subagents` or `mode: same-session`.
+Final line: `skeptic: complete` or `skeptic: blocked` (scope/need missing).
 
 ## Do not
 
 - Freestyle product essay that skips the nine stage contracts  
 - Skip unit-tests stage or fold it silently into testability  
-- Refuse to run only because subagents are unavailable  
+- Spawn subagents for stages  
 - “Do nothing” as a design option  
 - Implement without asking  
 - LLM as formatter/linter  
 - Invent hard-rule IDs  
-- When subagents exist: collapse stages into one subagent “to save time”  

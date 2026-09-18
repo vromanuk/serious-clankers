@@ -2,7 +2,7 @@
 
 ## Intent
 
-Skeptic is a standalone read-only multi-stage code review, Rust-first. It snapshots scope and real need, always runs nine fixed stages (purpose → architecture → testability → unit-tests → observability → comments → naming → conventions → hard-rules) via one no-edit subagent each (or same-session sequential), coordinates findings, and hands off a single report. It does not implement fixes unless asked and is not an implement→fix→verify loop.
+Skeptic is a standalone read-only multi-stage code review, Rust-first. It snapshots scope and real need, always runs nine fixed stages (purpose → architecture → testability → unit-tests → observability → comments → naming → conventions → hard-rules) in the current session without spawning subagents, coordinates findings, and hands off a single report. It does not implement fixes unless asked and is not an implement→fix→verify loop.
 
 ## Triggers
 
@@ -23,15 +23,15 @@ The agent SHALL always run stages purpose, architecture, testability, unit-tests
 - **WHEN** skeptic runs
 - **THEN** the handoff contains all nine sections in order (findings or N/A with reason each), including `## 4. Unit tests`
 
-### Behavior: Prefer subagents; fall back same session
+### Behavior: Same-session, no spawned agents
 
-The agent SHALL prefer one no-edit subagent per stage with at most three open at once. When subagents are unavailable or capacity is too low, the agent SHALL run stages 1→9 sequentially in the same session, still loading each stage contract, and SHALL NOT freestyle a one-lens product essay. The agent SHALL NOT block the review solely for lack of subagents.
+The agent SHALL run stages 1→9 in the current session without spawning subagents, still loading each stage contract, and SHALL NOT freestyle a one-lens product essay.
 
-#### Scenario: Subagents unavailable
+#### Scenario: Review requested
 
-- **GIVEN** the harness cannot open no-edit subagents
+- **GIVEN** a review request and a harness that can spawn subagents
 - **WHEN** skeptic runs
-- **THEN** the agent completes all nine stages in-session, reports `mode: same-session`, and does not refuse only because subagents are missing
+- **THEN** the agent completes all nine stages in this session and does not spawn subagents
 
 ### Behavior: Evidence-backed coordination
 

@@ -80,7 +80,7 @@ Helpers are fine for **boring** defaults (`newCalculator()`, blank fixtures). Th
 | Scenario helpers / DRY fixtures that hide the case | Unclear failures; helper bugs mask product bugs |
 | Over-mocking internal modules | Tests lock implementation, not behavior |
 | Order-dependent tests / shared mutable globals | Flakes; hard to run alone |
-| Sleeps for “eventual” success | Flakes; prefer fake clocks / pure cores |
+| Sleeps or spins on the wall clock for “eventual” success | Slow and flaky. Hard ban `HR-sleep-in-tests`: fake clock or wait on the event. A comment does not make the sleep ok |
 | Snapshot of entire huge unstable output without discipline | Constant golden churn |
 
 ---
@@ -175,7 +175,7 @@ For **benches**: unit-test SQL builders and pure window math; don’t replace A/
 | **Unit vs real-world boundary** | Anything that hits network, real DB, real filesystem, live services, or binds ports is **integration** — keep those few and separate from pure unit tests of thinking code. |
 | **Don’t mix suites** | Don’t bury pure unit cases inside a suite that only exists to do real IO (and vice versa). |
 | **Independent tests** | Each test runs alone and in any order; no relying on another test’s side effects. |
-| **Avoid flaky timing** | Prefer fake clocks / pure cores over `sleep`. If a timing wait is truly needed, name and comment why, and use coarse granularity. |
+| **No sleep in tests** | Hard ban `HR-sleep-in-tests`. Do not `sleep` or spin on the wall clock, and do not wait out a production backoff. Pass time in, advance a fake clock, or wait on the event. A comment does not make a sleep ok. |
 | **Obvious test code** | Prefer clear, slightly longer tests over clever test-only frameworks that hide the behavior under test. |
 | **Test-only hooks stay narrow** | Don’t widen the public API only so tests can poke internals; keep test seams small and hard to misuse in prod. |
 | **Public surface deserves tests** | If something is part of the unit’s real contract for callers, prefer an explicit test; if you wouldn’t test it, question whether it should be public. |
@@ -191,7 +191,8 @@ For **benches**: unit-test SQL builders and pure window math; don’t replace A/
 4. **DAMP?** Important inputs and expected outcomes visible in the body?  
 5. Wide input space or long-lived state → consider **property / sequence + invariant**.  
 6. Stable complex blob → consider **snapshot** with normalization.  
-7. New behavior → new test (`HR-new-behavior-no-test` for thinking code).
+7. New behavior → new test (`HR-new-behavior-no-test` for thinking code).  
+8. No sleep or wall-clock spin (`HR-sleep-in-tests`).
 
 ---
 

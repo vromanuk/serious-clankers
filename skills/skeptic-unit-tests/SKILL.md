@@ -31,6 +31,7 @@ This stage **always runs** in the skeptic pipeline. It is not optional depth und
    - DAMP failures: case buried in helpers / silent `setUp` / `runScenario` as the whole test  
    - logic in tests that reimplements production  
    - over-mocked internals; weak failure messages  
+   - sleep, or a spin on the wall clock, inside a test — note `HR-sleep-in-tests` here; stage 9 records the blocker. A comment is not a fix  
 3. Flag **missing** unit coverage when thinking-code / pure contracts gained behavior and no public-API unit test was added (overlap with testability — report craft + gap here; pure-vs-shell placement stays stage 3).  
 4. When tests are in scope: `unit-tests: ok` (one line) or findings.  
 5. When **no** test files and **no** new pure behavior in the diff: `none` with one-line why (still run the stage — do not skip silently).  

@@ -769,6 +769,7 @@ When reviewing or writing unit tests, ask:
 8. **Failure message?** Expected vs actual clear?  
 9. **DAMP?** Can you understand the case without opening test helpers / distant setUp? Important values in the body?  
 10. **New behavior covered?** Feature/bugfix added tests without rewriting the world?  
+11. **No sleep?** The test does not `sleep` or spin on the wall clock, and does not wait out a production backoff (`HR-sleep-in-tests`). Pass time in, advance a fake clock, or wait on the event.  
 
 ---
 
@@ -779,6 +780,7 @@ When reviewing or writing unit tests, ask:
 | Thinking code vs shell (what is easy to unit-test) | `skeptic-testability/references/pure-core.md` |
 | Property / snapshot **when** | `skeptic-testability/references/testing.md` (still obey public-API + unchanging + DAMP rules) |
 | Hard ban: new thinking behavior without tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-new-behavior-no-test` |
+| Hard ban: sleep or wall-clock spin in tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-sleep-in-tests` |
 
 ---
 

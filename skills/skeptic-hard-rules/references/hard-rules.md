@@ -9,6 +9,7 @@ Prefer encoding as lint/CI when stable.
 | `HR-secret-in-error` | Do not echo secrets in errors/logs | Building error strings from keys/tokens; plain secrets when a secret manager exists |
 | `HR-impossible-fallback-zero` | No silent `unwrap_or(0)` / epoch on impossible calendar or invariant paths | e.g. validated date then `.unwrap_or(0)` for epoch ms |
 | `HR-new-behavior-no-test` | New behavior in thinking code without a test that asserts the contract | Diff adds decision logic, no test update |
+| `HR-sleep-in-tests` | Tests must not **sleep** or spin on wall-clock time. That wait is slow and flaky: it guesses that other work finished. Highlight it; do not add another one. A comment does not make it ok | `sleep` / `sleep_until` / `time.Sleep` / `time.sleep` / `asyncio.sleep`; test `setTimeout` or `delay` used as a wait; `while` + sleep; spin until `Instant::now()` / `Date.now()` passes a duration — in test modules, `tests/`, `*_test.go`, `test_*.py`, `*.test.*`, `*.spec.*`. Also a test that **calls** production code and waits out that code’s real sleep |
 | `HR-private-import` | Do not import another component’s private path (past its public surface) | Cross-component use of private modules / non-exported paths; not merely “missing an `internal/` folder name” |
 | `HR-io-in-decision-core` | No network/disk/env/clock/random inside pure decision helpers under review | `std::fs`, `Instant::now`, env, sockets inside functions documented as pure/thinking |
 | `HR-io-timeout` | Every **external** call / remote IO must have a **timeout or deadline** | HTTP/DB/gRPC/Redis/queue/S3/SMTP/DNS/client SDK call with no client timeout, per-request timeout, or wrapping deadline; connect-only timeout with unbounded body wait when the stack supports request timeout |
@@ -18,6 +19,58 @@ Prefer encoding as lint/CI when stable.
 | `HR-api-bool-status` | Public booleans must name a **state**, not vague `status` | Public `status: bool` (or `status: true/false` in wire JSON) for a yes/no flag |
 | `HR-api-double-negation` | Public flags must not force **double-negation** reading | Public bool `dont_*` / `do_not_*` / `no_*` where callers set `false` to allow, or pair of `no_x` flags instead of `has_x` |
 | `HR-api-name-type-mismatch` | Public name must match **what the value is** | Field named `recipe` but only an id; named `*_id` but holds a full object; singular collection path that returns a list with no list/marker |
+
+### `HR-sleep-in-tests` (detail)
+
+**Why:** A sleep, or a loop on the wall clock, picks a duration and hopes other work finished during it. Too short and the test flakes when the machine is busy. Too long and the suite gets slow enough that people stop running it. The test is not checking the event it cares about. Explaining the sleep in a comment does not fix either problem. Treat every new one as a blocker.
+
+**Invalid:**
+
+```rust
+#[tokio::test]
+async fn row_is_stored() {
+    start(job);
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    assert!(stored.load(Ordering::Relaxed));
+}
+
+#[test]
+fn retry_waits_out_the_backoff() {
+    let started = Instant::now();
+    let _ = upload_that_sleeps_on_retry();
+    assert!(started.elapsed() >= Duration::from_millis(100));
+}
+```
+
+**Valid:**
+
+```rust
+#[tokio::test(start_paused = true)]
+async fn retries_after_backoff() {
+    tokio::time::advance(backoff).await;
+    assert_eq!(attempts.load(Ordering::Relaxed), 2);
+}
+
+#[test]
+fn backoff_is_between_half_and_the_base() {
+    let delay = retry_backoff(base, 1);
+    assert!(delay >= base / 2 && delay <= base);
+}
+```
+
+Same idea outside Rust: advance a fake clock (`freezegun`, fake timers), or block on the channel / notify / join the code already signals. Assert the delay **value** when the contract is the duration, and do not wait it out.
+
+**Not a hit:**
+
+- Sleep in **production** code (retry backoff, rate limit). This ban is tests. A test that calls that path and sits through the real delay is still a hit — inject a clock, or assert the delay value.
+- `timeout(budget, event)` / `select!` where `event` is the real completion signal (channel, notify, join, response). The budget only fails the test if that signal never comes. It is not a nap before an assert.
+- A paused or fake clock and code that advances it (`tokio::time::pause`, `start_paused`, freezegun, fake timers).
+- The word “sleep” in a comment, a name, or an expected log line.
+- One `yield_now`. A loop that spins until a flag flips, or until wall time passes, **is** a hit.
+
+**Fix:** Pass time in, pause the clock and advance it, or block on the signal the code already produces. Do not lengthen the sleep. Do not keep the sleep and add a comment.
+
+**Later check:** flag `sleep` under `#[cfg(test)]` and in `tests/`. Not a lint yet.
 
 ### `HR-prefer-battle-tested-lib` (detail)
 
@@ -140,6 +193,7 @@ When adding a rule: exact signal, invalid example, valid example, prefer tool en
 | Topic | Guidance |
 |-------|----------|
 | **Ticket IDs in comments** | Prefer stating the **constraint**. Tickets OK for scars/critical bugs. Not on ordinary logic. |
+| **Production sleep** | Retry backoff and rate limits are not `HR-sleep-in-tests`. Remote IO still needs `HR-io-timeout`. |
 | **Vague but not false public names** | e.g. `get_time()` when several times exist; short `str` — **naming** stage (API Book “don’t spare letters”) |
 | **Function verb / bool predicate form** | action = verb phrase; bool = `is`/`has`/`can` — **naming** stage (`naming.md` § Function naming), not automatic HR |
 | **Shallow public surface / missing use-case orchestration** | many exported step-helpers or handler-owned workflows — **architecture** (`components.md`, `design-components`), not automatic HR |

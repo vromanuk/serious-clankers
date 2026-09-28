@@ -62,9 +62,15 @@ Portable rules for **functions and methods** (any language). Spelling style stil
 
 Aligned with widespread guides: [.NET Framework Design Guidelines](https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-type-members) (methods = verbs; bools affirmative, often `Is`/`Can`/`Has`); [Google Java Style](https://google.github.io/styleguide/javaguide.html) (methods = verbs / verb phrases); Oracle Java conventions (methods are verbs); common Python practice for predicates (`is_` / `has_` — not a PEP 8 mandate, but the usual readable form); Rust std style (`is_empty`, `is_some`, action methods as verbs).
 
-### 1. Actions start with a verb
+### 1. Every function starts with a verb
 
-A function that **does work** (computes, loads, writes, transforms, sends, cancels, …) is named with a **verb or verb phrase**. The call site should read as an action.
+A function is named with a **verb or verb phrase**. The call site reads as an action. A bare noun is a value (a type, a field, a variable), not a function.
+
+Do not drop the verb on a getter. `next_offsets()` looks like a field. `get_next_offsets()` is a function.
+
+Do not reuse a verb as a noun for a value. `resume` is a verb. `resume_offsets` does not say which offsets those are.
+
+When one type holds two different values, the function stays the verb and the argument says which value. A record offset and the next offset to read are both offsets. `commit(offsets)` can store the wrong one. `commit(next_offsets)` cannot be read as the record that finished. Bare `offsets` is not enough there. `next` is the distinction. Adding `fetch` repeats it.
 
 | Bad | Why | Better |
 |-----|-----|--------|
@@ -118,7 +124,7 @@ Also fine when they fit better: **`should_`** (policy / recommendation), **`are_
 - **Language / framework protocol names** you must implement (`fmt::Display`, `Iterator::next`, serialization hooks).  
 - **Constructors / conversions** by project idiom (`new`, `from_str`, `of`, `default`).  
 - **Operators** and symbol traits.  
-- **Project-local getters** that already follow a clear house style (e.g. Go often drops `Get` on pure accessors — match **this** codebase, don’t invent a second style).  
+- **Project-local getters** in a language whose house style drops the verb (Go often drops `Get`). Rust here does not: a getter still starts with a verb.  
 - Returning **optional / result types**, not bool — name the action or the value (`find_user`, `load_config`), not a fake `is_*`.
 
 If none of those apply and the name is still a bare noun or a non-predicate bool, **rename**.
@@ -250,7 +256,7 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 1. New/changed names: clear to a stranger?  
 2. Public too short? Local too long?  
 3. Odd abbreviations or dropped letters?  
-4. **Function that does work:** verb / verb phrase (not a bare noun)? Concrete verb (not amoeba `process` / `handle` alone)?  
+4. **Every function** starts with a verb / verb phrase (not a bare noun, not a verb reused as a noun)? Concrete verb (not amoeba `process` / `handle` alone)? If one type carries two values, does the argument say which?  
 5. **Function / field that is a bool:** affirmative predicate (`is_` / `has_` / `can_` / `should_` / …)? Reads as a yes/no at the call site?  
 6. Would a better name remove a comment that only explains the name?  
 7. Same style as the rest of the file?  

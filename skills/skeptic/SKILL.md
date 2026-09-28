@@ -58,6 +58,7 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 - Speculative guards with no contract  
 - Restating comments / type lines in design headers  
 - Unclear or overlong names for how widely they’re used  
+- Function named as a noun, or a verb reused as a noun (`resume_offsets` for the next offset to fetch)  
 - Helpers that only rename a loop; big functions packing several jobs  
 - Import of another component’s private surface  
 - Shared write tables across components  

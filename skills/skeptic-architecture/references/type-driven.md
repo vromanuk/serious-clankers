@@ -113,12 +113,41 @@ Same idea as Crichton’s `PrimaryColor` vs `&str`: after parse, the function ca
 
 ---
 
+## New struct vs one that already exists
+
+**Need:** a new struct only when no existing type can be reused or generalized.
+
+Before adding a struct, look in this crate’s types and in the same component. Same fields under new names is a second copy, even when one is `pub` and one is `pub(crate)`, and even when a comment says the new struct is “not” some third type.
+
+**Smell:** `KafkaRecord` (what the processor receives) repeats `BrokerRecord` (a broker record before it is registered). Topic, partition, offset, and key are the same facts. `record_offset` / `offset` and `body` / `payload` are renames. `Body` (`Payload` / `Filtered`) restates `RecordPayload` (`Payload` / `FilteredPayload`). The same field list also sits on `PollingEvent::Record`. The only field `BrokerRecord` does not have is `record_registration`.
+
+```text
+BrokerRecord                         KafkaRecord
+  topic: String                        topic: String
+  partition: i32                       partition: i32
+  offset: i64                          record_offset: i64
+  key: Vec<u8>                         key: Vec<u8>
+  payload: RecordPayload               body: Body
+                                       record_registration: RecordRegistration
+```
+
+Highlight this. Do not decide it off-stage. The finding offers:
+
+- **Reuse.** Keep `BrokerRecord` (or the `PollingEvent` record). Carry `record_registration` beside it after register, instead of copying topic, partition, offset, key, and body.  
+- **Generalize.** One record type and one payload enum. The processor value is that record plus registration. `Filtered` and `FilteredPayload` are one variant.  
+- **Keep both** only if a named fact would be a lie on the earlier type. Registration is not a broker record yet — that can be the reason. Renaming fields is not. If this option wins, the finding says the fact in one sentence. A comment that only says “not a row-mapping record” does not.
+
+**Not a flag:** `Registered { record: BrokerRecord, registration: RecordRegistration }` — that reuses the record. Two structs that share one or two incidental fields but not the concept. A newtype that exists only to enforce an invariant the other type does not have.
+
+---
+
 ## What *not* to do
 
 - Newtype every `Vec` when empty is a valid **inventory** outcome.  
 - Typestate for a two-step script that never returns mid-protocol.  
 - Non-empty success type **and** a second free `require_*` that still takes bare `Vec` (undermines the type).  
-- Copy-pasted error strings instead of one constructor.
+- Copy-pasted error strings instead of one constructor.  
+- A second struct that copies an existing one field-for-field under new names. Generalize or reuse; do not keep the copy without naming the fact that would be a lie if they were one type.
 
 ---
 
@@ -126,4 +155,5 @@ Same idea as Crichton’s `PrimaryColor` vs `&str`: after parse, the function ca
 
 - `type-driven: ok` — e.g. “`NonEmptyParquetFiles` forces empty fail at list/resolve; generate reuse stays on `Vec`.”  
 - Finding: “empty check only in comments / second helper; success type still allows empty.”  
-- Finding: “parallel `Option`s for exclusive modes; encode as enum at decide site.”
+- Finding: “parallel `Option`s for exclusive modes; encode as enum at decide site.”  
+- Finding: “new `KafkaRecord` repeats `BrokerRecord` (topic, partition, offset, key, payload). Options: reuse and carry registration beside it; generalize to one record and one payload enum; keep both only because registration does not exist before register.”

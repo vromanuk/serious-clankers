@@ -22,7 +22,7 @@ description: >
 2. `../design-components/references/guide.md` — when designing/growing a component interior (orchestration + sans-IO)  
 3. `../design-components/references/philosophy-of-design.md` — when shallow vs deep face, leakage, or pass-through APIs are in scope  
 4. `../skeptic-testability/references/pure-core.md` — when pure vs IO placement is in scope  
-5. `references/type-driven.md` — type-boundary samples when APIs/results change  
+5. `references/type-driven.md` — type-boundary samples when APIs/results change, and when the diff adds a struct  
 6. `references/rust-apis.md` — misuse-resistant API craft  
 
 ## Do
@@ -61,7 +61,21 @@ description: >
 
 **Flag:** silent empty success; optional fields that only make sense together; duplicate empty-checks with the same string.
 
-When APIs/results changed, include `type-driven: ok` (what the type forces) or type-driven findings.
+### New struct vs one that already exists
+
+When the diff **adds a struct** (or a payload enum), look for an existing struct or enum variant in this crate — especially under `types` — with the same role and the same fields under different names.
+
+**Flag it.** Do not treat a doc comment that distinguishes the new struct from some *other* type as enough. Do not pick the merge silently. The finding names both types and gives letter options:
+
+- **Reuse** the existing type. Put the extra fact beside it, not in a second copy of every field.  
+- **Generalize** the existing type so both stages use it (one record, one payload enum).  
+- **Keep both** only when collapsing them would lie. Name the fact that must not exist on the earlier type. Renaming `offset` to `record_offset`, or `payload` to `body`, is not that fact.
+
+Detail and the broker-record example: `references/type-driven.md` § New struct vs one that already exists.
+
+**Not a flag:** a wrapper that holds the existing type plus one new fact; two structs that share a word but not the fields; a newtype whose only job is an invariant the other type does not have.
+
+When APIs/results changed, or a struct was added, include `type-driven: ok` (what the type forces, and that no existing type was copied) or type-driven findings.
 
 ### Findings
 

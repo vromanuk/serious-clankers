@@ -61,6 +61,7 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 - Function named as a noun, or a verb reused as a noun (`resume_offsets` for the next offset to fetch)  
 - Ambiguous short variable (`list`, `stale`, `read`) that does not say which thing  
 - Type or value named for the episode or the decision (`UnfinishedAfterRevoke`, `IgnoredFinish`) instead of the thing (`UnfinishedRecords`)  
+- New struct that repeats an existing struct or enum variant under new field names, instead of reusing or generalizing it  
 - Helpers that only rename a loop; big functions packing several jobs  
 - Import of another component’s private surface  
 - Shared write tables across components  

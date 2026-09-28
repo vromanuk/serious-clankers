@@ -47,13 +47,19 @@ The agent SHALL treat job-shaped components (public surface at the component bou
 
 ### Behavior: Type-driven boundaries
 
-When APIs or shared results change, the agent SHALL check whether callers can forget a real decision, and SHALL report `type-driven: ok` or type-driven findings.
+When APIs or shared results change, the agent SHALL check whether callers can forget a real decision, and SHALL report `type-driven: ok` or type-driven findings. When the diff adds a struct, the agent SHALL also check whether an existing struct or enum variant already carries those fields, and SHALL flag a near-copy with reuse / generalize / keep-both options.
 
 #### Scenario: Empty list as silent success
 
 - **GIVEN** success type is a bare list while product forbids empty
 - **WHEN** reviewing architecture
 - **THEN** the agent flags the boundary and prefers a type that forces the contract
+
+#### Scenario: New struct repeats an existing one
+
+- **GIVEN** a diff adds a struct whose fields match an existing struct or enum variant under different names (for example `KafkaRecord` repeating `BrokerRecord`: topic, partition, offset, key, and payload, plus registration)
+- **WHEN** reviewing architecture
+- **THEN** the agent flags both types and offers reuse, generalize, or keep both. Keep-both is allowed only when the finding names the fact that would be a lie if they were one type. A comment that distinguishes the new struct from some other type is not that fact. A wrapper that holds the existing type plus the extra field is not this finding.
 
 ## Constraints
 

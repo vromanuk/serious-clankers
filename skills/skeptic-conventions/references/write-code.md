@@ -221,7 +221,17 @@ can_retry(error)
 
 Not `ready()`, `check_valid()`, or a noun that happens to return `bool`. Prefer positive form; invert at the call site (`if !is_enabled`).
 
-Full rules, tables, and narrow exceptions: `skeptic-naming/references/naming.md` § Function naming. Review stage: **skeptic-naming**.
+**Values (variables, fields, parameters)** — say which thing. A short word that could mean several things is not a name, even on a local.
+
+```text
+closed_windows    not list
+stale_resume      not stale
+record_bytes      not read
+```
+
+`read` is a verb. A variable is a noun. A bare adjective (`stale`) needs its noun. Loop indices `i` / `n` can stay short. Do not explain a vague name with a comment — rename it.
+
+Full rules: `skeptic-naming/references/naming.md` § Variable names and § Function naming. Review stage: **skeptic-naming**.
 
 If a `///` only restates what the name should have said, or is required for the reader to know the verb / that it is a yes-no, **rename the function** instead of padding the comment. Comments remain for contracts, hazards, and non-obvious *why* — not for supplying a missing verb.
 

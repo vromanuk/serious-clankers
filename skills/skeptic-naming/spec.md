@@ -13,7 +13,13 @@ Stage 7 of skeptic: judge whether names fully say what items are or do, without 
 
 ### Behavior: Clear names for the scope
 
-The agent SHALL flag names that fail to say their purpose for how widely they are used, and names that are overlong or only repeat local context. The agent SHALL prefer clear names matched to scope and SHALL not force another language’s spelling style over the project’s style. For functions/methods, the agent SHALL apply stronger rules: work functions named as verb phrases (not bare nouns or amoeba verbs alone); boolean returns named as affirmative predicates (`is_` / `has_` / `can_` or clear equivalents). For public/API surfaces, the agent SHALL also apply stronger rules: explicit side effects, units/standards in names, concrete names (not bare get/process), naming that matches type kind, matching pair words, and no double-negative flags.
+The agent SHALL flag names that fail to say which thing they are, including ambiguous locals (`list`, `stale`, `read`), and names that are overlong or only repeat local context. A loop index `i` / `n` is not that finding. The agent SHALL prefer clear names matched to scope and SHALL not force another language’s spelling style over the project’s style. For functions/methods, the agent SHALL apply stronger rules: work functions named as verb phrases (not bare nouns or amoeba verbs alone); boolean returns named as affirmative predicates (`is_` / `has_` / `can_` or clear equivalents). For public/API surfaces, the agent SHALL also apply stronger rules: explicit side effects, units/standards in names, concrete names (not bare get/process), naming that matches type kind, matching pair words, and no double-negative flags.
+
+#### Scenario: Ambiguous short variable
+
+- **GIVEN** a local named `list`, `stale`, or `read` where more than one meaning fits
+- **WHEN** reviewing naming
+- **THEN** the agent flags it and prefers a name that says which thing (e.g. `closed_windows`, `stale_resume`, `record_bytes`). A loop index `i` is not this finding. A comment that explains the short name is not a fix.
 
 #### Scenario: Cryptic public name
 

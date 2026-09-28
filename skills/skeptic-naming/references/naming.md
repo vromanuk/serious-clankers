@@ -18,7 +18,8 @@ Rules are generalizations — don’t apply them blindly if they make an unusabl
 2. **Don’t shorten public names just to save space** — clarity wins for anything others call.  
 3. **How public it is**  
    - Public / shared → fuller name.  
-   - Local in a tiny loop → short is fine when the context is obvious.  
+   - A local is not a license for a vague word. `list`, `stale`, and `read` stay unclear in a three-line function.  
+   - Short is fine for a loop index (`i`, `n`) when the collection name already says what is counted.  
 4. **Don’t repeat what’s already clear** — e.g. `user.id` not `user.user_id` if the type is already `User`.  
 5. **Abbreviations**  
    - Avoid ones outsiders won’t know, and don’t drop letters (`cstmr`).  
@@ -33,7 +34,8 @@ Rules are generalizations — don’t apply them blindly if they make an unusabl
 
 ```text
 proc(x)           // does what?
-tmp2, data, obj   // on something others use
+list, stale, read // which list, stale what, read as a verb or the bytes?
+tmp2, data, obj   // a bucket, not a thing
 cstmr_id          // letters deleted
 ```
 
@@ -53,6 +55,27 @@ table_name
 max_allowed_connections
 is_already_processed   // or IsAlreadyProcessed — match the language
 ```
+
+---
+
+## Variable names
+
+A variable, field, or parameter names **which thing this is**. A word that could mean several things is not a name, even when it is short and local. Make it long enough that a reader does not need the next line to guess.
+
+This is a review preference, not a hard ban. Flag it. Do not invent a second, shorter name “because it is only a local.”
+
+| Name | Why it fails | Better |
+|------|----------------|--------|
+| `list` | list of what? | `closed_windows` |
+| `stale` | stale what? a bare adjective | `stale_resume` |
+| `read` | a verb. the bytes, a bool, or the act of reading? | `record_bytes` or `is_record_read` |
+| `data`, `items`, `result`, `value`, `tmp`, `obj` | a bucket | the specific noun (`parsed_rows`, `commit_error`) |
+
+A bool that stands alone still needs a predicate (`is_` / `has_` / `can_`). `stale` is not saved by being short. `is_stale` is still weak when more than one thing in scope can be stale — say `is_stale_resume`.
+
+The name gets longer when two values could be confused, or when the scope is wider than a few lines. It does not become an essay. Do not repeat the type already written on the same line (`users: Vec<User>` does not need `list_of_user_objects`).
+
+**Not a flag:** loop index `i` / `n` when the collection name says what is counted; `ok` / `found` in a few lines where that one check is the only meaning.
 
 ---
 
@@ -254,7 +277,7 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 ## Review checklist
 
 1. New/changed names: clear to a stranger?  
-2. Public too short? Local too long?  
+2. Public too short? Local too long? Variable says **which thing** — not `list` / `stale` / `read` / `data` / `items` / `result`?  
 3. Odd abbreviations or dropped letters?  
 4. **Every function** starts with a verb / verb phrase (not a bare noun, not a verb reused as a noun)? Concrete verb (not amoeba `process` / `handle` alone)? If one type carries two values, does the argument say which?  
 5. **Function / field that is a bool:** affirmative predicate (`is_` / `has_` / `can_` / `should_` / …)? Reads as a yes/no at the call site?  
@@ -265,6 +288,7 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 ### Flag
 
 - Unclear public or module-level names  
+- Ambiguous variable, field, or parameter: `list`, `stale`, `read`, `data`, `items`, `result`, `value` — the name does not say which thing  
 - Very long names that only repeat local context  
 - `helper1`, `doStuff`, `process_data` with no real meaning  
 - Action named as a noun (`profile_credentials()`, `user_list()` as work)  
@@ -272,7 +296,7 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 - Comment only needed because the name is opaque → rename  
 - Public API smells from § Public API naming (hidden writes, bare units, vague `get`, mismatched pairs, …)  
 
-Not a flag: normal short loop indices; domain words the project already uses; protocol/constructor names from § Function naming exceptions.
+Not a flag: loop index `i` / `n`; `ok` / `found` in a few lines with one obvious meaning; domain words the project already uses; protocol/constructor names from § Function naming exceptions.
 
 ---
 

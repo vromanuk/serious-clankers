@@ -13,7 +13,13 @@ Stage 7 of skeptic: judge whether names fully say what items are or do, without 
 
 ### Behavior: Clear names for the scope
 
-The agent SHALL flag names that fail to say which thing they are, including ambiguous locals (`list`, `stale`, `read`), and names that are overlong or only repeat local context. A loop index `i` / `n` is not that finding. The agent SHALL prefer clear names matched to scope and SHALL not force another language’s spelling style over the project’s style. For functions/methods, the agent SHALL apply stronger rules: work functions named as verb phrases (not bare nouns or amoeba verbs alone); boolean returns named as affirmative predicates (`is_` / `has_` / `can_` or clear equivalents). For public/API surfaces, the agent SHALL also apply stronger rules: explicit side effects, units/standards in names, concrete names (not bare get/process), naming that matches type kind, matching pair words, and no double-negative flags.
+The agent SHALL walk the principles in `naming.md` and SHALL flag names that fail to say which thing they are, including ambiguous locals (`list`, `stale`, `read`), types named for an episode or a decision (`UnfinishedAfterRevoke`, `IgnoredFinish` — prefer `UnfinishedRecords`), and names that are overlong or only repeat local context. A loop index `i` / `n` is not that finding. A function may carry the cause (`count_unfinished_after_revoke`); the value it stores still names the thing. The agent SHALL prefer clear names matched to scope and SHALL not force another language’s spelling style over the project’s style. For functions/methods, the agent SHALL apply stronger rules: work functions named as verb phrases (not bare nouns or amoeba verbs alone); boolean returns named as affirmative predicates (`is_` / `has_` / `can_` or clear equivalents). For public/API surfaces, the agent SHALL also apply stronger rules: explicit side effects, units/standards in names, concrete names (not bare get/process), naming that matches type kind, matching pair words, and no double-negative flags.
+
+#### Scenario: Name is the episode, not the thing
+
+- **GIVEN** a type or value named `UnfinishedAfterRevoke` or `IgnoredFinish`
+- **WHEN** reviewing naming
+- **THEN** the agent flags it as ambiguous and prefers a name for what is stored (e.g. `UnfinishedRecords`). The cause may stay on the function or in a comment. An enum variant that is only the event, and holds no hidden records, is not this finding.
 
 #### Scenario: Ambiguous short variable
 

@@ -224,14 +224,16 @@ Not `ready()`, `check_valid()`, or a noun that happens to return `bool`. Prefer 
 **Values (variables, fields, parameters)** — say which thing. A short word that could mean several things is not a name, even on a local.
 
 ```text
-closed_windows    not list
-stale_resume      not stale
-record_bytes      not read
+closed_windows       not list
+stale_resume         not stale
+record_bytes         not read
+UnfinishedRecords    not UnfinishedAfterRevoke
+UnfinishedRecords    not IgnoredFinish
 ```
 
-`read` is a verb. A variable is a noun. A bare adjective (`stale`) needs its noun. Loop indices `i` / `n` can stay short. Do not explain a vague name with a comment — rename it.
+`read` is a verb. A variable is a noun. A bare adjective (`stale`) needs its noun. A type names what is stored, not when it happened or what the code decided. The cause stays on the function (`count_unfinished_after_revoke`) or in a comment. Loop indices `i` / `n` can stay short. Do not explain a vague name with a comment — rename it.
 
-Full rules: `skeptic-naming/references/naming.md` § Variable names and § Function naming. Review stage: **skeptic-naming**.
+Full rules: `skeptic-naming/references/naming.md` § Principles, § Variable names, § Name the thing, not the episode, and § Function naming. Review stage: **skeptic-naming**.
 
 If a `///` only restates what the name should have said, or is required for the reader to know the verb / that it is a yes-no, **rename the function** instead of padding the comment. Comments remain for contracts, hazards, and non-obvious *why* — not for supplying a missing verb.
 

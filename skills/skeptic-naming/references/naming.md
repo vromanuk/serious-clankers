@@ -12,6 +12,19 @@ Rules are generalizations — don’t apply them blindly if they make an unusabl
 
 ---
 
+## Principles
+
+Walk these on every new or changed name. The sections below are the detail. Flag a miss. A comment that only explains the name is not a fix.
+
+1. **Say what it is, or what it does.** Long enough that a stranger can tell. Not an essay. Not a short word that could mean several things (`list`, `stale`, `read`).  
+2. **A value names the thing, not the episode.** `UnfinishedRecords`, not `UnfinishedAfterRevoke` or `IgnoredFinish`. “After revoke” is when. “Ignored” is what the code decided. Neither says the value is records. Adding the story makes the name longer and less clear. Put the cause on the function (`count_unfinished_after_revoke`) or in a comment.  
+3. **A function starts with a verb.** Not a bare noun. Not a verb reused as a noun for a value (`resume_offsets`).  
+4. **A bool reads as a yes/no.** `is_` / `has_` / `can_`.  
+5. **Plain words.** No made-up pattern labels.  
+6. **Match this file’s spelling.** Do not import another language’s style.
+
+---
+
 ## Choosing names (any scope)
 
 1. **Purpose first** — a new reader should get the idea from the name.  
@@ -76,6 +89,21 @@ A bool that stands alone still needs a predicate (`is_` / `has_` / `can_`). `sta
 The name gets longer when two values could be confused, or when the scope is wider than a few lines. It does not become an essay. Do not repeat the type already written on the same line (`users: Vec<User>` does not need `list_of_user_objects`).
 
 **Not a flag:** loop index `i` / `n` when the collection name says what is counted; `ok` / `found` in a few lines where that one check is the only meaning.
+
+---
+
+## Name the thing, not the episode
+
+A type, field, or variable is **what is stored**. It is not the moment that produced it, and it is not the decision the code made about it.
+
+| Name | Why it fails | Better |
+|------|----------------|--------|
+| `UnfinishedAfterRevoke` | “after revoke” is when. The type holds a record count and an offset span, and the name never says records | `UnfinishedRecords` |
+| `IgnoredFinish` | “ignored” is a decision. “Finish” does not say finish of what — a record, an offset, a count, a command? | `UnfinishedRecords` |
+
+The function may carry the cause. `count_unfinished_after_revoke` is an action, and “after revoke” says when that action applies. The value it stores is still `UnfinishedRecords`.
+
+**Not a flag:** an enum variant that *is* the event, with no stored records hiding under it (`PartitionsRevoked`). If the variant holds data, name the data.
 
 ---
 
@@ -276,8 +304,8 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 
 ## Review checklist
 
-1. New/changed names: clear to a stranger?  
-2. Public too short? Local too long? Variable says **which thing** — not `list` / `stale` / `read` / `data` / `items` / `result`?  
+1. New/changed names: clear to a stranger? Walk § Principles.  
+2. Public too short? Local too long? Variable says **which thing** — not `list` / `stale` / `read` / `data` / `items` / `result`? Type or value names the thing, not the episode (`UnfinishedRecords`, not `UnfinishedAfterRevoke` / `IgnoredFinish`)?  
 3. Odd abbreviations or dropped letters?  
 4. **Every function** starts with a verb / verb phrase (not a bare noun, not a verb reused as a noun)? Concrete verb (not amoeba `process` / `handle` alone)? If one type carries two values, does the argument say which?  
 5. **Function / field that is a bool:** affirmative predicate (`is_` / `has_` / `can_` / `should_` / …)? Reads as a yes/no at the call site?  
@@ -289,6 +317,7 @@ Google-only shapes (`kConstantName`, trailing `_` on class fields, `MYPROJECT_MA
 
 - Unclear public or module-level names  
 - Ambiguous variable, field, or parameter: `list`, `stale`, `read`, `data`, `items`, `result`, `value` — the name does not say which thing  
+- Type or value named for the episode or the decision (`UnfinishedAfterRevoke`, `IgnoredFinish`) instead of the thing (`UnfinishedRecords`)  
 - Very long names that only repeat local context  
 - `helper1`, `doStuff`, `process_data` with no real meaning  
 - Action named as a noun (`profile_credentials()`, `user_list()` as work)  

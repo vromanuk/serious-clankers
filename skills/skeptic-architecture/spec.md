@@ -39,6 +39,12 @@ The agent SHALL treat job-shaped components (public surface at the component bou
 - **WHEN** reviewing architecture
 - **THEN** the agent flags missing component-level orchestration on a public job struct
 
+#### Scenario: Public data type outside types
+
+- **GIVEN** a `pub struct`, `pub enum`, or `pub type` that callers name, declared outside the crate’s `types.rs` or `types/` module (a root `pub use` does not count)
+- **WHEN** reviewing architecture
+- **THEN** the agent flags the definition site and says to add `types` if it is missing and move the type there. The job struct (`KafkaConsumer`) and a behavior trait stay with the component. A `pub(crate)` or private type stays next to its user.
+
 #### Scenario: Free functions re-pass deps
 
 - **GIVEN** several public free functions that each take the same store or client for one job

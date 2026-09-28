@@ -12,7 +12,8 @@
 
 ```text
 billing/
-  mod.rs          # public interface: pub use / pub fn / pub struct that outsiders may use
+  mod.rs          # public interface: job struct + pub use of types callers name
+  types.rs        # public data types (or types/mod.rs). Not the job struct.
   invoice.rs      # private modules (not re-exported)
   store.rs
   batch.rs
@@ -116,7 +117,7 @@ impl Billing {
     }
 }
 
-pub use rules::Invoice; // only if outsiders must name the type
+pub use types::Invoice; // definition lives in types, not beside the shell
 // store and step helpers stay private
 ```
 
@@ -134,6 +135,21 @@ billing.issue_invoice(/* … */)?;
 **Good enough:** one file component (`billing.rs`) with a small public struct and private items, if the job is small — still prefer **struct + methods** over a flat `pub` helper list.
 
 **Also fine:** multi-crate (`billing` crate, `check_engine` crate) when the boundary must be hard — same idea: crate root is the public interface.
+
+### Public data types
+
+A public **data** type callers name — `pub struct`, `pub enum`, `pub type` — is defined in that crate’s `types` module (`types.rs`, or `types/mod.rs` and files under it). If the crate has no `types` module, add one and move the type there. The crate root may `pub use` it so the short path stays.
+
+The definition site is what counts. `pub struct KafkaRecord` in `processing/listener.rs`, then `pub use` from `lib.rs`, is still outside `types`.
+
+| Stays out of `types` | Why |
+|----------------------|-----|
+| The job struct (`KafkaConsumer`, `KafkaClient`, `Billing`) | It is the component. Its methods are the use cases. |
+| A trait that is the behavior (`RecordProcessor`) | It is what the caller implements, not a data shape. |
+| `pub(crate)` and private types (`BrokerRecord`) | Only this crate uses them. They stay next to that code. |
+| A one-file script with no library surface | No module split for a one-shot. |
+
+This is one crate’s public data, not a workspace-wide types crate. Mixing unrelated jobs into one shared types crate is still the god-module smell.
 
 ---
 
@@ -213,7 +229,8 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 | **Business rules only inside SQL/HTTP with no pure core** | Hard to test; split thinking vs shell |
 | Two jobs write the same tables | Hidden coupling; hard to split |
 | Component A reaches through B to B’s private dependency | Skip levels; use the public surface |
-| “Common” bag of domain types for everything | Often a proto-god-module |
+| “Common” bag of domain types for everything | Often a proto-god-module. One crate’s own `types` module is not that — it is where **this** crate’s public data types go. A workspace-wide types crate that mixes unrelated jobs still is |
+| **Public struct/enum defined outside `types`** (`KafkaRecord` in `listener.rs`, then `pub use` from the crate root) | Callers cannot find the data type next to the others. Move the definition into `types.rs` or `types/`. Re-export from the root if the short path should stay |
 | New package theater for a one-shot script | Keep local |
 | **Missing `api/` folder** when `mod.rs` already is the surface | **Not a smell** — do not flag |
 | **Having a private `service.rs` use-case module inside a job** | **Not a smell** — that *is* the service layer idea |
@@ -237,7 +254,10 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 - Finding: “root re-exports `load_*` / `validate_*` / `write_*`; callers sequence them — fold into methods on a job struct.”  
 - Finding: “allocate workflow only lives in the HTTP handler — move orchestration onto the component struct.”  
 - Finding: “several `pub fn`s all take the same store — hold it on a public struct.”  
+- Finding: “`KafkaRecord` is declared in `processing/listener.rs` and only re-exported. Move it into `types`. Add `types.rs` or `types/mod.rs` if the crate has none.”  
 - Not a finding: “no `internal/` directory.”  
+- Not a finding: “`KafkaConsumer` stays at the component root” — that is the job struct, not a data type.  
+- Not a finding: “`BrokerRecord` is `pub(crate)` next to the shell that builds it.”  
 - Not a finding: “pure rules are free functions inside the component.”  
 
 ---

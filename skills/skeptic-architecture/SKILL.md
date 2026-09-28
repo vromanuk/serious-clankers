@@ -40,6 +40,7 @@ description: >
 9. **Compose at the edge** — app/binary/server wires components; no tangled mesh of private paths.  
 10. **Tool vs product:** small scripts stay local; no package theater for a one-shot.  
 11. When layout is in scope, report `components: ok` (one line: owners + surfaces) or layout findings with path:line.  
+12. **Public data types live in `types`.** A `pub struct`, `pub enum`, or `pub type` that callers name is defined in that crate’s `types.rs` or `types/` module. A `pub use` from another file does not count. If `types` does not exist, the finding says add it and move the type there. The crate root may re-export it so the short path stays. Detail: `references/components.md` § Public data types.  
 
 ### Type-driven contracts (when APIs/results change)
 
@@ -93,6 +94,7 @@ When APIs/results changed, or a struct was added, include `type-driven: ok` (wha
 - Demand literal `api/` / `internal/` folders when the root module already defines a clear public surface  
 - Treat “no layers” as “no public use-case orchestration on the component”  
 - Demand Cosmic/DDD folder sets or formal UoW/repository types by default  
+- Treat this crate’s `types` module as a god-module, or demand one workspace-wide `types` crate for unrelated jobs  
 
 ## Output section title
 

@@ -44,6 +44,18 @@ Depth: `skeptic-architecture` → `references/components.md`. Designing a compon
 
 ---
 
+## Design from the top
+
+Do not blurt the whole design, or the whole implementation, at once.
+
+**Wishful thinking.** Start from the behavior you wish you had. Write the high-level calls as if the pieces already exist: what goes in, what comes back, what a caller can see. The inside of a piece comes after that surface is clear — one piece at a time, not every body in the same step.
+
+A choice a caller could see (result, error, default) belongs on that surface. If it is not decided, say so and stop. Do not pick it while filling in the inside.
+
+Skip this for a local fix that adds no new behavior.
+
+---
+
 ## Language
 
 - Plain words. Prefer the common word.

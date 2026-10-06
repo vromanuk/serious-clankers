@@ -1,6 +1,7 @@
-# Layout
+# Dashboard structure
 
-Open this when sketching or reviewing the overall dashboard structure.
+Open this when sketching or reviewing the overall dashboard: sections, rows, grid, variables,
+header links, and descriptions. Each panel's own rules live in its panel file.
 
 ## The two questions
 
@@ -33,53 +34,22 @@ Stats tables:   [Relays: health | rate | upload ok % | delay | lag | trend | log
 
 Grafana's grid is 24 columns wide; one row unit is about 30 px plus an 8 px gap.
 
-- Canvas: full width (`w: 24`). Pick the height from the drawing's bottom edge plus the panel
-  header; empty space under the drawing means the panel is too tall.
-- System health: three panels of `w: 8, h: 6`, or one per component.
-- Stats tables: `h` = header + one line per row + a little room; a two-row table needs about
-  `h: 6`, a one-row table `h: 4`. A table that scrolls is squashed.
 - Collapsed rows: at most three panels per line (`w: 8` each, or `12 + 12`, or `16 + 8`). A
   line of small stat panels (`w: 3` each) next to one graph is fine.
-- Latency panel and its heatmap sit on the same line, same height.
+- Panel sizes: canvas in `canvas.md`, system health in `system-health.md`, stats tables in
+  `tables.md`, latency and heatmap in `latency.md`.
 
 ## RED inside a component row
 
-1. Rate and errors together: `"<Things>/s: success vs failure"`. Success blue, failure red.
-2. Duration: `"<Thing> duration: p50 / p95 / p99 / max"` and `"<Thing> duration heatmap"`.
+1. Rate and errors together (`rate-errors.md`).
+2. Duration: percentiles + max, and the heatmap beside it (`latency.md`).
 3. Saturation and causes: queue depth, backpressure share and reasons, in-flight vs limit,
    retries, dependency calls, storage capacity.
 
 Prefer one line per question. If a component has no histogram, say so in the row rather than
 leaving a gap.
 
-## System health
-
-Mirror the deploy view: per component, a timeseries of pods ready (blue) and expected
-(yellow line, no fill). It shows restarts, crash loops, and scale changes over the time range.
-Do not add CPU or memory here; link the pod-detail dashboard from the panel and the header.
-
-## Stats tables
-
-One row per component (or per instance of it). Columns, in this order:
-
-| Column | Content | Cell |
-|---|---|---|
-| health | worst of the component's checks: 0 OK, 1 warning, 2 error | colored background, value mapping to "● OK" / "▲ WARN" / "✗ ERROR", link to the deploy tool for that app |
-| name | plain-English component name | link to pod detail |
-| rate | processing rate (records/s, req/s) | blue |
-| errors | success % or failures/s | thresholds |
-| duration / delay | latency or "store delay" | thresholds |
-| lag | consumer lag in time | link to the consumer dashboard |
-| trend | sparkline of the rate | |
-| logs | "🔍 errors ↗" | link to the log search, filtered to the app and warning+ |
-
-Build with instant table queries, one per column, then transformations: `timeSeriesTable`
-(for the sparkline), `joinByField` on the component label, `organize` to rename, order, and
-hide helper columns (keep them for links, hide with `custom.hidden`). Map label values to
-display names with a value mapping rather than renaming in PromQL.
-
-Text-link cells: a numeric helper column with a value mapping (`range` from -1e12 to 1e12 →
-"🔍 errors ↗") plus a data link. Regex mappings do not apply to numeric cells.
+No CPU or memory panels anywhere; link the pod-detail dashboard instead.
 
 ## Variables
 
@@ -112,8 +82,3 @@ dashboard. Name links the way people say them.
 Every panel gets one or two plain sentences: what it shows, what normal looks like, what bad
 looks like. Example: "Share of time fetch was paused by backpressure while running. Shutdown is
 not counted. Sustained above 20 % means the uploaders are the limit."
-
-## Undeployed metrics
-
-When a metric arrives with a later release, keep the panel and make it read "n/a" (see
-queries.md). List those panels when reporting the dashboard, with the release that brings them.

@@ -55,7 +55,7 @@ At most **three panels per line** in a row (a line of small stat panels is fine)
 memory panels — link the pod-detail dashboard instead. Every panel gets a plain-words
 description of what it shows and what "bad" looks like.
 
-Load `references/layout.md` for grid sizes, tables, variables, header links, and descriptions.
+Load `references/structure.md` for grid sizes, variables, header links, and descriptions.
 
 ## Colors
 
@@ -97,7 +97,7 @@ text, and a layout check script.
 | 0 % success with no traffic | InfluxQL 0 / 0 = 0 | `100 * (1 - fail / total)` |
 | Age looks alarming at every close | age counts from window start | subtract the window length, show "delay" |
 
-Load `references/queries.md` for RED, latency, heatmap, status, and fallback query patterns.
+Load `references/honest-values.md` for these fixes; panel-specific queries live in the panel files.
 
 ## Metric design
 

@@ -62,6 +62,7 @@ On the generated JSON, before upload:
   middle; every arrow straight or with bend points; every arrow long enough to see. See
   canvas.md for the script.
 - Every canvas field referenced by an element is produced by some query.
+- Run the Check section of each panel file you used (canvas, tables, latency, rate and errors).
 
 ## Screenshot
 

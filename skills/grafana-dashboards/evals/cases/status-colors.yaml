@@ -1,0 +1,33 @@
+behavior: status-colors
+prompt: |
+  Tidy up the colors of the "Relay health" stat in dashboard.json and write it back.
+setup: |
+  cat > dashboard.json <<'EOF'
+  {
+    "uid": "relay",
+    "title": "Relay",
+    "panels": [
+      {"id": 1, "type": "stat", "title": "Relay health",
+       "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+       "targets": [{"refId": "A", "expr": "max(relay_status)"}],
+       "fieldConfig": {"defaults": {
+         "thresholds": {"mode": "absolute", "steps": [
+           {"color": "green", "value": null},
+           {"color": "red", "value": 2}
+         ]}}}}
+    ]
+  }
+  EOF
+checks:
+  - shell: |
+      python3 - <<'EOF'
+      import json
+      panel = json.load(open("dashboard.json"))["panels"][0]
+      steps = panel["fieldConfig"]["defaults"]["thresholds"]["steps"]
+      colors = " ".join(str(s["color"]).lower() for s in steps)
+      assert "green" not in colors and "#73bf69" not in colors, colors
+      EOF
+  - judge: >
+      The threshold steps go blue for OK (base), orange for warning, and red for error; no
+      green is used anywhere in the panel.
+timeout: 300

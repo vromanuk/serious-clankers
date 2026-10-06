@@ -1,0 +1,26 @@
+behavior: red-per-component
+prompt: |
+  Review dashboard.json (our uploader dashboard) and fix whatever is off with the upload
+  panels. Write the fixed dashboard back to dashboard.json.
+setup: |
+  cat > dashboard.json <<'EOF'
+  {
+    "uid": "uploader",
+    "title": "Uploader",
+    "panels": [
+      {"id": 1, "type": "timeseries", "title": "Uploads/s",
+       "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+       "targets": [{"refId": "A", "expr": "sum by (container) (rate(uploads_total{outcome=\"success\"}[$__rate_interval]))"}]},
+      {"id": 2, "type": "timeseries", "title": "Upload failures/s",
+       "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+       "targets": [{"refId": "A", "expr": "sum by (container) (rate(uploads_total{outcome=\"failure\"}[$__rate_interval]))"}]}
+    ]
+  }
+  EOF
+checks:
+  - shell: python3 -c 'import json; json.load(open("dashboard.json"))'
+  - judge: >
+      dashboard.json has one timeseries panel that plots both upload successes and upload
+      failures (titled like "Uploads/s: success vs failure"), with success colored blue and
+      failure colored red; the separate failures-only panel is gone.
+timeout: 300

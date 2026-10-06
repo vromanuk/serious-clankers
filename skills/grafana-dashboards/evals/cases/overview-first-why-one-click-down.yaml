@@ -1,0 +1,42 @@
+behavior: overview-first-why-one-click-down
+prompt: |
+  The "Kafka Consumer" row in dashboard.json feels cluttered. Clean up its layout and write
+  the result back to dashboard.json.
+setup: |
+  cat > dashboard.json <<'EOF'
+  {
+    "uid": "relay",
+    "title": "Relay",
+    "panels": [
+      {"id": 10, "type": "row", "title": "Kafka Consumer", "collapsed": true,
+       "gridPos": {"x": 0, "y": 0, "w": 24, "h": 1},
+       "panels": [
+         {"id": 11, "type": "timeseries", "title": "Records/s: success vs failure", "gridPos": {"x": 0, "y": 1, "w": 6, "h": 8},
+          "targets": [{"refId": "A", "expr": "sum(rate(kafka_consumer_records_total[$__rate_interval]))"}]},
+         {"id": 12, "type": "timeseries", "title": "Commit duration: p50 / p95 / p99 / max", "gridPos": {"x": 6, "y": 1, "w": 6, "h": 8},
+          "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(kafka_consumer_commit_duration_seconds_bucket[$__rate_interval])))"}]},
+         {"id": 13, "type": "heatmap", "title": "Commit duration heatmap", "gridPos": {"x": 12, "y": 1, "w": 6, "h": 8},
+          "targets": [{"refId": "A", "expr": "sum by (le) (increase(kafka_consumer_commit_duration_seconds_bucket[$__rate_interval]))"}]},
+         {"id": 14, "type": "timeseries", "title": "CPU", "gridPos": {"x": 18, "y": 1, "w": 3, "h": 8},
+          "targets": [{"refId": "A", "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{container=\"relay\"}[5m]))"}]},
+         {"id": 15, "type": "timeseries", "title": "Memory", "gridPos": {"x": 21, "y": 1, "w": 3, "h": 8},
+          "targets": [{"refId": "A", "expr": "sum by (pod) (container_memory_working_set_bytes{container=\"relay\"})"}]}
+       ]}
+    ]
+  }
+  EOF
+checks:
+  - shell: |
+      python3 - <<'EOF'
+      import json, collections
+      dashboard = json.load(open("dashboard.json"))
+      row = next(p for p in dashboard["panels"] if p.get("type") == "row" and p["title"] == "Kafka Consumer")
+      inner = row.get("panels", [])
+      assert not any(p["title"].strip().lower() in ("cpu", "memory") for p in inner), "CPU/memory panel kept"
+      lines = collections.Counter(p["gridPos"]["y"] for p in inner if p["gridPos"]["w"] > 3)
+      assert all(count <= 3 for count in lines.values()), lines
+      EOF
+  - judge: >
+      The CPU and Memory panels are replaced by a link to a pod-detail dashboard (a dashboard
+      link or panel link), not by other resource panels.
+timeout: 300

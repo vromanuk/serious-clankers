@@ -1,0 +1,52 @@
+behavior: architecture-canvas
+prompt: |
+  The arrows on the architecture canvas in dashboard.json look skewed. Fix the drawing and
+  write it back to dashboard.json.
+setup: |
+  cat > dashboard.json <<'EOF'
+  {
+    "uid": "relays",
+    "title": "Relays",
+    "panels": [
+      {"id": 1, "type": "canvas", "title": "Architecture",
+       "gridPos": {"x": 0, "y": 0, "w": 24, "h": 14},
+       "options": {"root": {"type": "frame", "name": "root", "elements": [
+         {"type": "rectangle", "name": "site", "config": {"text": {"mode": "fixed", "fixed": "site"}},
+          "placement": {"left": 40, "top": 20, "width": 200, "height": 100},
+          "connections": [{"targetName": "storage", "source": {"x": 1, "y": 0}, "target": {"x": -1, "y": 1},
+                           "path": "straight"}]},
+         {"type": "rectangle", "name": "device", "config": {"text": {"mode": "fixed", "fixed": "device"}},
+          "placement": {"left": 40, "top": 300, "width": 200, "height": 100},
+          "connections": [{"targetName": "storage", "source": {"x": 1, "y": 0}, "target": {"x": -1, "y": -1},
+                           "path": "straight"}]},
+         {"type": "cloud", "name": "storage", "config": {"text": {"mode": "fixed", "fixed": "storage"}},
+          "placement": {"left": 600, "top": 20, "width": 200, "height": 100},
+          "connections": []}
+       ]}}}
+    ]
+  }
+  EOF
+checks:
+  - shell: |
+      python3 - <<'EOF'
+      import json
+      canvas = next(p for p in json.load(open("dashboard.json"))["panels"] if p["type"] == "canvas")
+      elements = canvas["options"]["root"]["elements"]
+      by_name = {e["name"]: e for e in elements}
+      assert len(by_name) == len(elements), "duplicate element names"
+      def point(element, anchor):
+          p = element["placement"]
+          return (p["left"] + (anchor["x"] + 1) / 2 * p["width"], p["top"] + (1 - anchor["y"]) / 2 * p["height"])
+      for element in elements:
+          for c in element.get("connections", []):
+              target = by_name[c["targetName"]]
+              assert c["target"]["x"] == 0 or c["target"]["y"] == 0, ("target not an edge middle", element["name"])
+              start, end = point(element, c["source"]), point(target, c["target"])
+              straight = abs(start[0] - end[0]) < 2 or abs(start[1] - end[1]) < 2
+              assert straight or c.get("vertices"), ("diagonal arrow", element["name"])
+      EOF
+  - judge: >
+      Arrows are dashed, animated, and colored by a status field; boxes use full plain-English
+      names (for example "Site Signals Relay" rather than "site"); every arrow is horizontal,
+      vertical, or a right-angle elbow into the middle of an edge.
+timeout: 300

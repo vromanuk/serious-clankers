@@ -1,0 +1,46 @@
+behavior: metric-design-that-can-be-graphed
+prompt: |
+  We want to build a Grafana dashboard on the metrics in src/metrics.rs. Review them first
+  and write your findings to REVIEW.md.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  cat > src/metrics.rs <<'EOF'
+  use opentelemetry::metrics::Meter;
+  use opentelemetry::KeyValue;
+
+  pub struct Metrics {
+      rows_written: opentelemetry::metrics::Counter<u64>,
+      bytes_consumed: opentelemetry::metrics::Gauge<u64>,
+  }
+
+  impl Metrics {
+      pub fn new(meter: &Meter) -> Self {
+          Self {
+              rows_written: meter.u64_counter("rows_written_total").build(),
+              // Running total of bytes read from the partition since start.
+              bytes_consumed: meter.u64_gauge("partition_total_bytes_consumed").build(),
+          }
+      }
+
+      pub fn record_rows(&self, instance_id: uuid::Uuid, rows: u64) {
+          self.rows_written.add(rows, &[KeyValue::new("instance_id", instance_id.to_string())]);
+      }
+
+      pub fn record_bytes(&self, total_so_far: u64) {
+          self.bytes_consumed.record(total_so_far, &[]);
+      }
+  }
+  EOF
+  git add -A && git commit -qm "metrics"
+checks:
+  - file_exists: REVIEW.md
+  - shell: git diff --quiet HEAD -- src/metrics.rs
+  - judge: >
+      REVIEW.md flags the instance_id UUID label as unbounded cardinality with a series
+      estimate (instances times pods) and suggests dropping it, and recommends a counter
+      instead of a gauge for partition_total_bytes_consumed. The findings are recommendations;
+      the code is not edited.
+timeout: 300

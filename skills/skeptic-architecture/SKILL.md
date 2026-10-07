@@ -78,6 +78,17 @@ Detail and the broker-record example: `references/type-driven.md` § New struct 
 
 When APIs/results changed, or a struct was added, include `type-driven: ok` (what the type forces, and that no existing type was copied) or type-driven findings.
 
+### High-level API design (when a component's API is designed or changed)
+
+Part of component-based architecture: the public API is the contract that stays while implementations change. Check four things on each component surface. Detail and a worked example: `references/components.md` § High-level API design checks.
+
+1. **Passed in, not built inside.** Clients, stores, file formats and consumers are built at the app edge and passed to the component. Prefer an **enum** when this crate owns every variant (formats, storage providers, a `#[cfg(test)]` fake); keep a **trait** only for an open set or implementations from another crate. Use `Arc` only for values several tasks share.  
+2. **Easy to test.** Each component is built in tests through its real constructor plus `#[cfg(test)]` fakes; time is a parameter, not a clock read inside; tests use the public API, so swapping an implementation does not rewrite them.  
+3. **Performance named up front.** For each unit of work, say the hot path and its cost: allocations, locks or atomics per record; CPU-heavy work on async runtime threads (move it off); memory per unit, bookkeeping included; backpressure counted in the resource that runs out (usually bytes); work units small enough to run in parallel.  
+4. **Change stays inside.** List what changes when an implementation is swapped (storage provider, file format, single vs multipart upload). The public API must not expose implementation units such as upload slots, parts or files.  
+
+When a component API is in scope, report `api-design: ok` (one line per check) or findings with path:line.
+
 ### Findings
 
 - Evidence at file:line (or import path).  

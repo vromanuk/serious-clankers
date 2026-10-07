@@ -262,6 +262,57 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 
 ---
 
+## High-level API design checks
+
+The public API of a component is what callers and tests depend on. Implementations behind it will change (another storage provider, another file format, multipart instead of one PUT). Design the API so those changes stay inside.
+
+| Check | Ask | Good | Flag |
+|-------|-----|------|------|
+| Passed in | Does the component build its own clients, stores or formats? | built at the app edge and passed to the constructor | `S3Client::new()` inside a component; a format chosen by `if` deep inside |
+| Enum or trait | Who owns the implementations? | enum when this crate owns every variant; trait for an open set or another crate's implementations | `Arc<dyn Trait>` with one production implementation and one fake |
+| `Arc` | Is the value shared across tasks? | `Arc` (or a cheap-clone handle) only when shared; move ownership otherwise | `Arc` around values one task owns |
+| Tests | Can tests build the real component and swap only the collaborator? | real constructor + `#[cfg(test)]` fake; time as a parameter | tests that need a broker, a clock read, or private helpers to reach the logic |
+| Hot path | What runs per record, and what does it cost? | no allocation or lock per record where avoidable; work per batch | per-record locks, allocations, channel sends or metric updates on a high-rate path |
+| Runtime threads | Does CPU-heavy work run on async runtime threads? | `spawn_blocking` for heavy work (encoding, compression) | seconds of CPU inside an async task that shares the runtime with I/O loops |
+| Memory | What does one unit of work hold, bookkeeping included? | counted in the limit that pauses input | per-record ids or tracker entries left out of the memory limit |
+| Backpressure | What resource runs out first? | a limit in that resource (usually bytes); retries do not hold slots | slot counts that tie memory and concurrency together; a retry that holds a worker while it sleeps |
+| Parallel work | Can the work be split for idle workers to pick up? | units small enough to spread (parts, files) | one huge unit no idle worker can share |
+| Containment | What changes when an implementation is swapped? | only the component's interior | public API exposing upload slots, parts, files, or provider types |
+
+### Worked example: bulk relay (sketch)
+
+```rust
+// The window component: rows in, stored windows out. No files, parts or slots in the API.
+pub struct WindowExport { .. }
+impl WindowExport {
+    pub fn new(settings: WindowExportSettings, file_format: BulkFileFormat,
+               bulk_bucket: BulkBucket, acknowledgment: Acknowledgment, cancel: CancellationToken) -> Self;
+    pub fn add_rows(&mut self, processing_ms: i64, rows: Vec<(InstanceId, BulkRow)>, ack_id: AckId);
+    pub fn close_due_windows(&mut self, processing_ms: i64);
+    pub fn can_accept_rows(&self) -> bool;                  // memory limit in bytes
+    pub async fn wait_for_stored_window(&mut self) -> StoredWindow;
+}
+
+// The format: an enum this crate owns. Parquet is one more variant.
+#[derive(Clone, Copy)] pub enum BulkFileFormat { Csv }
+
+// The store: a struct with a private enum; the provider and single vs multipart stay inside.
+#[derive(Clone)] pub struct BulkBucket { storage: Storage }
+enum Storage { S3 { .. }, #[cfg(test)] Fake(FakeBucket) }
+```
+
+What changes when part uploads replace whole-file uploads: the interior of `WindowExport` and additions to `BulkBucket`. The relay loop, the record mapper and the tests written against `WindowExport`'s public API stay.
+
+### Review one-liners
+
+- Finding: "`WindowUploads::try_start_upload` returns `AllUploadersBusy` — the caller now manages upload slots; keep slots inside and expose `can_accept_rows()`."
+- Finding: "`Chunks<P: PutObject, R>` — a trait and a type parameter for one production store; pass a `BulkBucket` with a private enum fake."
+- Finding: "each window keeps one `AckId` per record and the memory limit ignores it — count it, or keep ranges."
+- Finding: "CSV for a 256 MiB file is encoded inside an async task — move it to `spawn_blocking` or encode as rows arrive."
+- Not a finding: "`Arc<dyn KeyFilter>` — another crate's API asks for it."
+
+---
+
 ## Not this file
 
 - Merged interior design (public face + pure-core/shell, short guide) → **`design-components/references/guide.md`**  

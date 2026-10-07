@@ -72,6 +72,10 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 - `println!` as production logging; unentered spans; metric labels with unbounded values  
 - External HTTP/DB/RPC call with no timeout or deadline  
 - Brittle unit tests (private helpers, interaction-only mocks, case hidden in test helpers)  
+- Public API that exposes implementation units (upload slots, parts, files, provider types), so swapping the implementation changes callers  
+- Per-record bookkeeping (ids, tracker entries) left out of the memory limit that pauses input  
+- CPU-heavy work (encoding, compression, hashing large buffers) on async runtime threads  
+- Collaborators built inside a component instead of passed in from the app edge  
 
 Hard-rule IDs only from stage 9 / `skeptic-hard-rules/references/hard-rules.md`. Soft scars go to the matching stage with evidence.
 

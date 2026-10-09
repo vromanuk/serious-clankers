@@ -164,9 +164,12 @@ When a series disappears (process down, scrape failing, metric renamed), compari
 - Repeated sub-expressions (the same ratio in several alerts) → a recording rule, so every alert uses the same definition.
 - The same rule copied per environment or per instance drifts. When one copy changes, check every copy.
 
-### 10. Validate before deploying
+### 10. Validate before deploying (suggestion)
+
+Nice to have, not a finding. A review lists these under suggestions; a missing test does not block the change.
 
 - `promtool check rules` for syntax; `promtool test rules` for behavior: it fires on a sustained problem, stays quiet on a one-scrape blip, and stops soon after recovery.
+- If the metric has no series yet (a counter that appears on its first event), an empty result looks the same as a label typo. Run the same label filter against a sibling metric that has data to confirm the labels match.
 - If rules are generated from templates, render them and check the rendered output.
 - Keep the default evaluation interval; go faster only when detection time needs it.
 

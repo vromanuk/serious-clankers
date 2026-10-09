@@ -68,4 +68,5 @@ When in scope: `observability: ok` (one line) or findings.
 ## Related
 
 - Skeptic stage: `skeptic-observability` loads this.  
+- Dashboards and the metric design they need: `grafana-dashboards`.  
 - Hard rules: secrets in errors/logs.  

@@ -81,12 +81,18 @@ Cause metrics (CPU, memory, restarts, queue depth on its own) belong on dashboar
 Two windows, without an SLO:
 
 ```promql
+# Fires when more than 5% of checkout requests fail, over the last hour and right now.
+# Target: we accept up to 5% failed requests.
 (
+  # Long window: the failures have lasted long enough to matter, not a one-scrape blip.
   sum(rate(requests_failed_total{service="checkout"}[1h])) / sum(rate(requests_total{service="checkout"}[1h])) > 0.05
 and
+  # Short window: the failures are still happening, so the alert resolves minutes after a fix.
   sum(rate(requests_failed_total{service="checkout"}[5m])) / sum(rate(requests_total{service="checkout"}[5m])) > 0.05
 )
 ```
+
+Why both: the 1h window alone keeps firing for most of an hour after the fix; the 5m window alone fires on every blip. Requiring both means the problem has lasted **and** is still going. A severe outage crosses both thresholds within minutes, so detection still scales with severity.
 
 ### 4. Severity follows how fast someone must act
 
@@ -150,6 +156,7 @@ When a series disappears (process down, scrape failing, metric renamed), compari
 - `description`: what it means for users and the target it protects.
 - Runbook link with a first step. If the runbook's answer is "wait" or "ignore", delete the alert or demote it to a ticket.
 - Dashboard link that lands on the failing part.
+- **Comments in the expression.** One line above it: when the alert fires, in plain words, and the target it protects. When the expression has more than one part (two windows, a volume guard, `unless`, `and on()`), one comment per part saying what that part guards against. On-call should know why it fired without decoding the PromQL. PromQL accepts `#` comments, including inside a YAML `expr: |` block.
 
 ### 9. Few rules, same parameters, simple expressions
 
@@ -192,4 +199,5 @@ When a series disappears (process down, scrape failing, metric renamed), compari
 | `max by` / `count` hides which instance | Name it honestly; put the "where" in the description |
 | Signal that should always exist, no `absent()` / no-traffic alert | Add one |
 | No runbook, or a runbook that says "ignore" | Add a first step, or delete / demote |
+| Expression with several parts (windows, volume guard, `unless`) and no comments | One line above saying when it fires and the target; one comment per part saying what it guards against |
 | Rule copied per environment with diverging thresholds | One definition, or check every copy |

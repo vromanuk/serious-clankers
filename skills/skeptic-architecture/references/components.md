@@ -153,6 +153,97 @@ This is one crate’s public data, not a workspace-wide types crate. Mixing unre
 
 ---
 
+### One test seam for a concrete collaborator
+
+**First principle:** a type should exist for a job. When a type exists only so tests can replace one collaborator, the seam is the collaborator, not a second copy of the component.
+
+The common shape it replaces: the external client is a concrete type (generated gRPC client, SDK client) with no trait to fake. So a private trait is added for it, the rules move into a generic inner struct, and the public job struct only fixes the type parameter and forwards every call.
+
+**Before — two types and a trait, for one fake:**
+
+```rust
+pub struct AssetClient {
+    rpc_caller: AssetRpcCaller<AssetApiClient<TraceableChannel>>, // only fixes R
+}
+
+impl AssetClient {
+    pub async fn get_hierarchy_descendants(&self, /* … */) -> Result<Vec<Row>, AssetError> {
+        self.rpc_caller.get_hierarchy_descendants(/* … */).await // forwards
+    }
+}
+
+trait AssetRpc: Clone + Send + Sync { /* one method per RPC */ } // one production impl
+
+struct AssetRpcCaller<R> { asset_rpc: R, retry_budget: Arc<RetryBudget>, /* … */ }
+
+impl<R: AssetRpc> AssetRpcCaller<R> { /* the real rules: request, retry, deadline, metrics */ }
+
+// tests.rs
+impl AssetRpc for FakeAssetRpc { /* … */ }
+let client = AssetRpcCaller::new(fake, /* … */); // tests a private type
+```
+
+**After — one job struct, one seam:**
+
+```rust
+pub struct AssetClient {
+    transport: Transport,
+    retry_budget: Arc<RetryBudget>,
+    call_deadline: Duration,
+}
+
+impl AssetClient {
+    pub async fn get_hierarchy_descendants(&self, /* … */) -> Result<Vec<Row>, AssetError> {
+        // the real rules live here, once
+    }
+}
+
+/// Where one attempt goes: Asset over gRPC, or a fake in tests.
+///
+/// The generated client is a concrete type with no trait to fake, so the
+/// client's rules run against this enum and tests swap in the fake.
+#[derive(Clone)]
+enum Transport {
+    Grpc(AssetApiClient<TraceableChannel>),
+    #[cfg(test)]
+    Fake(tests::FakeAssetRpc),
+}
+
+impl Transport {
+    async fn get_hierarchy_descendants(&mut self, request: Request<Req>) -> Result<Vec<Resp>, Status> {
+        match self {
+            Self::Grpc(client) => client.get_hierarchy_descendants(request).await?.into_inner().try_collect().await,
+            #[cfg(test)]
+            Self::Fake(fake) => fake.get_hierarchy_descendants(request).await,
+        }
+    }
+}
+
+// tests.rs — the real job struct, its public method
+let client = AssetClient::new(Transport::Fake(fake), /* … */);
+client.get_hierarchy_descendants(/* … */).await;
+```
+
+**What it buys:** one fewer type, no trait, no type parameter, and tests that run the public method instead of a private copy of it. The seam sits at the one thing tests actually replace.
+
+**What it costs:** the production enum names a test-only variant. Test builds may trip `clippy::large_enum_variant` (a big real client next to a small fake). Allow it for test builds only, with the reason — do not box the real client, which would allocate on every clone in production:
+
+```rust
+#[cfg_attr(test, expect(clippy::large_enum_variant, reason = "only test builds have the small Fake variant"))]
+```
+
+**Keep the trait when:**
+
+| Situation | Why the trait is a real seam |
+|-----------|------------------------------|
+| Two or more production implementations (object store vs local disk) | Production chooses between them; the enum would not be test-only |
+| Another crate must supply the fake (a `test-util` feature for callers' tests) | `#[cfg(test)]` code is visible only inside this crate |
+| The collaborator is the component's public extension point (`RecordProcessor`) | Callers implement it; it is the behavior, not a test hook |
+
+**Review flag:** “`AssetRpcCaller<R>` and trait `AssetRpc` exist only for the test fake; the public `AssetClient` only forwards. Fold the rules into `AssetClient` with a private `Transport` enum and a `#[cfg(test)]` fake variant.”
+
+---
+
 ## Optional convention: folders named `api` / `internal`
 
 Some codebases (Hombergs / reflectoring Java examples) use explicit packages:
@@ -232,6 +323,7 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 | “Common” bag of domain types for everything | Often a proto-god-module. One crate’s own `types` module is not that — it is where **this** crate’s public data types go. A workspace-wide types crate that mixes unrelated jobs still is |
 | **Public struct/enum defined outside `types`** (`KafkaRecord` in `listener.rs`, then `pub use` from the crate root) | Callers cannot find the data type next to the others. Move the definition into `types.rs` or `types/`. Re-export from the root if the short path should stay |
 | New package theater for a one-shot script | Keep local |
+| **Private trait + generic inner struct only for a test fake; public struct only forwards** | Two types and a trait for one seam; tests hit a private copy. Use one job struct and a private enum with a `#[cfg(test)]` fake variant (§ One test seam) |
 | **Missing `api/` folder** when `mod.rs` already is the surface | **Not a smell** — do not flag |
 | **Having a private `service.rs` use-case module inside a job** | **Not a smell** — that *is* the service layer idea |
 

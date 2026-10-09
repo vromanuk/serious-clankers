@@ -41,6 +41,7 @@ description: >
 10. **Tool vs product:** small scripts stay local; no package theater for a one-shot.  
 11. When layout is in scope, report `components: ok` (one line: owners + surfaces) or layout findings with path:line.  
 12. **Public data types live in `types`.** A `pub struct`, `pub enum`, or `pub type` that callers name is defined in that crate’s `types.rs` or `types/` module. A `pub use` from another file does not count. If `types` does not exist, the finding says add it and move the type there. The crate root may re-export it so the short path stays. Detail: `references/components.md` § Public data types.  
+13. **One test seam, not a trait plus a wrapper type.** When a private trait and a generic inner struct exist only so tests can swap one concrete collaborator (a generated gRPC client, an SDK client), flag them. Prefer the rules on the job struct and a private `enum Transport { Real(…), #[cfg(test)] Fake(…) }`; tests then build the real job struct and call its public methods. Keep the trait when there are two production implementations or another crate supplies the fake. Detail: `references/components.md` § One test seam for a concrete collaborator.  
 
 ### Type-driven contracts (when APIs/results change)
 

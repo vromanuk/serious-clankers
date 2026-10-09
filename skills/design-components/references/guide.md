@@ -120,7 +120,7 @@ impl Customers {
 }
 ```
 
-You do **not** need a trait named Repository or UnitOfWork for this shape. Store concrete collaborators on the struct, or a small trait field **when** you need a fake for tests — only then.
+You do **not** need a trait named Repository or UnitOfWork for this shape. Store concrete collaborators on the struct. When tests need a fake for one concrete collaborator, prefer a private enum with a `#[cfg(test)]` fake variant over a trait plus a generic inner struct; keep a trait only when production has two implementations or another crate supplies the fake. Worked example: `skeptic-architecture/references/components.md` § One test seam for a concrete collaborator.
 
 Full pure-core samples: `skeptic-testability/references/pure-core.md`.
 

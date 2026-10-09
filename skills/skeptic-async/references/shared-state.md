@@ -97,7 +97,7 @@ let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 let (tx, rx) = tokio::sync::mpsc::channel(64);
 ```
 
-Every source of concurrency needs an explicit bound: spawn loops, `select!`/`join!` fan-out, channels, open sockets. Bounds are application-specific — pick one on purpose and write down why.
+Every source of concurrency needs an explicit bound: spawn loops, `select!`/`join!` fan-out, channels, open sockets. Bounds are application-specific — pick one on purpose and write down why (size it with Little's Law, `lifetimes-and-load.md` §4.2).
 
 ### 3.5 Blocking channels in async code
 

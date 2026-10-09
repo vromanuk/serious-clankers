@@ -2,7 +2,7 @@
 
 ## Intent
 
-Review async Rust (Tokio-first) for the failures the compiler does not catch: futures cancelled mid-operation, futurelock, blocking the runtime, unsafe sharing of state across `.await`, tasks with no owner, unbounded queues, and slow async I/O on hot paths. Runs standalone, or as an extra section of a skeptic review when the diff contains async code.
+Review async Rust (Tokio-first) for the failures the compiler does not catch: futures cancelled mid-operation, futurelock, blocking the runtime, unsafe sharing of state across `.await`, tasks with no owner, unbounded or unsized queues, and slow async I/O on hot paths. Runs standalone, or as an extra section of a skeptic review when the diff contains async code.
 
 ## Triggers
 
@@ -66,6 +66,22 @@ The agent SHALL flag unbounded queues and fan-out, backpressure that does not re
 - **GIVEN** a producer that sends every incoming event into `unbounded_channel()` consumed by a slower task
 - **WHEN** reviewing async code
 - **THEN** the agent flags unbounded memory growth and suggests a bounded channel with a stated capacity and a policy when full
+
+### Behavior: Sizing queues and caps with Little's Law
+
+The agent SHALL check every new or changed channel capacity, concurrency cap, or pool size with Little's Law (L = λ × W), SHALL ask for peak arrival rate and per-item time when the code does not state them, and SHALL flag a consumer that cannot keep up on average, a capacity or cap too small for the stated load, and a capacity with no stated memory cost.
+
+#### Scenario: Magic-number channel capacity
+
+- **GIVEN** `mpsc::channel(10_000)` with no comment or config stating the rate, the per-item time, or the item size
+- **WHEN** reviewing async code
+- **THEN** the agent asks for peak arrival rate and the longest consumer stall to absorb, shows the capacity as peak rate × stall plus headroom, and asks for worst-case memory (capacity × item size) and added wait (capacity / consumer rate)
+
+#### Scenario: Concurrency cap below the load
+
+- **GIVEN** a `Semaphore::new(16)` around a dependency that is stated to receive 2 000 req/s at 50 ms per call
+- **WHEN** reviewing async code
+- **THEN** the agent flags that 2 000 × 0.05 s = 100 calls must be in flight and the cap limits throughput to 320 req/s
 
 ### Behavior: Safe in context is not a finding
 

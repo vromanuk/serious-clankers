@@ -155,6 +155,7 @@ Load when the job matches — not always-on:
 | `skeptic-naming` | Naming quality — skeptic stage 8 |
 | `skeptic-conventions` | One function per task, plain words, clear Rust style — skeptic stage 9 |
 | `skeptic-hard-rules` | Absolute bans, pass/fail — skeptic stage 10 |
+| `skeptic-async` | Async Rust review (Tokio-first): cancellation, blocking, shared state, task lifetimes, load, performance — extra skeptic section when the diff has async code |
 | `design-components` | Design or grow a job-shaped component (one public struct, pure core) |
 | `unit-tests` | Write or review unit tests |
 | `observability` | Write or review production telemetry and alert rules (Rust-first) |

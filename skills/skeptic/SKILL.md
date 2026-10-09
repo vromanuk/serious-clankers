@@ -40,6 +40,8 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 
 Each stage owns its own `references/` (load only what that stage’s SKILL asks for). Coordinator stays thin — no shared ref library here.
 
+**Extra section (conditional):** when the diff contains async Rust (`async`, `.await`, `tokio::`, futures, a hand-written `Future`), also run `../skeptic-async/SKILL.md` after stage 10 and report it as `## Async`. No async code → omit the section.
+
 ## Care priority (when weighting findings)
 
 1. Correctness of the real contract  
@@ -99,7 +101,7 @@ Material design forks: NUMBER the issue, then LETTER real options (recommended f
 
 1. **Snapshot** — base/dirty tree, real need (mark assumed if needed), non-goals, changed files, validation commands available  
 2. **Load** each stage `SKILL.md` (and that stage’s `references/` as the stage says). Do not skip a stage because the slice “looks safe.”  
-3. **Run stages 1→10** in this session — sequential, one stage at a time, no spawned agents  
+3. **Run stages 1→10** in this session — sequential, one stage at a time, no spawned agents; then the `## Async` section when the diff has async code  
 4. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
 5. **Optional validation note** — smallest relevant checks; not a tenth stage  
 6. **Handoff** — one merged report; do not implement unless asked  
@@ -125,6 +127,7 @@ Real need: …
 ## 8. Naming
 ## 9. Conventions
 ## 10. Hard rules
+## Async (only when the diff has async code)
 
 ## Validation
 (commands/results or not run)

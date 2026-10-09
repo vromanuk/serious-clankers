@@ -23,6 +23,16 @@ The agent SHALL always run stages purpose, architecture, complexity, testability
 - **WHEN** skeptic runs
 - **THEN** the handoff contains all ten sections in order (findings or N/A with reason each), including `## 3. Complexity` and `## 5. Unit tests`
 
+### Behavior: Async section when the diff has async code
+
+When the diff contains async Rust, the agent SHALL also run the `skeptic-async` contract after stage 10 and report it as `## Async`; otherwise it SHALL omit that section.
+
+#### Scenario: Diff adds a tokio task
+
+- **GIVEN** a diff that adds `tokio::spawn` and a `select!` loop
+- **WHEN** skeptic runs
+- **THEN** the handoff contains the ten numbered sections followed by `## Async`
+
 ### Behavior: Same-session, no spawned agents
 
 The agent SHALL run stages 1→10 in the current session without spawning subagents, still loading each stage contract, and SHALL NOT freestyle a one-lens product essay.

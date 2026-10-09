@@ -144,15 +144,22 @@ Load when the job matches — not always-on:
 
 | Skill | When |
 |-------|------|
+| `skeptic` | Multi-stage code review: runs the ten stages below in order |
+| `skeptic-purpose` | Real need, structure, serious bugs, alternatives — skeptic stage 1 |
+| `skeptic-architecture` | Component layout (default) + type boundaries — skeptic stage 2 |
+| `skeptic-complexity` | Design depth: red flags, leakage, errors, split vs join — skeptic stage 3 |
+| `skeptic-testability` | Thinking code vs shell, decisions as data — skeptic stage 4 |
+| `skeptic-unit-tests` | Unit-test craft on the diff — skeptic stage 5 |
+| `skeptic-observability` | Logs/spans/metrics and alert rules — skeptic stage 6 |
+| `skeptic-comments` | Comment quality — skeptic stage 7 |
+| `skeptic-naming` | Naming quality — skeptic stage 8 |
+| `skeptic-conventions` | One function per task, plain words, clear Rust style — skeptic stage 9 |
+| `skeptic-hard-rules` | Absolute bans, pass/fail — skeptic stage 10 |
+| `design-components` | Design or grow a job-shaped component (one public struct, pure core) |
+| `unit-tests` | Write or review unit tests |
+| `observability` | Write or review production telemetry and alert rules (Rust-first) |
+| `grafana-dashboards` | Build or review Grafana dashboards (RED per component) |
 | `pr-description` | Draft a PR body (why first, how, testing, diagram if structure) |
-| `skeptic` | Multi-lens code review (10 stages) |
-| `skeptic-architecture` | Component layout (default) + type boundaries — also skeptic stage 2 |
-| `skeptic-complexity` | Design depth: red flags, leakage, errors, split vs join — also skeptic stage 3 |
-| `skeptic-observability` | Logs/spans/metrics — also skeptic stage 6 |
-| `observability` | Write/review production telemetry (Rust-first) |
-| `skeptic-comments` | Comment quality — also skeptic stage 7 |
-| `skeptic-naming` | Naming quality — also skeptic stage 8 |
-| `skeptic-conventions` | One function per task, plain words, clear Rust style — also skeptic stage 9 |
 | `explain-topic` | Teach a concept from first principles |
 | `explain-diff` | Teach a code change: background, intuition, alternatives, then code |
-| `unit-tests` | Unit-test craft / review |
+| `create-flashcards` | Study cards as a self-contained HTML deck |

@@ -68,8 +68,8 @@ Explaining the idea correctly somewhere else in the deck does **not** do this jo
 1. **Ingest source** — notes, chapter, talk, code, prior explanation, or user paste.  
 2. **Model pass** — first principles, then outline the *ideas*. **Scale count to the material:** a light conceptual talk may need ~8–15; a **dense technical chapter warrants one atomic card per load-bearing item** — each key **term, unit, quantity, component, law, and named example** — which can total **25–40**. Enumerate with the coverage sweep in `guide.md`; skip only true trivia, never core vocabulary.  
 3. **Draft cards** using the types below (craft in `guide.md`; **mirror patterns in `examples.md`**).  
-4. **Edit** — plain language; one idea; moderate A; **relevant** examples; mark **important** phrases for bold.  
-5. **Self-check** — guide § Self-check + examples § F + html-deck checklist.  
+4. **Edit** — plain language; one idea; moderate A; **relevant** examples; mark **important** phrases for bold. Technical terms are fine when defined, but cut figures of speech and business or academic jargon ("seeded", "flip side", "relay race", "commodity", "incumbents", "network effect") — say the literal thing instead.  
+5. **Self-check** — guide § Self-check + examples § F + html-deck checklist. Then **review every card for context + intuition**: each back must say why the fact matters and give a picture (a decimal analogy, a familiar case, what breaks without it). A card may stay a bare one-liner only if a neighbouring card carries that context — otherwise expand it.  
 6. **Build HTML deck** — themed sections; every card Q+A visible; **Copy on every card**; bold important text; path under `~/explanations/`.  
 7. **Handoff** — absolute path, card count, one-line summary (not a full dump of all cards in chat).
 

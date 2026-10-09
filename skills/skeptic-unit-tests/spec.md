@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 4 of skeptic: always judge **unit-test craft** on the scoped change (unchanging tests, public API of the unit, state not interactions, behaviors not methods, DAMP over DRY). Loads the `unit-tests` skill. Not pure-core placement or property/snapshot strategy alone.
+Stage 5 of skeptic: always judge **unit-test craft** on the scoped change (unchanging tests, public API of the unit, state not interactions, behaviors not methods, DAMP over DRY). Loads the `unit-tests` skill. Not pure-core placement or property/snapshot strategy alone.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 4 (always in the pipeline), or the user asks only for unit-test quality review.  
+- **SHOULD** apply when skeptic runs stage 5 (always in the pipeline), or the user asks only for unit-test quality review.  
 - **SHOULD NOT** replace the full skeptic pipeline.  
 - **SHOULD NOT** skip when the diff “looks like no tests” — still run and report `none` with reason if nothing applies.
 

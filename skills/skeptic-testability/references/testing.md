@@ -3,7 +3,7 @@
 Load when writing or reviewing tests.  
 Also: `pure-core.md` (state/invariant ideas); unit craft: skill `unit-tests` → `../unit-tests/references/guide.md`.
 
-Inspired by (portable ideas): *Software Engineering at Google* Ch. 12 Unit Testing — not Java-specific copy.
+Ideas from *Software Engineering at Google* (unit testing), restated for any language.
 
 ---
 
@@ -198,5 +198,5 @@ For **benches**: unit-test SQL builders and pure window math; don’t replace A/
 
 ## Sources
 
-- SE at Google Ch. 12 (unit testing maintainability, public API, unchanging tests) — portable ideas only  
+- *Software Engineering at Google* (unit testing: maintainability, public API, unchanging tests)  
 - `pure-core.md`; composition depth: `skeptic-conventions/references/write-code.md`; comments: `skeptic-comments`  

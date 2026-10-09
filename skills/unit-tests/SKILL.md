@@ -2,10 +2,10 @@
 name: unit-tests
 description: >
   Unit-test guidelines for writing and reviewing maintainable unit tests
-  (Google SE Ch.12-style: unchanging tests, public API, state not interactions,
+  (unchanging tests, public API, state not interactions,
   behaviors not methods, DAMP over DRY — do not test production helpers; do not
   hide the case behind test helpers). Use when adding/changing unit tests,
-  reviewing test quality or brittleness, or when skeptic stage 4 (skeptic-unit-tests)
+  reviewing test quality or brittleness, or when skeptic stage 5 (skeptic-unit-tests)
   runs. Not for pure integration/E2E strategy alone.
 ---
 
@@ -96,6 +96,6 @@ Flag with path:line:
 
 ## Related
 
-- Skeptic **stage 4** `skeptic-unit-tests` **always** loads this during a full skeptic run.  
+- Skeptic **stage 5** `skeptic-unit-tests` **always** loads this during a full skeptic run.  
 - Pure-core / property-snapshot *placement*: `skeptic-testability` (`references/testing.md`, `pure-core.md`).  
 - Local review pack may still load this skill under `~/agents/skills/unit-tests/`.  

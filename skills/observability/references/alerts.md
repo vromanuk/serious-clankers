@@ -2,7 +2,7 @@
 
 Rules for **writing and reviewing** alert rules (Prometheus-style PromQL; the ideas apply to any alerting system).
 
-**Sources:** Google SRE Workbook, ch. 5 "Alerting on SLOs" (Thurgood et al.); Prometheus docs, "Alerting rules" and alerting practices. Points marked *(general practice)* come from neither source; keep them, but do not cite them as the book's.
+**Sources:** ideas from the Google SRE Workbook (alerting on SLOs) and the Prometheus alerting docs.
 
 ---
 
@@ -37,7 +37,7 @@ Most services have no SLO yet. The checks still apply:
 
 - A threshold implies a target. **Write the target down** in the alert description ("we accept up to 1% failed requests"). It can become an SLO later without guessing.
 - Base thresholds on **history or real pain** (what users noticed, what broke last time), not round numbers.
-- With an SLO, the book's thresholds are **burn rates** (how fast the error budget is spent): page at 14.4× over 1h (2% of a 30-day budget) or 6× over 6h (5%); ticket at 1× over 3 days (10%). Without one, the same shape still works: a high ratio over short windows pages, and a low ratio over long windows opens a ticket.
+- With an SLO, thresholds are **burn rates** (how fast the error budget is spent): page at 14.4× over 1h (2% of a 30-day budget) or 6× over 6h (5%); ticket at 1× over 3 days (10%). Without one, the same shape still works: a high ratio over short windows pages, and a low ratio over long windows opens a ticket.
 
 ---
 
@@ -68,7 +68,7 @@ Cause metrics (CPU, memory, restarts, queue depth on its own) belong on dashboar
 
 | Choice | Detection | Precision | Reset | Note |
 |--------|-----------|-----------|-------|------|
-| Short window alone (e.g. 5m) | Fast | Low | Fast | Fires on blips; the book's example could alert 144 times a day and still meet the SLO |
+| Short window alone (e.g. 5m) | Fast | Low | Fast | Fires on blips; can alert many times a day while the SLO is still met |
 | Long window alone (e.g. 6h) | OK | Good | Slow | Keeps firing for most of the window after recovery; long ranges are expensive to evaluate |
 | Long `for:` as the noise filter | Slow, same for a 100% outage as a 0.2% one | Better | — | Timer resets when the value dips once: errors that come and go may **never** alert (poor recall) |
 | **Long AND short window** | Good | Good | Good | Recommended; short window ≈ 1/12 of the long one (1h + 5m, 6h + 30m) |
@@ -76,7 +76,7 @@ Cause metrics (CPU, memory, restarts, queue depth on its own) belong on dashboar
 - **Keep `for:` short**: long enough to absorb one bad scrape or evaluation (a minute or two), not the main noise filter. Get precision from the window length.
 - **No `for:`** means the rule fires on its first true evaluation. That is fine when the expression is already sustained (time since last success, a long window). It is noisy on an instant rate over a short window.
 - **`keep_firing_for:`** stops flapping and false resolutions during short data gaps, but adds directly to reset time. Keep it short and say why it is there.
-- *(general practice)* Make a `rate()` range at least 4× the scrape interval, so one missed scrape does not empty the window.
+- Make a `rate()` range at least 4× the scrape interval, so one missed scrape does not empty the window.
 
 Two windows, without an SLO:
 
@@ -101,14 +101,14 @@ Why both: the 1h window alone keeps firing for most of an hour after the fix; th
 
 ### 5. Low traffic
 
-At 10 requests an hour, one failure is a 10% error rate. Options from the book:
+At 10 requests an hour, one failure is a 10% error rate. Options:
 
 - **Synthetic traffic** (probes, black-box checks), so there is always a signal. Downside: if real users fail and synthetic requests succeed, the synthetic successes hide the failure.
 - **Combine related services** that share a failure domain into one alert. Downside: one small service failing completely may not move the group; keep a long-window alert per service for that.
 - **Make one failure matter less**: client retries with backoff, fallback paths.
 - **A lower target or a longer window**, if one failed request really does not need a human.
 
-*(general practice)* A **minimum-volume condition** (`and sum(rate(requests_total[w])) > N`) stops one failure from paging. It also hides a total outage that drops traffic to zero, so pair it with a check for missing traffic (check 7).
+A **minimum-volume condition** (`and sum(rate(requests_total[w])) > N`) stops one failure from paging. It also hides a total outage that drops traffic to zero, so pair it with a check for missing traffic (check 7).
 
 A tail latency quantile over few requests is noisy: p99 over 5 minutes with 10 requests is about the slowest single request.
 
@@ -160,7 +160,7 @@ When a series disappears (process down, scrape failing, metric renamed), compari
 
 ### 9. Few rules, same parameters, simple expressions
 
-- Pick a small set of alert classes (window + threshold + severity) and apply them across services. The book advises against tuning windows and thresholds per service: it does not scale.
+- Pick a small set of alert classes (window + threshold + severity) and apply them across services. Tuning windows and thresholds per service does not scale.
 - Repeated sub-expressions (the same ratio in several alerts) → a recording rule, so every alert uses the same definition.
 - The same rule copied per environment or per instance drifts. When one copy changes, check every copy.
 

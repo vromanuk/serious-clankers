@@ -2,8 +2,8 @@
 name: skeptic
 description: >
   Coordinate a multi-stage code review in fixed order: purpose, architecture,
-  testability, unit-tests, observability, comments, naming, conventions,
-  hard-rules. Use when the user asks for review, code review, comprehensive
+  complexity, testability, unit-tests, observability, comments, naming,
+  conventions, hard-rules. Use when the user asks for review, code review, comprehensive
   review, review this branch/PR/diff, or /skeptic. Prefer for Rust codebases.
   Not for post-implement fix-only loops, file-by-file progressive campaigns, or
   external automated-review CLIs alone.
@@ -11,12 +11,12 @@ description: >
 
 # Skeptic
 
-Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scope and real need, run stages 1→9, judge findings, merge one report, ask before any fix.
+Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scope and real need, run stages 1→10, judge findings, merge one report, ask before any fix.
 
 ## Contract
 
 - **Read-only** unless the user explicitly asked to fix.
-- Run stages **1→9 always**, in report order. Never freestyle a product essay first. **Do not skip** unit-tests (stage 4) — it is not optional depth under testability.
+- Run stages **1→10 always**, in report order. Never freestyle a product essay first. **Do not skip** unit-tests (stage 5) — it is not optional depth under testability.
 - **Execution:** run the full review **in this same session**. Do not spawn subagents. Load each stage `SKILL.md`, keep stage boundaries, same report shape. Do not invent a one-lens freestyle essay.
 - **Coordinator:** reject weak, preference-only, or evidence-free findings; label facts vs assumptions.
 - Findings: numbered issues with evidence; **LETTER options** only for material design forks (real alternatives — no “do nothing”). Per option: what / pros / cons / gain / worse when. No time estimates.
@@ -29,13 +29,14 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 |---|-------------|----------|
 | 1 | `../skeptic-purpose/SKILL.md` | Real need? Approach fit? Serious bugs? Alternatives? |
 | 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components? Use-case surface (not stray helpers)? Data ownership? Types at boundaries? |
-| 3 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Coverage/shape for new contracts? |
-| 4 | `../skeptic-unit-tests/SKILL.md` | Unit-test craft: public API, state not mocks, DAMP, unchanging? |
-| 5 | `../skeptic-observability/SKILL.md` | Logs/spans/metrics useful? Async spans? Safe labels? Alerts: precision, recall, detection, reset, how many fire? |
-| 6 | `../skeptic-comments/SKILL.md` | Comments: necessary? why not what? clear English? |
-| 7 | `../skeptic-naming/SKILL.md` | Names: clear for scope, not cryptic, not overlong? |
-| 8 | `../skeptic-conventions/SKILL.md` | One function per task? Plain words? Clear Rust style? |
-| 9 | `../skeptic-hard-rules/SKILL.md` | Absolute bans only (`references/hard-rules.md` on that skill)? |
+| 3 | `../skeptic-complexity/SKILL.md` | Harder to understand or change? Shallow units, leakage, pass-throughs, error design, split vs join? |
+| 4 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Coverage/shape for new contracts? |
+| 5 | `../skeptic-unit-tests/SKILL.md` | Unit-test craft: public API, state not mocks, DAMP, unchanging? |
+| 6 | `../skeptic-observability/SKILL.md` | Logs/spans/metrics useful? Async spans? Safe labels? Alerts: precision, recall, detection, reset, how many fire? |
+| 7 | `../skeptic-comments/SKILL.md` | Comments: necessary? why not what? clear English? |
+| 8 | `../skeptic-naming/SKILL.md` | Names: clear for scope, not cryptic, not overlong? |
+| 9 | `../skeptic-conventions/SKILL.md` | One function per task? Plain words? Clear Rust style? |
+| 10 | `../skeptic-hard-rules/SKILL.md` | Absolute bans only (`references/hard-rules.md` on that skill)? |
 
 Each stage owns its own `references/` (load only what that stage’s SKILL asks for). Coordinator stays thin — no shared ref library here.
 
@@ -43,7 +44,7 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 
 1. Correctness of the real contract  
 2. Testability of decisions  
-3. Clarity (names, short functions, plain comments)  
+3. Clarity (names, functions that each do one thing completely, plain comments)  
 4. Small surface  
 5. DRY on meaning  
 6. Performance last by default  
@@ -52,6 +53,8 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 
 - Layer soup / package theater for a one-shot script  
 - Shallow component: many public step-helpers; callers reassemble the use case  
+- Function split for length so the pieces must be read together (conjoined)  
+- Error no caller can act on, where redefining the operation would remove it  
 - Free public orchestration fns that re-pass the same deps (prefer a job struct)  
 - Handler owns multi-step orchestration that belongs on the component struct  
 - Business rules next to sockets/files/clocks  
@@ -78,7 +81,7 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 - CPU-heavy work (encoding, compression, hashing large buffers) on async runtime threads  
 - Collaborators built inside a component instead of passed in from the app edge  
 
-Hard-rule IDs only from stage 9 / `skeptic-hard-rules/references/hard-rules.md`. Soft scars go to the matching stage with evidence.
+Hard-rule IDs only from stage 10 / `skeptic-hard-rules/references/hard-rules.md`. Soft scars go to the matching stage with evidence.
 
 ## Concern format
 
@@ -96,7 +99,7 @@ Material design forks: NUMBER the issue, then LETTER real options (recommended f
 
 1. **Snapshot** — base/dirty tree, real need (mark assumed if needed), non-goals, changed files, validation commands available  
 2. **Load** each stage `SKILL.md` (and that stage’s `references/` as the stage says). Do not skip a stage because the slice “looks safe.”  
-3. **Run stages 1→9** in this session — sequential, one stage at a time, no spawned agents  
+3. **Run stages 1→10** in this session — sequential, one stage at a time, no spawned agents  
 4. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
 5. **Optional validation note** — smallest relevant checks; not a tenth stage  
 6. **Handoff** — one merged report; do not implement unless asked  
@@ -114,13 +117,14 @@ Real need: …
 
 ## 1. Purpose
 ## 2. Architecture
-## 3. Testability
-## 4. Unit tests
-## 5. Observability
-## 6. Comments
-## 7. Naming
-## 8. Conventions
-## 9. Hard rules
+## 3. Complexity
+## 4. Testability
+## 5. Unit tests
+## 6. Observability
+## 7. Comments
+## 8. Naming
+## 9. Conventions
+## 10. Hard rules
 
 ## Validation
 (commands/results or not run)
@@ -133,7 +137,7 @@ Final line: `skeptic: complete` or `skeptic: blocked` (scope/need missing).
 
 ## Do not
 
-- Freestyle product essay that skips the nine stage contracts  
+- Freestyle product essay that skips the ten stage contracts  
 - Skip unit-tests stage or fold it silently into testability  
 - Spawn subagents for stages  
 - “Do nothing” as a design option  

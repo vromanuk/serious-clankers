@@ -1,7 +1,7 @@
 ---
 name: skeptic-observability
 description: >
-  Stage 5 of skeptic: production observability — structured logs, spans, metrics,
+  Stage 6 of skeptic: production observability — structured logs, spans, metrics,
   panic hooks, async span attachment, alert rules. Use when skeptic runs or the
   user asks for telemetry/observability/alerting review only. Loads the
   observability skill for depth.
@@ -37,4 +37,4 @@ description: >
 
 ## Output section title
 
-`## 5. Observability`
+`## 6. Observability`

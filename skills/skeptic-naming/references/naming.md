@@ -3,8 +3,8 @@
 **Review question:** Did the developer pick good names for everything?  
 A good name is **long enough to fully say what the item is or does**, without being **so long that it’s hard to read**.
 
-**General names:** [Google C++ Style Guide — Naming](https://google.github.io/styleguide/cppguide.html#Naming) (Choosing Names).  
-**Public / API surface names (stronger):** [The API Book — Describing Interfaces](https://twirl.github.io/The-API-Book/API.en.html#api-design-describing-interfaces-para-3) (Sergey Konstantinov).  
+**General names:** ideas from the Google C++ Style Guide.  
+**Public / API surface names (stronger):** ideas from *The API Book* (Sergey Konstantinov).  
 
 **Spelling style** (`snake_case` vs `CamelCase`): follow **this project and language** — don’t force another language’s style.
 

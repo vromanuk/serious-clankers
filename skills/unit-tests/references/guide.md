@@ -1,9 +1,9 @@
 # Unit testing guide
 
-Distilled from *Software Engineering at Google*, Chapter 12 — Unit Testing (Erik Kuefler; ed. Tom Manshreck).  
+Ideas from *Software Engineering at Google* (unit testing), restated as rules.  
 Portable rules for writing and reviewing **unit tests**.
 
-**Language of the samples:** most code blocks are **Java** (as in the book), with a few Go/JS/Python snippets and occasional Rust notes. Treat them as **illustrations of the idea**, not as a Java-only rulebook. The same practices apply in Rust, Go, TypeScript, or any other stack — restate them in the project’s language when you write or review tests.
+**Language of the samples:** most code blocks are **Java**, with a few Go/JS/Python snippets and occasional Rust notes. Treat them as **illustrations of the idea**, not as a Java-only rulebook. The same practices apply in Rust, Go, TypeScript, or any other stack — restate them in the project’s language when you write or review tests.
 
 **Load this file** when applying the `unit-tests` skill in depth.
 
@@ -784,7 +784,7 @@ When reviewing or writing unit tests, ask:
 
 ---
 
-## 9. TL;DRs (from the chapter)
+## 9. TL;DRs
 
 1. Strive for **unchanging** tests.  
 2. Test via **public APIs** — **don’t test production helpers**.  
@@ -801,6 +801,6 @@ When reviewing or writing unit tests, ask:
 
 ## Sources
 
-- Erik Kuefler, “Unit Testing,” in *Software Engineering at Google* (O’Reilly), Chapter 12; ed. Tom Manshreck.  
+- *Software Engineering at Google* (O’Reilly), unit testing.  
 - Related: Testing on the Toilet — test behaviors not methods; Dan North — BDD intro.  
 - Flaky vs brittle: brittle = fails on harmless prod change; flaky = nondeterministic without prod change.  

@@ -2,7 +2,7 @@
 
 ## Intent
 
-Skeptic is a standalone read-only multi-stage code review, Rust-first. It snapshots scope and real need, always runs nine fixed stages (purpose → architecture → testability → unit-tests → observability → comments → naming → conventions → hard-rules) in the current session without spawning subagents, coordinates findings, and hands off a single report. It does not implement fixes unless asked and is not an implement→fix→verify loop.
+Skeptic is a standalone read-only multi-stage code review, Rust-first. It snapshots scope and real need, always runs ten fixed stages (purpose → architecture → complexity → testability → unit-tests → observability → comments → naming → conventions → hard-rules) in the current session without spawning subagents, coordinates findings, and hands off a single report. It does not implement fixes unless asked and is not an implement→fix→verify loop.
 
 ## Triggers
 
@@ -13,25 +13,25 @@ Skeptic is a standalone read-only multi-stage code review, Rust-first. It snapsh
 
 ## Behaviors
 
-### Behavior: Fixed nine-stage pipeline
+### Behavior: Fixed ten-stage pipeline
 
-The agent SHALL always run stages purpose, architecture, testability, unit-tests, observability, comments, naming, conventions, and hard-rules in that report order, and SHALL NOT replace them with a freestyle product essay. The agent MUST NOT skip unit-tests or treat it as optional depth under testability.
+The agent SHALL always run stages purpose, architecture, complexity, testability, unit-tests, observability, comments, naming, conventions, and hard-rules in that report order, and SHALL NOT replace them with a freestyle product essay. The agent MUST NOT skip unit-tests or treat it as optional depth under testability.
 
 #### Scenario: User asks to review a PR
 
 - **GIVEN** a PR scope and an explicit review request
 - **WHEN** skeptic runs
-- **THEN** the handoff contains all nine sections in order (findings or N/A with reason each), including `## 4. Unit tests`
+- **THEN** the handoff contains all ten sections in order (findings or N/A with reason each), including `## 3. Complexity` and `## 5. Unit tests`
 
 ### Behavior: Same-session, no spawned agents
 
-The agent SHALL run stages 1→9 in the current session without spawning subagents, still loading each stage contract, and SHALL NOT freestyle a one-lens product essay.
+The agent SHALL run stages 1→10 in the current session without spawning subagents, still loading each stage contract, and SHALL NOT freestyle a one-lens product essay.
 
 #### Scenario: Review requested
 
 - **GIVEN** a review request and a harness that can spawn subagents
 - **WHEN** skeptic runs
-- **THEN** the agent completes all nine stages in this session and does not spawn subagents
+- **THEN** the agent completes all ten stages in this session and does not spawn subagents
 
 ### Behavior: Evidence-backed coordination
 
@@ -57,6 +57,6 @@ The agent SHALL NOT implement fixes unless the user explicitly asked to fix.
 
 ### Constraint: No invented hard-rule IDs
 
-The agent MUST NOT invent hard-rule IDs; stage 9 uses only IDs from `skeptic-hard-rules/references/hard-rules.md`.
+The agent MUST NOT invent hard-rule IDs; stage 10 uses only IDs from `skeptic-hard-rules/references/hard-rules.md`.
 
 <!-- skillet-version: 1.7.0 -->

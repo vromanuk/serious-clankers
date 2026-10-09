@@ -1,7 +1,7 @@
 ---
 name: skeptic-conventions
 description: >
-  Stage 8 of skeptic: plain words in code, one function per task, clear Rust
+  Stage 9 of skeptic: plain words in code, one function per task, clear Rust
   style. Use when skeptic runs or the user asks for composition or Rust style
   review only. Not for comments, naming, or hard-rules.
 ---
@@ -26,6 +26,7 @@ Comments → stage **comments**. Naming → stage **naming**.
    - Thin outer function + named steps when that helps?  
    - Real step names (not `helper1`)?  
    - Helper that only renames a loop → say inline it  
+   - Split only when each piece reads on its own; length alone is not a reason (conjoined pieces → `skeptic-complexity`)  
    - Report `composition: ok` or composition findings  
 4. **Rust style** — ownership, types at edges, errors, async at the edge, needless clones; don’t re-argue `clippy`/`rustfmt`; allow a measured hot-path tradeoff with a short local why  
 5. **Linters** — run the tools; don’t re-litigate their output here  
@@ -40,4 +41,4 @@ Comments → stage **comments**. Naming → stage **naming**.
 
 ## Output section title
 
-`## 8. Conventions`
+`## 9. Conventions`

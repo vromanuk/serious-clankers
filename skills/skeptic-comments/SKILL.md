@@ -1,7 +1,7 @@
 ---
 name: skeptic-comments
 description: >
-  Stage 6 of skeptic: are comments clear, needed, and about why (benefit /
+  Stage 7 of skeptic: are comments clear, needed, and about why (benefit /
   design reason) — not restating the code or bare rules without explanation.
   Use when skeptic runs or the user asks for comment review only. Not for
   naming, composition, or hard-rules.
@@ -28,6 +28,7 @@ description: >
    - Keep only what the code cannot say (reasoning, scars, rules **with** their reason).  
 3. **Public docs vs body comments:**  
    - On the type/function (`///`): how to **use** it; **why this shape** when non-obvious.  
+   - Public docs describe what callers see, not internal mechanisms; flag implementation detail in `///` that callers don't need (move it into the body).  
    - On the **module** (`//!`): follow `comments.md` template — **role → intuition → why → rules → entrypoints → related → flow** (skip empty parts).  
    - Inside the body (`//`): tricky **how/why** — do not copy the public blurb into the body.  
 4. Flag module docs that only list policies (“do X, not Y”) with no benefit or rejected alternative when that is a real design choice.  
@@ -47,4 +48,4 @@ description: >
 
 ## Output section title
 
-`## 6. Comments`
+`## 7. Comments`

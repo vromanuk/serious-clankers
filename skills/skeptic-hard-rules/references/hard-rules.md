@@ -149,7 +149,7 @@ tokio::time::timeout(Duration::from_secs(10), client.get(url).send()).await??;
 ### API / interface hard rules (detail)
 
 Scope: **public** surfaces only — `pub` API, HTTP/JSON wire fields, SDK methods, component roots. Private helpers are naming-stage judgment, not these HRs.  
-Source ideas: [The API Book — Describing Interfaces](https://twirl.github.io/The-API-Book/API.en.html#api-design-describing-interfaces-para-3).
+Source ideas: *The API Book* (Sergey Konstantinov).
 
 #### `HR-api-get-mutates`
 

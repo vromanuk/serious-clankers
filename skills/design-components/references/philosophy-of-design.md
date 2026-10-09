@@ -8,6 +8,7 @@ Actionable rules from John Ousterhout, [*A Philosophy of Software Design*](https
 - `skeptic-architecture/references/components.md` — job layout  
 - `skeptic-conventions/references/write-code.md` — one function per task (**interior**)  
 - `skeptic-comments` — comments as design (adjacent ideas)
+- `skeptic-complexity/references/complexity.md` — every red flag with examples and limits (review depth)
 
 ---
 
@@ -21,9 +22,9 @@ It shows up as:
 |---------|---------|
 | **Change amplification** | One idea forces edits in many places |
 | **Cognitive load** | Too much to hold in mind for a safe change |
-| **Obscurity** | Important facts are hidden or surprising |
+| **Unknown unknowns** | Not clear what must change, or what must be known |
 
-**Causes:** unmanaged **dependencies** between pieces, and **obscurity** (missing or misleading information).
+**Causes:** unmanaged **dependencies** between pieces, and **obscurity** (important information is not obvious).
 
 **Two tactics:**
 
@@ -159,7 +160,7 @@ Aligns with this pack’s **type-driven** boundaries (`type-driven.md`).
 | **One function per task** | **Inside** the component — private helpers, pure rules, readable steps |
 | **Deep module** | **Public face** — few methods; do not publish every task |
 
-Ousterhout pushes back on “always tiny public methods.” We agree for the **boundary**: small private functions are good; a **shallow public surface** of tiny steps is not.
+Ousterhout pushes back on “always tiny methods”: depth comes before length, and length alone is not a reason to split. On the **boundary**, a **shallow public surface** of tiny steps is wrong. Inside, small private functions are good **when each one reads on its own**; a split whose pieces must be read together (conjoined) is not.
 
 Clean Code–style “extract until every method is five lines” applied to **exports** often produces shallow modules. Extract **privately**; keep the **struct face** deep.
 

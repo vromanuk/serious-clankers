@@ -2,24 +2,30 @@
 
 ## Intent
 
-Stage 8 of skeptic: judge plain words in code, one function per task, and clear Rust style — not comments, naming, architecture, or hard bans.
+Stage 9 of skeptic: judge plain words in code, one function per task, and clear Rust style — not comments, naming, architecture, or hard bans.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 8, or the user asks only for composition or Rust style review.
+- **SHOULD** apply when skeptic runs stage 9, or the user asks only for composition or Rust style review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors
 
 ### Behavior: Composition pass
 
-When multi-step functions are in scope, the agent SHALL report `composition: ok` or composition findings for monoliths and one-use rename helpers.
+When multi-step functions are in scope, the agent SHALL report `composition: ok` or composition findings for monoliths and one-use rename helpers. The agent SHALL NOT ask for a split on length alone; a split must leave pieces that each read on their own.
 
 #### Scenario: Monolith handler
 
 - **GIVEN** load + validate + write + notify inline with no named steps
 - **WHEN** reviewing conventions
 - **THEN** the agent flags composition with path:line evidence
+
+#### Scenario: Long function that reads top to bottom
+
+- **GIVEN** a long function with a simple signature that does one job in clear steps
+- **WHEN** reviewing conventions
+- **THEN** the agent does not ask for a split because of length
 
 ### Behavior: Easy to read
 

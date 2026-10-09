@@ -115,8 +115,7 @@ When a problem has **distinct jobs**, give each job its own function and a thin 
 
 Slogan: **one function per task.**
 
-Same idea as HTDP “Composing Functions” (wish list of tasks → one function each → main only glues):
-[How to Design Programs §2.3](https://htdp.org/2026-5-28//Book/part_one.html#%28part._sec~3acomposing%29).
+Same idea as *How to Design Programs* on composing functions: a wish list of tasks → one function each → the main function only glues.
 
 **Public vs private (important):** split tasks freely **inside** a component. Do **not** re-export every leaf as the component’s public API. Outsiders use preferably **one job struct** whose **methods** orchestrate once; pure rules stay thinking code (often private free functions). Otherwise “one function per task” becomes a shallow bag of stray public helpers (Ousterhout: deep face, private composition — `design-components/references/philosophy-of-design.md`). See also `components.md`, skill **`design-components`**, `pure-core.md`.
 

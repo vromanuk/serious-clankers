@@ -2,11 +2,11 @@
 
 ## Intent
 
-Stage 5 of skeptic: judge production observability of the change — structured logs, spans for units of work, metrics label safety, panic reporting, async/thread span attachment, and alert rules. Depth from the `observability` skill.
+Stage 6 of skeptic: judge production observability of the change — structured logs, spans for units of work, metrics label safety, panic reporting, async/thread span attachment, and alert rules. Depth from the `observability` skill.
 
 ## Triggers
 
-- **SHOULD** apply when skeptic runs stage 5, or the user asks only for observability/telemetry/alerting review.
+- **SHOULD** apply when skeptic runs stage 6, or the user asks only for observability/telemetry/alerting review.
 - **SHOULD NOT** apply as a substitute for the full skeptic pipeline.
 
 ## Behaviors

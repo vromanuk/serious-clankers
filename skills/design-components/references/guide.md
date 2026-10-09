@@ -264,7 +264,7 @@ One-shot scripts: stay local; no component graph.
 | Source | We take |
 |--------|---------|
 | Hombergs — [components not layers](https://www.youtube.com/watch?v=-VmhytwBZVs) | Job packages, not app-wide layers |
-| Cosmic Python [ch.4 service layer](https://www.cosmicpython.com/book/chapter_04_service_layer.html) | “Use case entrypoint” ≈ our public face — **not** the full book as default |
+| Cosmic Python (service layer) | “Use case entrypoint” ≈ our public face — **not** the full book as default |
 | Ousterhout — *Philosophy of Software Design* | Full pack mapping: `philosophy-of-design.md` |
 | Tilkov — [“Good Enough” Architecture](https://www.youtube.com/watch?v=nb0Ru40548U) | Enough modularization for the real problem |
 | Pack pure-core | Thinking vs shell / sans-IO |

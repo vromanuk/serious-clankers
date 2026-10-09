@@ -1,7 +1,7 @@
 ---
 name: skeptic-unit-tests
 description: >
-  Stage 4 of skeptic: unit-test craft on the scoped diff — unchanging tests,
+  Stage 5 of skeptic: unit-test craft on the scoped diff — unchanging tests,
   public API of the unit, state not interactions, behaviors not methods, DAMP
   over DRY. Always runs when skeptic runs. Use when skeptic runs or the user
   asks for unit-test quality review only. Loads the unit-tests skill for depth.
@@ -31,8 +31,8 @@ This stage **always runs** in the skeptic pipeline. It is not optional depth und
    - DAMP failures: case buried in helpers / silent `setUp` / `runScenario` as the whole test  
    - logic in tests that reimplements production  
    - over-mocked internals; weak failure messages  
-   - sleep, or a spin on the wall clock, inside a test — note `HR-sleep-in-tests` here; stage 9 records the blocker. A comment is not a fix  
-3. Flag **missing** unit coverage when thinking-code / pure contracts gained behavior and no public-API unit test was added (overlap with testability — report craft + gap here; pure-vs-shell placement stays stage 3).  
+   - sleep, or a spin on the wall clock, inside a test — note `HR-sleep-in-tests` here; stage 10 records the blocker. A comment is not a fix  
+3. Flag **missing** unit coverage when thinking-code / pure contracts gained behavior and no public-API unit test was added (overlap with testability — report craft + gap here; pure-vs-shell placement stays stage 4).  
 4. When tests are in scope: `unit-tests: ok` (one line) or findings.  
 5. When **no** test files and **no** new pure behavior in the diff: `none` with one-line why (still run the stage — do not skip silently).  
 
@@ -42,8 +42,8 @@ This stage **always runs** in the skeptic pipeline. It is not optional depth und
 - Property vs snapshot **mechanics** as the main pass (→ testability `testing.md`) — still flag if a unit test violates unchanging/public-API/DAMP  
 - Integration/E2E strategy alone  
 - Comment/naming polish of production code (→ comments / naming)  
-- Full hard-rule walk (→ hard-rules); `HR-new-behavior-no-test` may be noted and left to stage 9  
+- Full hard-rule walk (→ hard-rules); `HR-new-behavior-no-test` may be noted and left to stage 10  
 
 ## Output section title
 
-`## 4. Unit tests`
+`## 5. Unit tests`

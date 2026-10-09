@@ -31,7 +31,7 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 | 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components? Use-case surface (not stray helpers)? Data ownership? Types at boundaries? |
 | 3 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Coverage/shape for new contracts? |
 | 4 | `../skeptic-unit-tests/SKILL.md` | Unit-test craft: public API, state not mocks, DAMP, unchanging? |
-| 5 | `../skeptic-observability/SKILL.md` | Logs/spans/metrics useful? Async spans? Safe labels? |
+| 5 | `../skeptic-observability/SKILL.md` | Logs/spans/metrics useful? Async spans? Safe labels? Alerts: precision, recall, detection, reset, how many fire? |
 | 6 | `../skeptic-comments/SKILL.md` | Comments: necessary? why not what? clear English? |
 | 7 | `../skeptic-naming/SKILL.md` | Names: clear for scope, not cryptic, not overlong? |
 | 8 | `../skeptic-conventions/SKILL.md` | One function per task? Plain words? Clear Rust style? |
@@ -70,6 +70,7 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 - One opaque mega-diff / squash of many ideas  
 - Contract only in a second helper — caller can forget  
 - `println!` as production logging; unentered spans; metric labels with unbounded values  
+- Alert that pages on a cause, filters noise only with a long `for:`, or fires once per pod for one incident  
 - External HTTP/DB/RPC call with no timeout or deadline  
 - Brittle unit tests (private helpers, interaction-only mocks, case hidden in test helpers)  
 - Public API that exposes implementation units (upload slots, parts, files, provider types), so swapping the implementation changes callers  

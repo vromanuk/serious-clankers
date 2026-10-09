@@ -1,0 +1,23 @@
+# Only the skills listed here are published. A new skill stays local until it is added below.
+/skills/*
+!/skills/create-flashcards/
+!/skills/design-components/
+!/skills/explain-diff/
+!/skills/explain-topic/
+!/skills/grafana-dashboards/
+!/skills/observability/
+!/skills/pr-description/
+!/skills/skeptic/
+!/skills/skeptic-architecture/
+!/skills/skeptic-comments/
+!/skills/skeptic-complexity/
+!/skills/skeptic-conventions/
+!/skills/skeptic-hard-rules/
+!/skills/skeptic-naming/
+!/skills/skeptic-observability/
+!/skills/skeptic-purpose/
+!/skills/skeptic-testability/
+!/skills/skeptic-unit-tests/
+!/skills/unit-tests/
+
+__pycache__/

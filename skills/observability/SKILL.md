@@ -2,16 +2,17 @@
 name: observability
 description: >
   Write and review production observability: structured logs, spans/traces,
-  metrics, panic hooks (Rust-first: tracing, OpenTelemetry, metrics). Use when
-  adding telemetry, reviewing logs/metrics/spans, or when skeptic observability
-  stage runs. Not for unit-test craft alone.
+  metrics, panic hooks, alert rules (Rust-first: tracing, OpenTelemetry, metrics;
+  Prometheus-style alerts). Use when adding telemetry, writing or reviewing
+  logs/metrics/spans/alert rules, or when skeptic observability stage runs. Not
+  for unit-test craft alone.
 ---
 
 # Observability
 
-Make production systems **askable**: useful logs, spans, and metrics — without coupling to one sink, without silent span bugs, without unbounded metric labels.
+Make production systems **askable**: useful logs, spans, and metrics — without coupling to one sink, without silent span bugs, without unbounded metric labels — and alerts that fire when someone must act.
 
-**Full rules:** load `references/guide.md` for non-trivial work.
+**Full rules:** load `references/guide.md` for non-trivial work. For alert rules, load `references/alerts.md`.
 
 ## First rules (always)
 
@@ -25,6 +26,7 @@ Make production systems **askable**: useful logs, spans, and metrics — without
 8. **Async/spawn** — attach spans explicitly; thread-local does not follow tasks/threads alone.  
 9. **Metrics labels** — only **bounded** dimensions; never raw user ids as labels.  
 10. **Panics in services** — custom panic hook into the same pipeline as other telemetry.  
+11. **Alerts** — page on what users feel; judge each rule on precision, recall, detection time, reset time, and how many alerts fire for one incident. See `references/alerts.md`.  
 
 ## Do (write)
 
@@ -51,13 +53,17 @@ Flag with path:line (load guide for depth):
 | Missing span on heavy I/O / variable steps | add unit-of-work span |
 | Panic only on stderr in long-running service | panic hook → pipeline |
 | Secrets in log/span fields | redact / never attach |
+| Alert pages on a cause (CPU, restarts) with no user impact | symptom alert; cause on dashboard/ticket |
+| Long `for:` as the only alert noise filter | longer window, or long + short window |
+| Alert fires once per pod for one incident, or misses one bad pod | aggregate to the level someone acts on; suggest per-pod at ticket severity |
+| Alert on a signal that can vanish, no `absent()` | add a missing-data alert |
 
 When in scope: `observability: ok` (one line) or findings.
 
 ## Scope
 
-- **In:** logs, spans, metrics, panic hooks, export, async/thread span attachment, label cardinality.  
-- **Out:** pure unit-test style (→ `unit-tests`); full multi-lens review (→ `skeptic`); product feature design alone.  
+- **In:** logs, spans, metrics, panic hooks, export, async/thread span attachment, label cardinality, alert rules.  
+- **Out:** pure unit-test style (→ `unit-tests`); full multi-lens review (→ `skeptic`); product feature design alone; alert routing and on-call policy beyond a short note.  
 
 ## Related
 

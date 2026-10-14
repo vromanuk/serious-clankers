@@ -63,6 +63,22 @@ The agent SHALL treat job-shaped components (public surface at the component bou
 - **WHEN** reviewing architecture
 - **THEN** the agent does not suggest the test-only enum; the trait is a real seam
 
+### Behavior: Dependencies passed in
+
+The agent SHALL flag components that build their own clients, stores, or formats, and components that reach out at runtime for config, global services, or the clock instead of receiving them through the constructor or method parameters (dependency injection). Logging and tracing globals, caches of constants, and `main` or startup code reading configuration are not findings.
+
+#### Scenario: Config read from the environment inside a component
+
+- **GIVEN** a component method that calls `std::env::var("BUCKET")` each time it uploads
+- **WHEN** reviewing architecture
+- **THEN** the agent flags the hidden dependency and suggests reading the value once at the app edge and passing it to the component's constructor
+
+#### Scenario: Tracing global
+
+- **GIVEN** a component that logs through the global `tracing` subscriber
+- **WHEN** reviewing architecture
+- **THEN** the agent does not report a hidden dependency
+
 ### Behavior: Type-driven boundaries
 
 When APIs or shared results change, the agent SHALL check whether callers can forget a real decision, and SHALL report `type-driven: ok` or type-driven findings. When the diff adds a struct, the agent SHALL also check whether an existing struct or enum variant already carries those fields, and SHALL flag a near-copy with reuse / generalize / keep-both options.

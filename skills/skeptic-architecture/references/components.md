@@ -360,7 +360,8 @@ The public API of a component is what callers and tests depend on. Implementatio
 
 | Check | Ask | Good | Flag |
 |-------|-----|------|------|
-| Passed in | Does the component build its own clients, stores or formats? | built at the app edge and passed to the constructor | `S3Client::new()` inside a component; a format chosen by `if` deep inside |
+| Passed in (dependency injection through the constructor) | Does the component build its own clients, stores or formats? | built at the app edge and passed to the constructor | `S3Client::new()` inside a component; a format chosen by `if` deep inside |
+| Hidden dependencies | Does the component reach out at runtime for something it was not given? | config, clocks and shared clients arrive through the constructor (or as method parameters), so the call site shows everything the component needs | `std::env::var` inside a method; a global static or `OnceLock` used as a service (a client, a store, a registry); `SystemTime::now()` / `Instant::now()` read inside component logic instead of a clock passed in. Not a hit: logging and tracing globals, `OnceLock` caches of constants, `main` and startup code reading configuration |
 | Enum or trait | Who owns the implementations? | enum when this crate owns every variant; trait for an open set or another crate's implementations | `Arc<dyn Trait>` with one production implementation and one fake |
 | `Arc` | Is the value shared across tasks? | `Arc` (or a cheap-clone handle) only when shared; move ownership otherwise | `Arc` around values one task owns |
 | Tests | Can tests build the real component and swap only the collaborator? | real constructor + `#[cfg(test)]` fake; time as a parameter | tests that need a broker, a clock read, or private helpers to reach the logic |

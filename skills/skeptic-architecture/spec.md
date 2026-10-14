@@ -79,6 +79,22 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent flags both types and offers reuse, generalize, or keep both. Keep-both is allowed only when the finding names the fact that would be a lie if they were one type. A comment that distinguishes the new struct from some other type is not that fact. A wrapper that holds the existing type plus the extra field is not this finding.
 
+### Behavior: Reliability and security lenses
+
+When the diff touches failure-relevant code, the agent SHALL follow the `skeptic-reliability` contract and report it as `### Reliability` inside this stage; when it touches a trust boundary, the agent SHALL follow the `skeptic-security` contract and report it as `### Security`. Otherwise the agent SHALL write one line per lens with `none` and the reason.
+
+#### Scenario: Diff adds a consumer that writes to object storage
+
+- **GIVEN** a diff adds a Kafka consumer that uploads files to object storage with a service-account token
+- **WHEN** reviewing architecture
+- **THEN** the `## 2. Architecture` section contains the component findings followed by `### Reliability` (for example commit-after-durable, retries, backlog) and `### Security` (for example token handling and bucket access scope)
+
+#### Scenario: Pure formatting change
+
+- **GIVEN** a diff that only renames private helpers in a pure function module
+- **WHEN** reviewing architecture
+- **THEN** the section ends with `reliability: none` and `security: none`, each with a one-line reason
+
 ## Constraints
 
 ### Constraint: Stage boundary

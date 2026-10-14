@@ -23,6 +23,8 @@ description: >
 3. `../design-components/references/philosophy-of-design.md` — when shallow vs deep face, leakage, or pass-through APIs are in scope  
 4. `../skeptic-testability/references/pure-core.md` — when pure vs IO placement is in scope  
 5. `references/type-driven.md` — type-boundary samples when APIs/results change, and when the diff adds a struct  
+6. `../skeptic-reliability/SKILL.md` — when the diff touches remote calls, retries, consumers or producers, queues, caches, config, deployment or health checks, startup dependencies, shared tenant resources, or state that must survive a crash  
+7. `../skeptic-security/SKILL.md` — when the diff touches a trust boundary: untrusted input, authentication or authorization, keys or tokens, TLS, identities and permissions, queries or commands built from data, admin or debug endpoints, dependencies or deployment config, logging of user data  
 6. `references/rust-apis.md` — misuse-resistant API craft  
 
 ## Do
@@ -90,6 +92,15 @@ Part of component-based architecture: the public API is the contract that stays 
 
 When a component API is in scope, report `api-design: ok` (one line per check) or findings with path:line.
 
+### Reliability and security (part of this stage)
+
+Architecture decides how failure and trust flow between components, so this stage also runs two lenses, each kept in its own skill:
+
+1. **Reliability** — when its trigger matches (Load item 6), follow `skeptic-reliability` and report its result as `### Reliability` inside this section: does the design contain failure and recover?  
+2. **Security** — when its trigger matches (Load item 7), follow `skeptic-security` and report its result as `### Security` inside this section: what can a hostile or mistaken caller, message, credential, or insider do?  
+3. When a trigger does not match, write one line: `reliability: none — <why>` or `security: none — <why>`.  
+4. Keep the lenses separate from the component findings above; when one finding is both (for example a shared identity that is also a shared failure domain), report it once, where its fix lives, and cross-reference it from the other.
+
 ### Findings
 
 - Evidence at file:line (or import path).  
@@ -110,4 +121,4 @@ When a component API is in scope, report `api-design: ok` (one line per check) o
 
 ## Output section title
 
-`## 2. Architecture`
+`## 2. Architecture` — with `### Reliability` and `### Security` subsections (or their one-line `none`) after the component findings.

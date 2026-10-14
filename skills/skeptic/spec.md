@@ -23,6 +23,16 @@ The agent SHALL always run stages purpose, architecture, complexity, testability
 - **WHEN** skeptic runs
 - **THEN** the handoff contains all ten sections in order (findings or N/A with reason each), including `## 3. Complexity` and `## 5. Unit tests`
 
+### Behavior: Reliability and security inside architecture
+
+Stage 2 (architecture) SHALL include `### Reliability` and `### Security` subsections, following the `skeptic-reliability` and `skeptic-security` contracts, when the diff touches failure-relevant code or a trust boundary; otherwise each SHALL be one line with `none` and the reason. This adds no numbered stage.
+
+#### Scenario: Diff adds a remote call with retries
+
+- **GIVEN** a diff that adds an object-storage upload with a retry loop and a new service-account token
+- **WHEN** skeptic runs
+- **THEN** `## 2. Architecture` contains `### Reliability` and `### Security`, and the report still has exactly ten numbered sections
+
 ### Behavior: Async section when the diff has async code
 
 When the diff contains async Rust, the agent SHALL also run the `skeptic-async` contract after stage 10 and report it as `## Async`; otherwise it SHALL omit that section.

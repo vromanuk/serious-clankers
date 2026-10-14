@@ -146,7 +146,9 @@ Load when the job matches — not always-on:
 |-------|------|
 | `skeptic` | Multi-stage code review: runs the ten stages below in order |
 | `skeptic-purpose` | Real need, structure, serious bugs, alternatives — skeptic stage 1 |
-| `skeptic-architecture` | Component layout (default) + type boundaries — skeptic stage 2 |
+| `skeptic-architecture` | Component layout (default) + type boundaries, with reliability and security subsections — skeptic stage 2 |
+| `skeptic-reliability` | Failure modes, timeouts/retries/idempotency, load shedding and backlogs, constant work, control vs data plane, sharding and cells, caches and consumers, rollout and rollback, recovery — part of skeptic stage 2 |
+| `skeptic-security` | Least privilege and authorization, trust boundaries and injection, keys and cryptography, attacker-driven load, supply chain — part of skeptic stage 2 |
 | `skeptic-complexity` | Design depth: red flags, leakage, errors, split vs join — skeptic stage 3 |
 | `skeptic-testability` | Thinking code vs shell, decisions as data — skeptic stage 4 |
 | `skeptic-unit-tests` | Unit-test craft on the diff — skeptic stage 5 |

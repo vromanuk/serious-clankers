@@ -28,7 +28,7 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 | # | Stage skill | Question |
 |---|-------------|----------|
 | 1 | `../skeptic-purpose/SKILL.md` | Real need? Approach fit? Serious bugs? Alternatives? |
-| 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components? Use-case surface (not stray helpers)? Data ownership? Types at boundaries? |
+| 2 | `../skeptic-architecture/SKILL.md` | Default layout: job components? Use-case surface (not stray helpers)? Data ownership? Types at boundaries? Plus `### Reliability` (`../skeptic-reliability/SKILL.md`) and `### Security` (`../skeptic-security/SKILL.md`) when the diff touches failure-relevant code or a trust boundary |
 | 3 | `../skeptic-complexity/SKILL.md` | Harder to understand or change? Shallow units, leakage, pass-throughs, error design, split vs join? |
 | 4 | `../skeptic-testability/SKILL.md` | Thinking vs shell? Decisions as data? Coverage/shape for new contracts? |
 | 5 | `../skeptic-unit-tests/SKILL.md` | Unit-test craft: public API, state not mocks, DAMP, unchanging? |

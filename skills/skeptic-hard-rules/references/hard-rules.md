@@ -13,6 +13,7 @@ Prefer encoding as lint/CI when stable.
 | `HR-private-import` | Do not import another component’s private path (past its public surface) | Cross-component use of private modules / non-exported paths; not merely “missing an `internal/` folder name” |
 | `HR-io-in-decision-core` | No network/disk/env/clock/random inside pure decision helpers under review | `std::fs`, `Instant::now`, env, sockets inside functions documented as pure/thinking |
 | `HR-io-timeout` | Every **external** call / remote IO must have a **timeout or deadline** | HTTP/DB/gRPC/Redis/queue/S3/SMTP/DNS/client SDK call with no client timeout, per-request timeout, or wrapping deadline; connect-only timeout with unbounded body wait when the stack supports request timeout |
+| `HR-retry-backoff` | Retries of remote IO must be **bounded** and wait with **capped exponential backoff plus jitter** | Loop or retry helper around an HTTP/gRPC/DB/broker/storage call with no attempt cap and no overall deadline; zero or fixed delay between attempts; exponential delay with no cap or no jitter; retry library set to unlimited attempts |
 | `HR-prefer-battle-tested-lib` | Prefer a standard, battle-tested crate over hand-rolled code for well-solved domains (especially **date/time/calendar**, also UUID, URL, crypto primitives, compression, etc.) when the crate is already in the workspace or is the normal Rust ecosystem choice | Custom leap-year / `days_in_month` / manual `YYYY-MM-DD` validation; home-grown base64/UUID; reinventing parsers already covered by `chrono`/`time`/`uuid`/… |
 | `HR-api-get-mutates` | Public **mutating** operations must not look like pure reads | `get_*` / `fetch_*` / HTTP `GET` that create/update/delete or have real side effects |
 | `HR-api-bare-quantity` | Public quantities must name the **unit or standard** (or carry currency) | Public field/param `duration` / `date` / `amount` / `price` as bare number/string with no unit/standard in name or structure |
@@ -146,6 +147,62 @@ tokio::time::timeout(Duration::from_secs(10), client.get(url).send()).await??;
 
 **Review tip:** when the diff **adds** a new outbound dependency, check the **construction** of the client/pool in the same PR or the module that owns it — not only the call site.
 
+### `HR-retry-backoff` (detail)
+
+**Why:** A retry adds load to a dependency at the moment it is failing. With no bound, retries never stop during an outage. With no delay or a fixed delay, every caller retries in lockstep. With no jitter, callers that failed together retry together again. Each of these turns a partial failure into a full one.
+
+**Scope:** retries of anything `HR-io-timeout` calls external or remote IO, written by hand or configured on a retry library or client.
+
+**What counts as compliant (all three):**
+
+- **Bounded:** a maximum number of attempts, or an overall deadline that covers every attempt.  
+- **Backoff:** the delay grows between attempts (exponential) up to a fixed cap.  
+- **Jitter:** each delay is randomized (for example full jitter: a random value between zero and the capped exponential delay).
+
+**Invalid:**
+
+```rust
+// unbounded, no delay: hammers the dependency for as long as it is down
+loop {
+    if client.put_object(&request).await.is_ok() { break; }
+}
+
+// bounded, but a fixed delay: every caller retries in lockstep
+for _ in 0..5 {
+    if call().await.is_ok() { break; }
+    tokio::time::sleep(Duration::from_millis(100)).await;
+}
+
+// exponential, but no cap and no jitter
+let delay = Duration::from_millis(100) * 2u32.pow(attempt);
+```
+
+**Valid:**
+
+```rust
+let mut attempt = 0;
+loop {
+    match call().await {
+        Ok(response) => break Ok(response),
+        Err(error) if attempt + 1 >= MAX_ATTEMPTS || !is_retryable(&error) => break Err(error),
+        Err(_) => {
+            let capped = BASE_DELAY.saturating_mul(1 << attempt.min(16)).min(MAX_DELAY);
+            tokio::time::sleep(rng.random_range(Duration::ZERO..=capped)).await; // full jitter
+            attempt += 1;
+        }
+    }
+}
+// or: a retry library / SDK retry policy configured with max attempts, capped exponential backoff, and jitter
+```
+
+**Not a hit:**
+
+- In-process retries that touch no remote IO (a lock, a local channel).  
+- A client or SDK whose documented default retry policy is bounded with capped backoff and jitter, used without overriding it.  
+- A contract that requires retrying until success (for example "a file is retried until it is stored, or its records would be committed without it"). The loop may then be unbounded, but each delay must still use capped backoff with jitter, and repeated failure must be visible (a metric or log per attempt, and an alert threshold).
+
+**Fix:** add an attempt cap or an overall deadline, capped exponential backoff, and jitter; retry only errors that can succeed on a retry; make sure the operation is idempotent (reliability stage).
+
 ### API / interface hard rules (detail)
 
 Scope: **public** surfaces only — `pub` API, HTTP/JSON wire fields, SDK methods, component roots. Private helpers are naming-stage judgment, not these HRs.  
@@ -193,7 +250,8 @@ When adding a rule: exact signal, invalid example, valid example, prefer tool en
 | Topic | Guidance |
 |-------|----------|
 | **Ticket IDs in comments** | Prefer stating the **constraint**. Tickets OK for scars/critical bugs. Not on ordinary logic. |
-| **Production sleep** | Retry backoff and rate limits are not `HR-sleep-in-tests`. Remote IO still needs `HR-io-timeout`. |
+| **Production sleep** | Retry backoff and rate limits are not `HR-sleep-in-tests`. Remote IO still needs `HR-io-timeout`, and its retries need `HR-retry-backoff`. |
+| **Retry design beyond the pass/fail floor** | Where to retry in a call chain, retry budgets, idempotency, circuit breakers — **reliability** (`skeptic-reliability`), not HR. |
 | **Vague but not false public names** | e.g. `get_time()` when several times exist; short `str` — **naming** stage (API Book “don’t spare letters”) |
 | **Function verb / bool predicate form** | action = verb phrase; bool = `is`/`has`/`can` — **naming** stage (`naming.md` § Function naming), not automatic HR |
 | **Shallow public surface / missing use-case orchestration** | many exported step-helpers or handler-owned workflows — **architecture** (`components.md`, `design-components`), not automatic HR |

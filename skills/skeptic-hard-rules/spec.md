@@ -13,7 +13,7 @@ Stage 10 of skeptic: pass/fail absolute bans only, from `references/hard-rules.m
 
 ### Behavior: Checklist only
 
-The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces, IO rules such as `HR-io-timeout` for external/remote calls, and `HR-sleep-in-tests` for sleeps and wall-clock spins in tests.
+The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces, IO rules such as `HR-io-timeout` for external/remote calls and `HR-retry-backoff` for their retries, and `HR-sleep-in-tests` for sleeps and wall-clock spins in tests.
 
 #### Scenario: Private import
 
@@ -32,6 +32,18 @@ The agent SHALL walk `references/hard-rules.md` against the diff and report only
 - **GIVEN** a new or changed outbound HTTP/DB/gRPC (or similar remote IO) with no client timeout, per-request timeout, or wrapping deadline
 - **WHEN** reviewing hard rules
 - **THEN** the agent reports `HR-io-timeout` with path:line and smallest fix
+
+#### Scenario: Unbounded retry with a fixed delay
+
+- **GIVEN** a loop that retries an object-storage upload with a fixed 100 ms sleep and no attempt cap, deadline, or stated retry-until-stored contract
+- **WHEN** reviewing hard rules
+- **THEN** the agent reports `HR-retry-backoff` with path:line and the smallest fix (attempt cap or deadline, capped exponential backoff, jitter)
+
+#### Scenario: Retry until stored is the contract
+
+- **GIVEN** an upload that must retry until stored, using capped exponential backoff with jitter and a metric per failed attempt
+- **WHEN** reviewing hard rules
+- **THEN** the agent does not report `HR-retry-backoff`
 
 #### Scenario: Sleep in a test
 

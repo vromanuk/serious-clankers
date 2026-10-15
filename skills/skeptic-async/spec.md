@@ -47,6 +47,22 @@ The agent SHALL flag blocking calls and long CPU work on runtime threads, and `b
 - **WHEN** reviewing async code
 - **THEN** the agent flags that it permanently takes a blocking-pool thread and suggests `std::thread::spawn`
 
+### Behavior: Mutexes in async code
+
+The agent SHALL flag a lock held across an `.await`, including the cases the compiler does not catch (`spawn_local`, `block_on` and the `#[tokio::main]` body, and `Send` guards from `dashmap` or `parking_lot` with `send_guard`), SHALL prefer a wrapper struct that locks only in non-async methods, and SHALL flag `tokio::sync::Mutex` where no await happens under the lock.
+
+#### Scenario: dashmap entry held across an await
+
+- **GIVEN** an `async fn` that takes a `dashmap` entry with `get_mut`, then awaits a remote call before writing to it
+- **WHEN** reviewing async code
+- **THEN** the agent flags a possible deadlock the compiler will not report, because `dashmap` guards are `Send`, and suggests reading and writing through sync methods with the await in between
+
+#### Scenario: Arc<Mutex> passed through async handlers
+
+- **GIVEN** handlers that each receive `Arc<tokio::sync::Mutex<HashMap<…>>>`, lock it, and only insert or read without awaiting
+- **WHEN** reviewing async code
+- **THEN** the agent suggests a wrapper struct around a `std::sync::Mutex` with non-async `insert` and `get` methods, since no await happens under the lock
+
 ### Behavior: Task ownership and shutdown
 
 The agent SHALL flag detached spawns and ignored `JoinHandle` results, and SHALL check that long-running tasks get a stop signal and that shutdown waits for them.

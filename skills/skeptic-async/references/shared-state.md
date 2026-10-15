@@ -23,8 +23,63 @@ Async does not remove the need to think about exclusion. **Mutual exclusion is a
 | An IO resource that must be held across `.await` | `tokio::sync::Mutex` works, but an actor that owns the resource is usually better |
 | A pipelined client (many requests in flight on one connection) | Actor — a Tokio mutex allows only one request in flight |
 | A contended `std::sync::Mutex` | Shard it, move the state into an actor, or restructure — rarely switch to the Tokio mutex |
+| A database connection | A connection pool (`bb8`, `deadpool`), not a mutex around one connection |
 
-`tokio::sync::Mutex` uses a synchronous mutex inside; it does not make code faster. It is FIFO, does not poison on panic, its `lock()` loses its queue place when cancelled, and `blocking_lock` panics inside async code.
+- **Use an async lock only when you must `.await` while holding it.** Async locks are "a lot slower than blocking locks", and `tokio::sync::Mutex` uses a synchronous mutex inside, so switching to it rarely helps performance.
+- A synchronous mutex in async code "is fine as long as contention remains low and the lock is not held across calls to `.await`." A contended lock blocks the thread, and with it every other task scheduled on that thread.
+- `tokio::sync::Mutex` is FIFO and fair, does not poison on panic, its `lock()` loses its queue place when cancelled, and `blocking_lock` panics inside async code. It cannot be locked in `Drop`, because destructors are synchronous.
+
+### 2.1 Hide the lock in a wrapper struct
+
+Do not pass `Arc<Mutex<MyStruct>>` around with `lock()` calls everywhere. That clutters every signature, leaks the choice of lock (swapping `Mutex` for `RwLock` touches the whole codebase), and makes it easy to hold the lock too long — "a particularly bad issue in async code." Put the `Arc<Mutex<…>>` inside a struct, and lock only inside its **non-async** methods: "Since you can't use .await in a non-async method, this makes it impossible to accidentally .await something while the mutex is locked."
+
+```rust
+#[derive(Clone)]
+pub struct SessionTable { inner: Arc<Mutex<HashMap<SessionId, Session>>> }
+
+impl SessionTable {
+    pub fn insert(&self, id: SessionId, session: Session) { self.inner.lock().unwrap().insert(id, session); }
+    pub fn get(&self, id: &SessionId) -> Option<Session> { self.inner.lock().unwrap().get(id).cloned() }
+}
+
+// Async code calls the sync methods; the guard never lives across an await
+async fn refresh(table: &SessionTable, id: SessionId) -> Result<(), Error> {
+    let session = table.get(&id).ok_or(Error::Unknown)?;
+    let renewed = auth_client.renew(session).await?;   // no lock held here
+    table.insert(id, renewed);
+    Ok(())
+}
+```
+
+Async methods on the wrapper follow the same rule: read through a small sync helper (`fn deadline(&self) -> Instant`) and await afterwards, as in Ryhl's debouncer, whose `sleep()` never locks directly.
+
+### 2.2 Never return a guard or a reference into the lock
+
+A reference into the locked value exists only while the guard does, so returning one means returning the guard — and then async callers hold it across their awaits. Instead:
+
+- **Clone the value out**, made cheap with `Arc<str>` or `Bytes` instead of `String` or `Vec<u8>`.
+- **Run a closure under the lock** (`with_*` pattern): the closure is synchronous, so it cannot await.
+
+```rust
+pub fn with_session<T>(&self, id: &SessionId, read: impl FnOnce(Option<&Session>) -> T) -> T {
+    let guard = self.inner.lock().unwrap();
+    read(guard.get(id))
+}
+```
+
+### 2.3 Alternatives to a mutex
+
+Wrap each one in a struct the same way.
+
+| Tool | Fits | Watch for |
+|------|------|-----------|
+| `RwLock` | Many more reads than writes | Writer starvation under constant readers; `parking_lot`'s `RwLock` and Tokio's locks are fair |
+| `arc-swap` | A value that changes rarely (config) | Readers never lock and see the old value during a write; every write clones the whole value (or shares parts through `Arc`) |
+| `evmap` | A map read far more than written | Eventually consistent: writes become visible later |
+| `dashmap` | A map with independent keys | Sharded `RwLock`s; its guards are `Send`, so holding one across `.await` compiles and can deadlock (§ 3.1) |
+| A thread-local | A per-thread cache | Data duplicated per thread |
+| Atomics | A counter or flag | — |
+| Sharded `Vec<Mutex<HashMap<…>>>` | Independent keys under contention | Pick the shard by key hash |
 
 ---
 
@@ -41,7 +96,7 @@ async fn increment_and_save(counter: &std::sync::Mutex<u64>) {
 }
 ```
 
-An explicit `drop(n)` before the await is **not** enough: the compiler decides `Send` from scopes. End the scope:
+The Tokio tutorial warns that an explicit `drop(n)` before the await may not be enough, because the compiler decides `Send` from scopes. Ending the scope always works:
 
 ```rust
 // Better: guard scope ends before the await
@@ -61,7 +116,14 @@ async fn increment_and_save(counter: &Counter) {
 }
 ```
 
-Do not "fix" the `!Send` error by moving the task to a local runtime: another task on that thread can then block on the same lock while the holder waits at its await — a deadlock. Some mutex crates make the guard `Send`; that code compiles and still deadlocks.
+Why it deadlocks: tasks switch only at an `.await`. A task that awaits while holding a lock keeps it locked; if another task on the same thread then calls `lock()` — which is not an `.await` — the thread blocks and can never switch back to the holder.
+
+**When the compiler does not catch it.** The `!Send` error appears only when the task can move between threads *and* the guard is not `Send`. No error, and a possible deadlock, when:
+
+- the code runs under `tokio::task::spawn_local`, or `block_on` — which includes the body of `#[tokio::main]`;
+- the guard is `Send`: **`dashmap`'s guards are**, and `parking_lot`'s are with its `send_guard` feature — which `dashmap` enables for the whole build, so every `parking_lot` lock in a crate that depends on `dashmap` loses the compiler check.
+
+So do not "fix" the `!Send` error by moving the task to a local runtime, and lock `dashmap` and `parking_lot` only inside non-async methods (§ 2.1).
 
 ### 3.2 A Tokio mutex held while state is broken
 
@@ -158,6 +220,7 @@ Rules:
 - **Shutdown = all handles dropped.** A cycle of actors holding each other's handles never shuts down; an actor holding a clone of its own sender never sees `None`. Break the cycle with a second channel whose closing ends the loop, or abort one actor.
 - **No cycle of bounded channels.** If A awaits sending to B while B awaits sending to A and both queues are full, both wait forever. `oneshot` replies and `try_send` do not count toward a cycle (they never wait).
 - **IO actors:** one reader task and one writer task per connection keep IO isolated.
+- **No IO resources inside a locked collection.** A `Mutex<HashMap<UserId, TcpStream>>` "never really" turns out well: give each connection its own task that owns the stream, and keep the actor *handles* in the map.
 
 ---
 
@@ -178,6 +241,7 @@ Rules:
 
 ## Sources
 
+- https://draft.ryhl.io/blog/shared-mutable-state/ — Shared mutable state in Rust (Alice Ryhl)
 - https://tokio.rs/tokio/tutorial/shared-state — Shared state (Tokio tutorial)
 - https://tokio.rs/tokio/tutorial/channels — Channels (Tokio tutorial)
 - https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html — `tokio::sync::Mutex` (which mutex to use)

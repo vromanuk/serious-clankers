@@ -42,6 +42,8 @@ Each stage owns its own `references/` (load only what that stage’s SKILL asks 
 
 **Extra section (conditional):** when the diff contains async Rust (`async`, `.await`, `tokio::`, futures, a hand-written `Future`), also run `../skeptic-async/SKILL.md` after stage 10 and report it as `## Async`. No async code → omit the section.
 
+**Extra section (conditional):** when the diff adds or changes traits, trait implementations, types with behavior, module layout, crate boundaries, `Cargo.toml` dependencies, or a library crate's public API, also run `../skeptic-solid/SKILL.md` after stage 10 (after `## Async` when present) and report it as `## SOLID`. Otherwise omit the section.
+
 ## Care priority (when weighting findings)
 
 1. Correctness of the real contract  

@@ -43,6 +43,16 @@ When the diff contains async Rust, the agent SHALL also run the `skeptic-async` 
 - **WHEN** skeptic runs
 - **THEN** the handoff contains the ten numbered sections followed by `## Async`
 
+### Behavior: SOLID section when the diff changes design structure
+
+When the diff adds or changes traits, trait implementations, types with behavior, module layout, crate boundaries, `Cargo.toml` dependencies, or a library crate's public API, the agent SHALL also run the `skeptic-solid` contract after stage 10 (after `## Async` when present) and report it as `## SOLID`; otherwise it SHALL omit that section.
+
+#### Scenario: Diff adds a trait and two implementations
+
+- **GIVEN** a diff that adds a public trait with two implementations and a new workspace crate
+- **WHEN** skeptic runs
+- **THEN** the handoff contains the ten numbered sections followed by `## SOLID`
+
 ### Behavior: Same-session, no spawned agents
 
 The agent SHALL run stages 1→10 in the current session without spawning subagents, still loading each stage contract, and SHALL NOT freestyle a one-lens product essay.

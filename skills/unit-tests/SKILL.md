@@ -26,6 +26,7 @@ Samples in the guide are mostly **Java** (from the source chapter) — principle
 6. **Complete and concise** — relevant inputs and outcomes visible; no clutter; no hidden setup that hides the point.  
 7. **DAMP over DRY** — tests optimize **clarity**, not shared lines. Straight-line; tolerate duplication when it clarifies; **do not bury the case in test helpers**.  
 8. **Clear failure messages** — expected vs actual + context; use good assertion libraries.  
+9. **Fake only IO** — keep IO out of the core so logic is tested by passing data in; run your own collaborators for real and replace only IO at the edge (in-memory store, fake clock); never mock your own code. Background work must be awaitable, so tests wait instead of sleeping. Depth: guide §7.  
 
 ## Helpers: two distinct anti-patterns (highlight)
 

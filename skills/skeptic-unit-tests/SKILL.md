@@ -32,6 +32,9 @@ This stage **always runs** in the skeptic pipeline. It is not optional depth und
    - logic in tests that reimplements production  
    - over-mocked internals; weak failure messages  
    - sleep, or a spin on the wall clock, inside a test — note `HR-sleep-in-tests` here; stage 10 records the blocker. A comment is not a fix  
+   - mocks of the crate's or component's own code where only IO should be faked; tests slow because they go through an out-of-process store where an in-memory fake of the same boundary would do (unit-tests guide §7.4)  
+   - tests that sleep or poll because the code under test spawns work they cannot wait for — the fix is in the production API (guide §7.3)  
+   - a trait added only as a test seam that no code is generic over (concrete abstraction, guide §7.5)  
 3. Flag **missing** unit coverage when thinking-code / pure contracts gained behavior and no public-API unit test was added (overlap with testability — report craft + gap here; pure-vs-shell placement stays stage 4).  
 4. When tests are in scope: `unit-tests: ok` (one line) or findings.  
 5. When **no** test files and **no** new pure behavior in the diff: `none` with one-line why (still run the stage — do not skip silently).  

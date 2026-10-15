@@ -40,6 +40,28 @@ The agent SHALL prefer asserting system state after the act over verifying exact
 - **WHEN** reviewing
 - **THEN** the agent recommends asserting observable state (e.g. user exists) and notes false pass/fail risks of interaction checks
 
+### Behavior: Fake only IO
+
+The agent SHALL prefer keeping IO out of the core so logic is tested by passing data in, SHALL replace only IO at the edge in tests (in-memory store, fake clock, fake transport) while running the component's own collaborators for real, and SHALL flag mocks of the code's own types, background work a test cannot wait for, and traits added as test seams that no code is generic over.
+
+#### Scenario: Mocking an own collaborator
+
+- **GIVEN** a test of `Checkout` that mocks the crate's own `Pricing` type and connects to a real database
+- **WHEN** reviewing
+- **THEN** the agent flags the mock as lowering fidelity, and suggests real `Pricing` with an in-memory order store
+
+#### Scenario: Sleep because work is detached
+
+- **GIVEN** a test that sleeps one second because the function under test spawns a task and returns nothing
+- **WHEN** reviewing
+- **THEN** the agent flags that the production API gives no way to wait, and suggests returning the task handle or an awaitable shutdown so the test waits on completion
+
+#### Scenario: One check function, visible cases
+
+- **GIVEN** tests that each call `check(input, expected)` with their own values
+- **WHEN** reviewing
+- **THEN** the agent accepts it as DAMP, because each case's inputs and expected result stay in the test body
+
 ### Behavior: Behaviors, structure, naming
 
 The agent SHALL prefer one behavior per test, Given/When/Then (or arrange/act/assert) structure, and names that summarize the behavior (action + expected outcome, plus setup when needed), not the production method name alone. The agent SHALL treat test names as failure-report documentation and SHALL flag method-only names (`testFoo`, `test_process_transaction`), opaque names (`test1`, `works`), and multi-story names that need **and** for independent behaviors.

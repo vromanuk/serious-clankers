@@ -755,7 +755,98 @@ Unit tests need not always be “smallest possible size,” but narrow scope + s
 
 ---
 
-## 7. Review checklist (for humans and agents)
+## 7. Keep IO out, fake only IO, and when a seam is worth a trait
+
+What makes tests fast and trustworthy is mostly decided by the production code's shape, not by the tests. These rules come from matklad's posts (Sources).
+
+### 7.1 Keep IO out of the core
+
+> "Key point: architecture the software to keep as much as possible sans io. Let the caller do input and output, and let the callee do compute."
+
+> "Even if it is the whole compiler, testing is fast and easy as long as no IO is involved."
+
+His example is rust-analyzer. A "Goto Definition" test is a small Rust project written as text, with `$0` marking the cursor. One `check` function builds an in-memory project, runs the whole compiler pipeline, and compares the result with a marker in the text. "Nothing is stubbed or mocked." The counterexample is Cargo, whose tests write real files and run the real `cargo` process: high confidence, but "Cargo’s test suite takes around seven minutes (-j 1), while rust-analyzer finishes in less than half a minute."
+
+- **Flag:** logic that reads files, sockets, or the clock in the middle of a computation, so the only way to test it is through real IO. Push the IO to the caller and pass data in (`skeptic-testability` → `pure-core.md`).
+
+### 7.2 Data-driven tests: one `check` function, many cases
+
+Write a single `check(input…, expected…)` function for a behavior, and make each test a call with its own inputs and expected result. When the API changes, "we only need to adjust the single place — check function".
+
+```rust
+#[track_caller]
+fn check(haystack: &[i32], needle: i32, expected_found: bool) {
+    let actual = haystack.binary_search(&needle).is_ok();
+    assert_eq!(actual, expected_found, "searching {needle} in {haystack:?}");
+}
+
+#[test]
+fn binary_search_in_a_singleton() {
+    check(&[92], 0, false);
+    check(&[92], 92, true);
+    check(&[92], 100, false);
+}
+```
+
+This is DAMP-compatible (§ 5): the inputs and the expected result stay visible in each test; `check` hides only the mechanics. A helper that hides the *case* (`run_happy_path()`) is still a smell.
+
+### 7.3 Background work must be awaitable
+
+An API that spawns concurrent work and gives the caller no way to wait for it "is fundamentally untestable": a test cannot check that the work is done, and the work can outlive the test and interfere with others. Tests then add sleeps or timeouts, and "Broken once, causality link is not reforgable by a layer above."
+
+- **Fix in production code:** return the `JoinHandle`, or give the owner a way to wait (`shutdown().await`, a `TaskTracker`). Detached spawns are also an async-stage finding (`skeptic-async` → `lifetimes-and-load.md`).
+- **Flag:** a test that sleeps or polls because the code under test spawns work it cannot wait on (`HR-sleep-in-tests`).
+
+### 7.4 Fake IO, never your own code
+
+> "artificially limiting the extent of tests by mocking your own code (as opposed to mocking impure IO) reduces fidelity of the tests, and makes the code more brittle in the face of refactors."
+
+> "What affects performance is not whether tests for business logic touch persistence, but whether, in tests, persistence is backed by an in-memory hash-map or by an out-of-process database server."
+
+So: run the real code of your own components together, and replace only the IO at the edge — storage with an in-memory map, the clock with a value or a fake clock, the network with a fake transport.
+
+```rust
+// Worse: the component under test is cut off from its own collaborator
+let mut pricing = MockPricing::new();
+pricing.expect_price().returning(|_| Ok(Money::eur(10)));
+let checkout = Checkout::new(pricing, PgOrders::connect(&db_url).await?); // real database
+
+// Better: real pricing code; only storage is faked, as an in-memory map
+let checkout = Checkout::new(Pricing::from_table(prices), Orders::in_memory());
+```
+
+- **Flag:** mocks of types from the same crate or component; tests slow because they hit an out-of-process store where an in-memory fake of the same boundary would do.
+
+### 7.5 When a test seam is worth a trait
+
+A trait is a real abstraction "if some part of you program is generic over T: Blag." If every use is concrete, "replace a trait with two inherent methods named blag, and the code will be essentially the same." His rust-analyzer case study removed the `Conv`/`ConvWith` traits in favor of plain functions — "the total diff for the commit was +999,-1123" — because the re-use "was not justified by the overall compression".
+
+What this means here:
+
+- A test fake is a second implementation, and code that is **generic** over the trait is real use: a trait with a generic parameter passes his test.
+- A trait used only through `dyn`, with one production implementation, passes too, but more weakly.
+- A trait no code is generic over, used only as a namespace for methods, is a concrete abstraction: use inherent methods.
+- The architecture stage then chooses the *shape* of the seam: when the fake is the only other implementation, it prefers a private enum with a `#[cfg(test)]` fake variant over a trait plus a generic inner type (`skeptic-architecture` → "One test seam").
+
+### 7.6 Call-site dependency injection
+
+Instead of storing a dependency at construction, pass it to each call:
+
+```rust
+// Stored at construction
+impl Engine { fn new(config: Config) -> Engine { /* … */ } fn go(&mut self) { /* … */ } }
+
+// Passed at the call site
+impl Engine { fn new() -> Engine { /* … */ } fn go(&mut self, config: &Config) { /* … */ } }
+```
+
+"In Rust, the latter (call-site injection) sometimes works with lifetimes better." His examples: `OnceCell::get_or_init(|| …)` instead of a closure stored in a `Lazy` (which would need a self-reference), hashbrown's `RawEntry`, and Zig's "unmanaged" containers, where "The “Unmanaged” flavor adds an allocator parameter to every method".
+
+For tests, call-site injection means each call can take a different fake or value (a `now` timestamp, a config, a store) with no stored handle to replace. Use it when the dependency is borrowed, differs per call, or would make the type self-referential; otherwise constructor injection at the app edge stays the default (`skeptic-architecture` → "Passed in, not built inside").
+
+---
+
+## 8. Review checklist (for humans and agents)
 
 When reviewing or writing unit tests, ask:
 
@@ -770,10 +861,14 @@ When reviewing or writing unit tests, ask:
 9. **DAMP?** Can you understand the case without opening test helpers / distant setUp? Important values in the body?  
 10. **New behavior covered?** Feature/bugfix added tests without rewriting the world?  
 11. **No sleep?** The test does not `sleep` or spin on the wall clock, and does not wait out a production backoff (`HR-sleep-in-tests`). Pass time in, advance a fake clock, or wait on the event.  
+12. **IO out of the core?** Can the logic be tested by passing data in, or does every test go through real files, sockets, or the clock? (§ 7.1)  
+13. **Only IO faked?** Are mocks limited to IO at the edge, with the component's own collaborators running for real? Is persistence an in-memory fake rather than an out-of-process server? (§ 7.4)  
+14. **Background work awaitable?** If the code spawns work, can the test wait for it instead of sleeping? (§ 7.3)  
+15. **Seam worth its trait?** Is some code generic over the trait, or is it a concrete abstraction? (§ 7.5)  
 
 ---
 
-## 8. Mapping to this repo
+## 9. Mapping to this repo
 
 | Idea | Where else |
 |------|------------|
@@ -781,10 +876,12 @@ When reviewing or writing unit tests, ask:
 | Property / snapshot **when** | `skeptic-testability/references/testing.md` (still obey public-API + unchanging + DAMP rules) |
 | Hard ban: new thinking behavior without tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-new-behavior-no-test` |
 | Hard ban: sleep or wall-clock spin in tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-sleep-in-tests` |
+| Owned, awaitable background tasks | `skeptic-async/references/lifetimes-and-load.md` |
+| Shape of a test seam (enum with `#[cfg(test)]` fake vs trait) | `skeptic-architecture/references/components.md` → One test seam for a concrete collaborator |
 
 ---
 
-## 9. TL;DRs
+## 10. TL;DRs
 
 1. Strive for **unchanging** tests.  
 2. Test via **public APIs** — **don’t test production helpers**.  
@@ -796,11 +893,17 @@ When reviewing or writing unit tests, ask:
 8. Don’t put **logic** in tests.  
 9. Write **clear failure messages**.  
 10. Follow **DAMP over DRY** — **don’t hide cases in test helpers**.  
+11. Keep **IO out of the core**; fake **only IO**, never your own code.  
+12. Background work must be **awaitable**.  
 
 ---
 
 ## Sources
 
 - *Software Engineering at Google* (O’Reilly), unit testing.  
+- matklad, "How to Test" — https://matklad.github.io/2021/05/31/how-to-test.html  
+- matklad, "Unit and Integration Tests" — https://matklad.github.io/2022/07/04/unit-and-integration-tests.html  
+- matklad, "Code Smell: Concrete Abstraction" — https://matklad.github.io/2020/08/15/concrete-abstraction.html  
+- matklad, "Call Site Dependency Injection" — https://matklad.github.io/2020/12/28/csdi.html  
 - Related: Testing on the Toilet — test behaviors not methods; Dan North — BDD intro.  
 - Flaky vs brittle: brittle = fails on harmless prod change; flaky = nondeterministic without prod change.  

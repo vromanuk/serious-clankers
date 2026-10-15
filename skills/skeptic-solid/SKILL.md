@@ -44,7 +44,7 @@ Load only what the diff touches:
 ## Do not
 
 - Report an acronym without a change pressure ("violates SRP")  
-- Demand traits for closed sets the crate owns, one trait per struct, or a trait whose only other implementation is a mock — the architecture defaults (enum, one `#[cfg(test)]` seam, passed in at the app edge) win  
+- Demand traits for closed sets of values the crate owns, or one trait per struct. A narrow trait for an IO client whose other implementation is a test fake is the architecture default (`skeptic-architecture` item 13), not over-abstraction  
 - Ask to split units that change together, or into pieces that must be read together (→ complexity owns depth and conjoined splits)  
 - Repeat component layout, public surface, data ownership, or "passed in, not built inside" (→ architecture), names (→ naming), Rust style (→ conventions), telemetry (→ observability)  
 - Propose new crates for an application's internal layers or subdomains — modules do that job  

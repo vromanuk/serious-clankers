@@ -13,7 +13,7 @@ Stage 2 of skeptic: judge and uphold the pack’s **default project architecture
 
 ### Behavior: Job-shaped components
 
-The agent SHALL treat job-shaped components (public surface at the component boundary + private implementation, edge composition, data ownership) as the **default** architecture for project layout. The agent SHALL prefer that shape over layer-only layout, SHALL judge the **boundary** (what the root exports vs private modules), and SHALL flag imports past the public surface and shared write free-for-alls with path:line evidence. The agent SHALL treat the public surface as preferably **one job struct** with **use-case methods** (orchestration entrypoints) and SHALL flag shallow bags of public step-helpers, free orchestration functions that re-pass the same deps, or multi-step workflows only in handlers when a component should own them. The agent MUST NOT require folders named `api` or `internal` when the component root already defines a clear public interface (e.g. Rust `mod.rs` / `lib.rs`). The agent MUST NOT treat “no app-wide layers” as forbidding a public job struct on the component. The agent MUST NOT demand Cosmic/DDD ceremony (formal UoW/repository hierarchies) by default. When layout is in scope, the agent SHALL report `components: ok` or concrete layout findings. When the change **adds** structure, the agent SHALL judge it against this default unless the user or existing codebase clearly requires another shape. When a private trait and a generic inner type exist only so tests can swap one concrete collaborator, the agent SHALL prefer folding the rules into the job struct with a private enum whose fake variant is `#[cfg(test)]`, and SHALL keep the trait when there is more than one production implementation or another crate must supply the fake.
+The agent SHALL treat job-shaped components (public surface at the component boundary + private implementation, edge composition, data ownership) as the **default** architecture for project layout. The agent SHALL prefer that shape over layer-only layout, SHALL judge the **boundary** (what the root exports vs private modules), and SHALL flag imports past the public surface and shared write free-for-alls with path:line evidence. The agent SHALL treat the public surface as preferably **one job struct** with **use-case methods** (orchestration entrypoints) and SHALL flag shallow bags of public step-helpers, free orchestration functions that re-pass the same deps, or multi-step workflows only in handlers when a component should own them. The agent MUST NOT require folders named `api` or `internal` when the component root already defines a clear public interface (e.g. Rust `mod.rs` / `lib.rs`). The agent MUST NOT treat “no app-wide layers” as forbidding a public job struct on the component. The agent MUST NOT demand Cosmic/DDD ceremony (formal UoW/repository hierarchies) by default. When layout is in scope, the agent SHALL report `components: ok` or concrete layout findings. When the change **adds** structure, the agent SHALL judge it against this default unless the user or existing codebase clearly requires another shape. The agent SHALL expect a client that does IO to be passed in behind a narrow trait: a type parameter on the job struct when tests are the only other implementation, with the fake implemented in test code; `Arc<dyn Trait>` (with `#[async_trait]` for async methods) when configuration picks between real implementations at runtime. The agent SHALL flag test-only variants in production enums, `Arc<dyn Trait>` whose only other implementation is a test fake, and a private generic copy of the job struct that the public one only forwards to.
 
 #### Scenario: Cross-module private import
 
@@ -51,17 +51,23 @@ The agent SHALL treat job-shaped components (public surface at the component bou
 - **WHEN** reviewing architecture
 - **THEN** the agent prefers a job struct that holds those collaborators and exposes methods
 
-#### Scenario: Trait and generic inner type only for a test fake
+#### Scenario: Generic inner type that the public struct only forwards to
 
-- **GIVEN** a public `AssetClient` whose only field is a private `AssetRpcCaller<R: AssetRpc>`, where the private trait `AssetRpc` has one production implementation (the generated gRPC client) and exists so tests can pass a fake
+- **GIVEN** a public `AssetClient` whose only field is a private `AssetRpcCaller<R: AssetRpc>` holding the rules, where `AssetRpc` has one production implementation (the generated gRPC client) and a test fake
 - **WHEN** reviewing architecture
-- **THEN** the agent flags the extra type and trait and offers moving the rules onto `AssetClient` with a private `enum Transport { Grpc(…), #[cfg(test)] Fake(…) }`, so tests build the real `AssetClient` and call its public methods
+- **THEN** the agent keeps the trait and flags the forwarding copy, offering `AssetClient<R: AssetRpc>` as the one generic job struct, so tests build the real `AssetClient` with the fake and call its public methods
 
-#### Scenario: Trait seam that real implementations need
+#### Scenario: Test-only variant in a production enum
 
-- **GIVEN** a private trait with two production implementations (for example an object-store backend and a local-disk backend)
+- **GIVEN** `enum Storage { S3 { .. }, #[cfg(test)] Fake(FakeBucket) }` inside a bucket component
 - **WHEN** reviewing architecture
-- **THEN** the agent does not suggest the test-only enum; the trait is a real seam
+- **THEN** the agent flags test code in a production type and offers a narrow `ObjectStorage` trait, the bucket generic over it, and the fake implementing it in test code
+
+#### Scenario: Implementation chosen from config at runtime
+
+- **GIVEN** a service that runs against S3 in production and an in-memory store for local development, chosen by a config value
+- **WHEN** reviewing architecture
+- **THEN** the agent accepts a narrow trait held as `Arc<dyn Trait>` with `#[async_trait]`, built by one `match` at the composition root, and does not ask for a type parameter
 
 ### Behavior: Dependencies passed in
 

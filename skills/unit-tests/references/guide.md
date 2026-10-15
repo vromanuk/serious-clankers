@@ -826,7 +826,7 @@ What this means here:
 - A test fake is a second implementation, and code that is **generic** over the trait is real use: a trait with a generic parameter passes his test.
 - A trait used only through `dyn`, with one production implementation, passes too, but more weakly.
 - A trait no code is generic over, used only as a namespace for methods, is a concrete abstraction: use inherent methods.
-- The architecture stage then chooses the *shape* of the seam: when the fake is the only other implementation, it prefers a private enum with a `#[cfg(test)]` fake variant over a trait plus a generic inner type (`skeptic-architecture` → "One test seam").
+- The architecture stage then chooses the *shape* of the seam: when the fake is the only other implementation, the job struct is generic over a narrow trait and the fake implements it in test code (`skeptic-architecture` → "External dependencies").
 
 ### 7.6 Call-site dependency injection
 
@@ -877,7 +877,7 @@ When reviewing or writing unit tests, ask:
 | Hard ban: new thinking behavior without tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-new-behavior-no-test` |
 | Hard ban: sleep or wall-clock spin in tests | `skeptic-hard-rules/references/hard-rules.md` → `HR-sleep-in-tests` |
 | Owned, awaitable background tasks | `skeptic-async/references/lifetimes-and-load.md` |
-| Shape of a test seam (enum with `#[cfg(test)]` fake vs trait) | `skeptic-architecture/references/components.md` → One test seam for a concrete collaborator |
+| Shape of a test seam (trait with a type parameter vs `Arc<dyn Trait>`) | `skeptic-architecture/references/components.md` → External dependencies |
 
 ---
 

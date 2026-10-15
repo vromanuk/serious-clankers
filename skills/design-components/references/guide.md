@@ -120,7 +120,7 @@ impl Customers {
 }
 ```
 
-You do **not** need a trait named Repository or UnitOfWork for this shape. Store concrete collaborators on the struct. When tests need a fake for one concrete collaborator, prefer a private enum with a `#[cfg(test)]` fake variant over a trait plus a generic inner struct; keep a trait only when production has two implementations or another crate supplies the fake. Worked example: `skeptic-architecture/references/components.md` § One test seam for a concrete collaborator.
+You do **not** need a trait named Repository or UnitOfWork for this shape. Store concrete collaborators on the struct. When tests need a fake for a client that does IO, put a narrow trait in front of it and make the job struct generic over it; the fake implements the trait in test code. Use `Arc<dyn Trait>` (with `#[async_trait]`) only when config picks between real implementations at runtime. Worked example and sources: `skeptic-architecture/references/components.md` § External dependencies.
 
 Full pure-core samples: `skeptic-testability/references/pure-core.md`.
 

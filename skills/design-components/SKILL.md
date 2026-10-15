@@ -59,8 +59,8 @@ Cosmic Python’s “service layer” ≈ **that public struct**. We do **not** 
 4. Pure rules vs IO bits  
 5. Data owned  
 6. What you are **not** adding yet  
-7. What is **passed in** at the app edge, and in what form (enum this crate owns, trait for an open set, concrete struct; `Arc` only when tasks share it)  
-8. **Test seams**: how tests build each piece (real constructor + `#[cfg(test)]` fake, time as a parameter)  
+7. What is **passed in** at the app edge, and in what form (a narrow trait for an IO client: a type parameter when tests are the only other implementation, `Arc<dyn Trait>` when config picks at runtime; an enum for closed sets of values; `Arc` only when tasks share it)  
+8. **Test seams**: how tests build each piece (real constructor, fakes implementing the client traits in test code, time as a parameter)  
 9. **Performance and containment**: the hot path and memory per unit of work, and what changes if an implementation is swapped (detail: `../skeptic-architecture/references/components.md` § High-level API design checks)  
 
 Then implement only what was asked, or stop after design if design-only.

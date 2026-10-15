@@ -256,7 +256,7 @@ Add an interface:
 
 "For everything else: stick to a final class" — especially entities, value objects, stateful objects, and business calculations. In Rust: a concrete struct with private fields.
 
-This matches the pack's rule: an enum for variants the crate owns, a trait for an open set or a real boundary, and one `#[cfg(test)]` seam rather than a trait whose only second implementation is a mock. North puts it more bluntly: invert a dependency only when "there might be multiple ways of providing it" and the wiring matters on its own — "mostly all you ever need is a main method." Flag `trait FooService` + `struct FooServiceImpl` pairs.
+This matches the pack's rule: an enum for closed sets of values the crate owns, and a narrow trait for I/O clients (Noback's case 2) — a type parameter when the second implementation is a test fake, `Arc<dyn Trait>` when config picks between real ones (`skeptic-architecture` item 13). North puts it more bluntly: invert a dependency only when "there might be multiple ways of providing it" and the wiring matters on its own — "mostly all you ever need is a main method." Flag `trait FooService` + `struct FooServiceImpl` pairs.
 
 ---
 

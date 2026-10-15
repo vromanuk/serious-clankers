@@ -153,94 +153,76 @@ This is one crate’s public data, not a workspace-wide types crate. Mixing unre
 
 ---
 
-### One test seam for a concrete collaborator
+### External dependencies: a narrow trait, passed in
 
-**First principle:** a type should exist for a job. When a type exists only so tests can replace one collaborator, the seam is the collaborator, not a second copy of the component.
+**First principle:** the component owns the rules; the client that does IO (object storage, a broker, an RPC client) is passed in behind a narrow trait. How the component holds it depends on **when the implementation is chosen**.
 
-The common shape it replaces: the external client is a concrete type (generated gRPC client, SDK client) with no trait to fake. So a private trait is added for it, the rules move into a generic inner struct, and the public job struct only fixes the type parameter and forwards every call.
+| Chosen when | Use | The fake lives in |
+|---|---|---|
+| At compile time: the real client, or a fake in tests | The trait plus a **type parameter** on the types that hold the client. The composition root writes the full type where it builds it: `Relay<KafkaConsumer, S3Storage>`. No default type parameters that name production types on core structs | `#[cfg(test)]` code only: `impl ObjectStorage for FakeStorage` |
+| At runtime from config, between real implementations someone runs | The trait plus `Arc<dyn Trait>`, with `#[async_trait]` for async methods (a native `async fn` in a trait cannot be used through `dyn`). One `match` per dependency at the composition root | Production code when it is a real mode someone runs; otherwise test code |
 
-**Before — two types and a trait, for one fake:**
+**Rules:**
+
+- **Narrow trait, named for the role.** Only the methods the component calls (`put_object`, not a mirror of the S3 API); named for the role (`ObjectStorage`, `RecordSource`), not the vendor. Keep the typed errors the caller acts on instead of `anyhow`.
+- **`Send` futures behind a type parameter.** Declare async methods as `fn put_object(&self, …) -> impl Future<Output = Result<(), PutError>> + Send;`. A plain `async fn` in a trait does not promise `Send`, and spawned tasks need it. Implementations may still write `async fn`.
+- **One job struct, generic.** Put the rules on the public job struct itself (`AssetClient<R: AssetRpc>`), not on a private generic copy that a public struct only forwards to.
+- **Split the read side** when readers do not need the client: a `DinMapReader` with the shared map, and a `DinMap<A: AssetLookup>` that loads and refreshes it. The type parameter then stays where the client is used.
+- **No test code in production types:** no `#[cfg(test)]` enum variants, no `cfg` inside production match arms.
+- **Sans-IO the policy; traits for the plumbing.** Fakes are for the thin IO layer. Decisions (what to acknowledge, when to close, what to retry) belong in synchronous code fed with data and tested without fakes (`../../skeptic-testability/references/pure-core.md`).
+- **No in-memory implementation as a config mode** unless someone runs that mode (local development, a demo), and never one that loses data if set in production by mistake.
+- **Fakes lock only in non-async methods,** so no guard is held across an await (`../../skeptic-async/references/shared-state.md`).
+
+**Example: the bulk relay's bucket.**
 
 ```rust
-pub struct AssetClient {
-    rpc_caller: AssetRpcCaller<AssetApiClient<TraceableChannel>>, // only fixes R
+/// Sends one put to an object store. [`BulkBucket`] adds the deadline.
+pub trait ObjectStorage: Send + Sync + 'static {
+    fn put_object(&self, key: &S3ObjectKey, body: Bytes)
+        -> impl Future<Output = Result<(), BulkBucketError>> + Send;
 }
 
-impl AssetClient {
-    pub async fn get_hierarchy_descendants(&self, /* … */) -> Result<Vec<Row>, AssetError> {
-        self.rpc_caller.get_hierarchy_descendants(/* … */).await // forwards
+pub struct S3Storage { client: aws_sdk_s3::Client, bucket_name: S3Bucket }
+impl ObjectStorage for S3Storage { /* one PutObject */ }
+
+pub struct BulkBucket<S> { storage: S }
+impl<S: ObjectStorage> BulkBucket<S> {
+    pub async fn put_object(&self, key: &S3ObjectKey, body: Bytes) -> Result<(), BulkBucketError> {
+        // the rule lives here once: the put deadline, around any storage
     }
 }
 
-trait AssetRpc: Clone + Send + Sync { /* one method per RPC */ } // one production impl
+// application.rs, the composition root
+fn build_relay(/* … */, bulk_bucket: BulkBucket<S3Storage>) -> anyhow::Result<Relay<KafkaConsumer, S3Storage>>;
 
-struct AssetRpcCaller<R> { asset_rpc: R, retry_budget: Arc<RetryBudget>, /* … */ }
-
-impl<R: AssetRpc> AssetRpcCaller<R> { /* the real rules: request, retry, deadline, metrics */ }
-
-// tests.rs
-impl AssetRpc for FakeAssetRpc { /* … */ }
-let client = AssetRpcCaller::new(fake, /* … */); // tests a private type
+// tests only
+#[cfg(test)]
+impl ObjectStorage for FakeStorage { /* refuse, hang or store, as the test sets */ }
 ```
 
-**After — one job struct, one seam:**
+**Alias at the composition root:** only when the full type repeats in many places, and named after its parts (`KafkaS3Relay`), never after where it is used (`ProductionRelay`, `AppRelay`).
 
-```rust
-pub struct AssetClient {
-    transport: Transport,
-    retry_budget: Arc<RetryBudget>,
-    call_deadline: Duration,
-}
+**Review flags:**
 
-impl AssetClient {
-    pub async fn get_hierarchy_descendants(&self, /* … */) -> Result<Vec<Row>, AssetError> {
-        // the real rules live here, once
-    }
-}
+- “`enum Storage { S3(…), #[cfg(test)] Fake(…) }` — test code in a production type. Pass the storage as a type parameter behind a narrow trait; implement the trait for the fake in test code.”
+- “`Arc<dyn ObjectStorage>` whose only other implementation is a test fake — nothing is chosen at runtime. Use a type parameter.”
+- “`pub struct Relay<S = S3Storage>` — the core type names the production client. Drop the default; the composition root writes the full type.”
+- “`trait Storage` mirrors the S3 client (`put`, `get`, `delete`, `list`) while the component calls only `put` — keep the methods it calls.”
+- “`AssetRpcCaller<R>` holds the rules and the public `AssetClient` only forwards — make `AssetClient<R: AssetRpc>` the one generic job struct.”
 
-/// Where one attempt goes: Asset over gRPC, or a fake in tests.
-///
-/// The generated client is a concrete type with no trait to fake, so the
-/// client's rules run against this enum and tests swap in the fake.
-#[derive(Clone)]
-enum Transport {
-    Grpc(AssetApiClient<TraceableChannel>),
-    #[cfg(test)]
-    Fake(tests::FakeAssetRpc),
-}
+**Sources: what each shows**
 
-impl Transport {
-    async fn get_hierarchy_descendants(&mut self, request: Request<Req>) -> Result<Vec<Resp>, Status> {
-        match self {
-            Self::Grpc(client) => client.get_hierarchy_descendants(request).await?.into_inner().try_collect().await,
-            #[cfg(test)]
-            Self::Fake(fake) => fake.get_hierarchy_descendants(request).await,
-        }
-    }
-}
-
-// tests.rs — the real job struct, its public method
-let client = AssetClient::new(Transport::Fake(fake), /* … */);
-client.get_hierarchy_descendants(/* … */).await;
-```
-
-**What it buys:** one fewer type, no trait, no type parameter, and tests that run the public method instead of a private copy of it. The seam sits at the one thing tests actually replace.
-
-**What it costs:** the production enum names a test-only variant. Test builds may trip `clippy::large_enum_variant` (a big real client next to a small fake). Allow it for test builds only, with the reason — do not box the real client, which would allocate on every clone in production:
-
-```rust
-#[cfg_attr(test, expect(clippy::large_enum_variant, reason = "only test builds have the small Fake variant"))]
-```
-
-**Keep the trait when:**
-
-| Situation | Why the trait is a real seam |
-|-----------|------------------------------|
-| Two or more production implementations (object store vs local disk) | Production chooses between them; the enum would not be test-only |
-| Another crate must supply the fake (a `test-util` feature for callers' tests) | `#[cfg(test)]` code is visible only inside this crate |
-| The collaborator is the component's public extension point (`RecordProcessor`) | Callers implement it; it is the behavior, not a test hook |
-
-**Review flag:** “`AssetRpcCaller<R>` and trait `AssetRpc` exist only for the test fake; the public `AssetClient` only forwards. Fold the rules into `AssetClient` with a private `Transport` enum and a `#[cfg(test)]` fake variant.”
+- matklad, [How to Test](https://matklad.github.io/2021/05/31/how-to-test.html): “keep as much as possible sans io. Let the caller do input and output, and let the callee do compute.” rust-analyzer tests build an in-memory project; “nothing is stubbed or mocked.”
+- matklad, [Unit and Integration Tests](https://matklad.github.io/2022/07/04/unit-and-integration-tests.html): mocking your own code “reduces fidelity… and makes the code more brittle”; fake only impure IO, ideally with an in-memory implementation.
+- matklad, [Code Smell: Concrete Abstraction](https://matklad.github.io/2020/08/15/concrete-abstraction.html): a trait pays only when some code is generic over it. A component generic over its client, used with the real client and a fake, passes that test.
+- matklad, [Call Site Dependency Injection](https://matklad.github.io/2020/12/28/csdi.html): pass a dependency per call instead of storing it, when that fits lifetimes better (`OnceCell::get_or_init`, Zig's unmanaged containers).
+- [TigerBeetle](https://github.com/tigerbeetle/tigerbeetle) (matklad's day job): `ReplicaType(comptime StateMachine, comptime MessageBus, comptime Storage, …)` in `src/vsr/replica.zig` — storage and network as type parameters; the simulator plugs in `src/testing/storage.zig`, “in-memory storage, with simulated faults and latency”. Time is a runtime interface (`stdx.Time`: a context plus a vtable).
+- Firezone, [sans-IO](https://www.firezone.dev/blog/sans-io): protocol logic as pure state machines; time passed in as `Instant`; an event loop does all IO. The idea comes from Python (h11, hyper-h2).
+- [`object_store`](https://github.com/apache/arrow-rs-object-store) (arrow-rs), used by DataFusion and delta-rs: `#[async_trait] pub trait ObjectStore`, held as `Arc<dyn ObjectStore>`, with an `InMemory` store; tests wrap it (`BlockingObjectStore`, `FailingMultipartStore`, `SlowCountingStore`) instead of mocking calls.
+- Rust blog, [async fn and return-position impl Trait in traits](https://blog.rust-lang.org/2023/12/21/async-fn-rpit-in-traits/): such traits are not dyn-compatible; keep `#[async_trait]` when you need dynamic dispatch.
+- Tokio tutorial, [Shared state](https://tokio.rs/tokio/tutorial/shared-state): lock a `std::sync::Mutex` only in non-async methods of a wrapper, so “the mutex guard does not appear anywhere in an async function.”
+- AWS SDK for Rust, [unit testing](https://docs.aws.amazon.com/sdk-for-rust/latest/dg/testing.html): a wrapper trait (with mockall), or a fake HTTP client (`StaticReplayClient`, `aws-smithy-mocks`).
+- Withdrawn alternative: an enum over implementations with a test-only variant (Neon's `GenericRemoteStorage { …, Unreliable }`, RisingWave's `ObjectStoreImpl` with a `cfg(madsim)` variant). Both still define a trait; the enum only dispatches. Here it put test code into production types for no gain over a type parameter.
 
 ---
 
@@ -323,7 +305,8 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 | “Common” bag of domain types for everything | Often a proto-god-module. One crate’s own `types` module is not that — it is where **this** crate’s public data types go. A workspace-wide types crate that mixes unrelated jobs still is |
 | **Public struct/enum defined outside `types`** (`KafkaRecord` in `listener.rs`, then `pub use` from the crate root) | Callers cannot find the data type next to the others. Move the definition into `types.rs` or `types/`. Re-export from the root if the short path should stay |
 | New package theater for a one-shot script | Keep local |
-| **Private trait + generic inner struct only for a test fake; public struct only forwards** | Two types and a trait for one seam; tests hit a private copy. Use one job struct and a private enum with a `#[cfg(test)]` fake variant (§ One test seam) |
+| **Test-only variant in a production enum** (`#[cfg(test)] Fake(…)`) | Test code in a production type. Pass the client as a type parameter behind a narrow trait; the fake implements it in test code (§ External dependencies) |
+| **Private generic inner struct holds the rules; public struct only forwards** | Two types for one job; tests hit a private copy. Make the public job struct itself generic (§ External dependencies) |
 | **Missing `api/` folder** when `mod.rs` already is the surface | **Not a smell** — do not flag |
 | **Having a private `service.rs` use-case module inside a job** | **Not a smell** — that *is* the service layer idea |
 
@@ -362,9 +345,9 @@ The public API of a component is what callers and tests depend on. Implementatio
 |-------|-----|------|------|
 | Passed in (dependency injection through the constructor) | Does the component build its own clients, stores or formats? | built at the app edge and passed to the constructor | `S3Client::new()` inside a component; a format chosen by `if` deep inside |
 | Hidden dependencies | Does the component reach out at runtime for something it was not given? | config, clocks and shared clients arrive through the constructor (or as method parameters), so the call site shows everything the component needs | `std::env::var` inside a method; a global static or `OnceLock` used as a service (a client, a store, a registry); `SystemTime::now()` / `Instant::now()` read inside component logic instead of a clock passed in. Not a hit: logging and tracing globals, `OnceLock` caches of constants, `main` and startup code reading configuration |
-| Enum or trait | Who owns the implementations? | enum when this crate owns every variant; trait for an open set or another crate's implementations | `Arc<dyn Trait>` with one production implementation and one fake |
+| Trait for a client | When is the implementation chosen? | a narrow trait; a type parameter when tests are the only other implementation, `Arc<dyn Trait>` (with `#[async_trait]`) when config picks between real ones (§ External dependencies). Enums stay for closed sets of values, such as file formats | an enum with a `#[cfg(test)]` variant; `Arc<dyn Trait>` whose only other implementation is a test fake |
 | `Arc` | Is the value shared across tasks? | `Arc` (or a cheap-clone handle) only when shared; move ownership otherwise | `Arc` around values one task owns |
-| Tests | Can tests build the real component and swap only the collaborator? | real constructor + `#[cfg(test)]` fake; time as a parameter | tests that need a broker, a clock read, or private helpers to reach the logic |
+| Tests | Can tests build the real component and swap only the collaborator? | real constructor, the fake behind the client's trait in test code; time as a parameter | tests that need a broker, a clock read, or private helpers to reach the logic |
 | Hot path | What runs per record, and what does it cost? | no allocation or lock per record where avoidable; work per batch | per-record locks, allocations, channel sends or metric updates on a high-rate path |
 | Runtime threads | Does CPU-heavy work run on async runtime threads? | `spawn_blocking` for heavy work (encoding, compression) | seconds of CPU inside an async task that shares the runtime with I/O loops |
 | Memory | What does one unit of work hold, bookkeeping included? | counted in the limit that pauses input | per-record ids or tracker entries left out of the memory limit |
@@ -376,10 +359,10 @@ The public API of a component is what callers and tests depend on. Implementatio
 
 ```rust
 // The window component: rows in, stored windows out. No files, parts or slots in the API.
-pub struct WindowExport { .. }
-impl WindowExport {
+pub struct WindowExport<S> { .. }
+impl<S: ObjectStorage> WindowExport<S> {
     pub fn new(settings: WindowExportSettings, file_format: BulkFileFormat,
-               bulk_bucket: BulkBucket, acknowledgment: Acknowledgment, cancel: CancellationToken) -> Self;
+               bulk_bucket: BulkBucket<S>, acknowledgment: Acknowledgment, cancel: CancellationToken) -> Self;
     pub fn add_rows(&mut self, processing_ms: i64, rows: Vec<(InstanceId, BulkRow)>, ack_id: AckId);
     pub fn close_due_windows(&mut self, processing_ms: i64);
     pub fn can_accept_rows(&self) -> bool;                  // memory limit in bytes
@@ -389,9 +372,13 @@ impl WindowExport {
 // The format: an enum this crate owns. Parquet is one more variant.
 #[derive(Clone, Copy)] pub enum BulkFileFormat { Csv }
 
-// The store: a struct with a private enum; the provider and single vs multipart stay inside.
-#[derive(Clone)] pub struct BulkBucket { storage: Storage }
-enum Storage { S3 { .. }, #[cfg(test)] Fake(FakeBucket) }
+// The store: the deadline lives in BulkBucket; the provider and single vs multipart stay
+// behind a narrow trait. Tests implement ObjectStorage for an in-memory fake.
+pub trait ObjectStorage: Send + Sync + 'static {
+    fn put_object(&self, key: &S3ObjectKey, body: Bytes)
+        -> impl Future<Output = Result<(), BulkBucketError>> + Send;
+}
+pub struct BulkBucket<S> { storage: S }
 ```
 
 What changes when part uploads replace whole-file uploads: the interior of `WindowExport` and additions to `BulkBucket`. The relay loop, the record mapper and the tests written against `WindowExport`'s public API stay.
@@ -399,7 +386,7 @@ What changes when part uploads replace whole-file uploads: the interior of `Wind
 ### Review one-liners
 
 - Finding: "`WindowUploads::try_start_upload` returns `AllUploadersBusy` — the caller now manages upload slots; keep slots inside and expose `can_accept_rows()`."
-- Finding: "`Chunks<P: PutObject, R>` — a trait and a type parameter for one production store; pass a `BulkBucket` with a private enum fake."
+- Finding: "`enum Storage { S3 { .. }, #[cfg(test)] Fake(FakeBucket) }` — test code in a production type; make the storage a type parameter behind `ObjectStorage` and implement it for the fake in test code."
 - Finding: "each window keeps one `AckId` per record and the memory limit ignores it — count it, or keep ranges."
 - Finding: "CSV for a 256 MiB file is encoded inside an async task — move it to `spawn_blocking` or encode as rows arrive."
 - Not a finding: "`Arc<dyn KeyFilter>` — another crate's API asks for it."

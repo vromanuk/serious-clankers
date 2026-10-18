@@ -95,6 +95,18 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent flags the boundary and prefers a type that forces the contract
 
+#### Scenario: Caller-controlled order checked at runtime
+
+- **GIVEN** a type whose methods must be called in a fixed order the caller controls (for example status line, then headers, then body), enforced by a stage field and a runtime error in each method
+- **WHEN** reviewing architecture
+- **THEN** the agent offers typestate as an option: methods only on the state that allows them, and each step takes `self` by value and returns the next state
+
+#### Scenario: Event-driven state machine
+
+- **GIVEN** a component whose next state is decided by incoming events (a consumer, an elevator controller, a consensus node), written as an enum of states
+- **WHEN** reviewing architecture
+- **THEN** the agent does not ask for typestate, because the code holding the machine cannot know its state at compile time
+
 #### Scenario: New struct repeats an existing one
 
 - **GIVEN** a diff adds a struct whose fields match an existing struct or enum variant under different names (for example `KafkaRecord` repeating `BrokerRecord`: topic, partition, offset, key, and payload, plus registration)

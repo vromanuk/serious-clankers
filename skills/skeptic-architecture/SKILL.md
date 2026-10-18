@@ -55,6 +55,7 @@ description: >
 | Non-empty / checked success type when empty is a product error | `Vec` / bare list + second `if empty` at each call site |
 | Decision enum from pure code | Bool soup / magic strings the shell re-interprets |
 | One constructor path with shared failure | Copy-pasted bail strings that can diverge |
+| Typestate when the caller drives the steps: methods only on the state that allows them, each step consumes `self` | A stage field checked at runtime in each method (“wrong stage” errors, `Option` filled in one step and unwrapped later) |
 
 **Ask on each changed boundary:**
 
@@ -62,6 +63,7 @@ description: >
 2. Is that in the **return/arg type**, or only in comments / a second helper?  
 3. Do shared policies share **one type/constructor**?  
 4. Is may-empty inventory a **different type/API** from must-have product paths?  
+5. Is an **order of steps** the caller controls checked at runtime? Typestate fits only when the caller always knows the current step; when incoming events decide the state, keep an enum of states. Detail: `references/type-driven.md` § Example D.  
 
 **Flag:** silent empty success; optional fields that only make sense together; duplicate empty-checks with the same string.
 

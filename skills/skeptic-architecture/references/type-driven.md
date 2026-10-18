@@ -1,6 +1,6 @@
 # Type-driven contracts
 
-**Sources:** [Type-Driven API Design in Rust](https://willcrichton.net/rust-api-type-patterns/introduction.html) (Will Crichton); [Parse, don’t validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/); Rust API Guidelines.
+**Sources:** [Type-Driven API Design in Rust](https://willcrichton.net/rust-api-type-patterns/introduction.html) (Will Crichton); [Parse, don’t validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/); [The Typestate Pattern in Rust](https://cliffle.com/blog/rust-typestate/) (Cliff Biffle); Rust API Guidelines.
 
 Use when reviewing APIs, return types, or “caller must remember to check X.”
 
@@ -13,7 +13,7 @@ Map the real concept 1:1 into types (**cardinality**). When several pieces must 
 | **Enum over string / bool soup** | Finite alternatives are variants | Modes, query kinds, auth kinds |
 | **Checked success type** | Value only exists after a property holds; private construct | “Must have files”, “profile passed checks”, “creds decided” |
 | **RAII / lock guard** | Type that both proves a state and controls access/cleanup | Mutex guards, open sessions (std already does this) |
-| **State in the type** | Different methods per step of a protocol | Multi-step flows where wrong order is a bug |
+| **State in the type** (typestate) | Different methods per step of a protocol; a step consumes the old state | Caller-driven multi-step flows where wrong order is a bug (Example D); not loops driven by incoming events |
 | **Parse at the edge** | `&str` / CLI → domain type once | Don’t re-check the same rule in three places |
 
 Do **not** reach for heavy state-in-type machinery by default. Prefer the **smallest** type that removes the real forgettable bug.
@@ -113,6 +113,63 @@ Same idea as Crichton’s `PrimaryColor` vs `&str`: after parse, the function ca
 
 ---
 
+## Example D — order of operations in the type (typestate)
+
+**Source:** [The Typestate Pattern in Rust](https://cliffle.com/blog/rust-typestate/) (Cliff Biffle).
+
+**Need:** an order rule the caller controls — “send messages only after login, and never after logout”, “no reads after close”, “status line, then headers, then body”.
+
+**Bad:** one type, a stage field, and a runtime check in each method. Wrong order compiles and fails in production — or the check is simply missing.
+
+```rust
+struct Response { stage: Stage, /* ... */ }
+
+impl Response {
+    fn header(&mut self, key: &str, value: &str) -> Result<()> {
+        if self.stage != Stage::Headers { bail!("header before status line or after body") }
+        /* ... */
+    }
+}
+```
+
+**Good:** a method exists only on the state that allows it, and a step takes `self` by value and returns the next state, so the old state cannot be used again.
+
+```rust
+struct Response<S> { inner: Box<Inner>, state: S }
+struct Start;
+struct Headers { code: u16 }   // data that exists only in this state
+
+impl Response<Start> {
+    fn status_line(self, code: u16) -> Response<Headers> { /* ... */ }
+}
+
+impl Response<Headers> {
+    fn header(&mut self, key: &str, value: &str) { /* ... */ }  // no state change → &mut self
+    fn body(self, text: &str) { /* ... */ }                      // consumes: nothing after the body
+}
+
+impl<S> Response<S> {
+    fn bytes_so_far(&self) -> usize { /* valid in every state */ }
+}
+```
+
+Three parts make it work: operations only on the states that allow them; states written as types; steps that consume the old state. Rust’s move is what makes the third one hold — after `body(self)` the response is gone, while a C++ move leaves a usable moved-from object behind.
+
+Details worth checking:
+
+- An operation that does not change the state takes `&mut self`, so a loop does not need `r = r.header(..)`.
+- Data that exists only in some states lives in that state’s type (`Headers { code }`), not in an `Option` that every state must handle.
+- The value moved at each step stays cheap (shared data behind a `Box`). Seal the state trait when outsiders must not invent states.
+- One type per state reads simplest. A state type parameter (`Response<S>`) suits methods shared by all or several states (`impl<S>`, or `impl<S: Sending>`).
+
+**Fits:** the caller drives the steps and always knows which step it is at — builders, connections, protocol encoders (serde’s `Serializer` → `SerializeStruct` → `end`).
+
+**Does not fit:** a machine where incoming events decide the next state (a Kafka consumer, an elevator, a Raft node). The code holding it cannot know the state at compile time, so use an enum of states with one handler per state, and check invariants in tests. Also not worth it for a two-step script that never stops between steps.
+
+**Review check:** is an order the caller controls checked at runtime (a “wrong stage” error, or an `Option` filled in one step and unwrapped in a later one)? → offer typestate. Is typestate forced onto a loop whose state changes with each incoming event? → offer an enum of states.
+
+---
+
 ## New struct vs one that already exists
 
 **Need:** a new struct only when no existing type can be reused or generalized.
@@ -145,6 +202,7 @@ Highlight this. Do not decide it off-stage. The finding offers:
 
 - Newtype every `Vec` when empty is a valid **inventory** outcome.  
 - Typestate for a two-step script that never returns mid-protocol.  
+- Typestate for a machine driven by incoming events — the state is only known at run time; use an enum of states.  
 - Non-empty success type **and** a second free `require_*` that still takes bare `Vec` (undermines the type).  
 - Copy-pasted error strings instead of one constructor.  
 - A second struct that copies an existing one field-for-field under new names. Generalize or reuse; do not keep the copy without naming the fact that would be a lie if they were one type.
@@ -156,4 +214,5 @@ Highlight this. Do not decide it off-stage. The finding offers:
 - `type-driven: ok` — e.g. “`NonEmptyParquetFiles` forces empty fail at list/resolve; generate reuse stays on `Vec`.”  
 - Finding: “empty check only in comments / second helper; success type still allows empty.”  
 - Finding: “parallel `Option`s for exclusive modes; encode as enum at decide site.”  
+- Finding: “`header()` checks `self.stage` at runtime, but the caller controls the order. Option: typestate — `status_line(self) -> Response<Headers>`, `header` only on `Response<Headers>`, `body(self)` consumes.”  
 - Finding: “new `KafkaRecord` repeats `BrokerRecord` (topic, partition, offset, key, payload). Options: reuse and carry registration beside it; generalize to one record and one payload enum; keep both only because registration does not exist before register.”

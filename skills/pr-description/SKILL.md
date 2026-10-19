@@ -1,6 +1,6 @@
 ---
 name: pr-description
-spec_hash: 4392f29718ef
+spec_hash: 51e63d87c997
 description: >
   Draft pull-request descriptions from committed branch changes. Use when the
   user asks to write, draft, or generate a PR description, fill a PR body, or
@@ -10,136 +10,75 @@ description: >
 
 # PR description
 
-Write a PR body a reviewer can use. **Inspect committed branch changes first**
-(changed files + diff), then draft. Plain language.
-
-**Always the same structure** — fixed labels, same order, every time:
+Write a PR body a reviewer can use: why the change exists, how it works, how it was checked. Same labels, same order, every time:
 
 ```text
-Why: <why we need this — missing contract + short intuition>
+Why: <the missing contract and its consequence>
 
 How: <intuition for the approach, then the mechanism>
 
-Testing: <what was run or what to run>
-```
-
-When structure matters, add a **separate** diagram/components block between `---` lines (not inside `How:`):
-
-```text
-Why: <need + intuition>
-
-How: <approach intuition, then mechanism>
-
 ---
 
-<diagram and/or changed components>
+<diagram or changed components — only when the change crosses components>
 
 ---
 
 Testing: <what was run or what to run>
+
+Notes: <optional: review tips, risks, follow-ups>
 ```
+
+No other labels, no `## Summary`-style headings, no `Idea:` line.
 
 ## Workflow
 
-1. **Inspect committed changes** (required — do this before drafting):
-   - Current branch; base = user-named base, else `main` / `master` / default.
-   - Merge base: `git merge-base HEAD <base>`.
-   - **Changed files (committed on the branch):**  
-     `git diff --name-status <merge-base>...HEAD`
-   - **Commits:** `git log --oneline <merge-base>..HEAD`
-   - **Diff:** `git diff <merge-base>...HEAD` (full or by important paths). Read enough of the real patches to explain the change — do not invent from commit subjects alone when the diff is available.
-   - Ticket: if a key is in the branch name, PR title, or user text, fetch it for the product need. Keep `Why:` short — do not paste the ticket.
-   - Uncommitted dirty files: ignore for the PR body unless the user asked to include WIP; if you skip them, do not claim they are in the PR.
-2. **Analyze** — from that file list + diff: why the change is needed, how the existing layout extends, mechanism, whether a diagram is needed, testing evidence.
-3. **Draft** using `references/shape.md` (load it). Labels must match exactly.
-4. **Check** — grounded in committed files/diff; `Why:` → `How:` → optional `---` diagram → `Testing:`; no invented runs; `Why:` is not a file dump.
-5. **Deliver** the full body (and put it in the PR if the user asked to open/update one).
+1. **Read the committed changes.** Base = the branch the user named, else the default branch. Run `git merge-base HEAD <base>`, then `git log --oneline <merge-base>..HEAD`, `git diff --name-status <merge-base>...HEAD`, and read enough of `git diff <merge-base>...HEAD` to explain the change. Commit subjects alone are not enough. Ignore uncommitted edits unless the user asked to include work in progress.
+2. **Fetch the ticket** if a key is in the branch, title, or user text. Use it for the need; do not paste it.
+3. **Draft** with the rules below, then reread each sentence and cut what a reviewer would not miss.
+4. **Deliver** the body, and put it in the PR if the user asked to open or update one.
 
-## Fixed structure (mandatory)
+## Why
 
-| Label | Job |
-|-------|-----|
-| `Why:` | Why we need this: named missing value, so the caller cannot fetch it, plus a short intuition |
-| `How:` | Intuition for the approach (existing pattern this extends), then the mechanism |
-| `---` … `---` | Diagram / changed components when structure matters |
-| `Testing:` | Commands, cases, or honest manual check |
+The missing contract and what it causes, in the system's own names, so a reviewer new to the area gets the need.
 
-Optional after those when material: `Risks:` or `Notes:`.
+- **Feature:** the value that is not available (signal, field, row) and the caller that cannot get it.
+- **Fix:** open with what the code does or fails to guarantee, as the precise mechanism, then the observed impact in a sentence or two as evidence. "The TCP connect blocks until the kernel stops retrying the SYN (~2 min on Linux)", not "it gets no reply and waits". Not "In the 2026-10-19 rollout, …".
+- Replace team shorthand with plain words, or define it on first use ("two replicas per shard", not "A/B").
 
-### Rules
+## How
 
-- Start lines with exactly `Why:`, `How:`, `Testing:`.
-- **Do not** replace them with `## Summary` or freeform headings, or reorder them.
-- Tiny one-liner PRs still use the same labels. No empty `---` pair.
+The approach first (for example, the existing pattern it extends), then the mechanism, with paths or symbols where they help. If a refactor exists only to make the change possible, say why it was needed and whether it changes behavior.
 
-### Why (need + intuition)
+## Testing
 
-`Why:` explains **why this change exists**. Technical names, short sentences. Fold the intuition into the paragraph — do not add a second heading.
+Commands, the tests (especially ones added in this diff) and what they cover, or the manual check. Never a bare "N/A" or "tested". Claim only runs the session or the user shows.
 
-1. **What is not there** — signal, field, row, in the system's names.  
-2. **So the caller cannot fetch it** — which RPC/store lookup fails (empty even though producers send it).  
-3. **Who needs it** — one line + ticket if fetched. Label *assumed* if only inferred from the diff.
+## Leave out
 
-Not a file dump. Not the implementation (that is `How:`).
+Anything that does not help a reviewer judge the change: file or env-var inventories, commit-by-commit lists, raw metric dumps, reproduction commands, line counts. Point to the ticket or commit instead. No "please review" checklists or filler. Do not implement anything when only the description was asked for.
 
-### How (approach intuition, then mechanism)
+## Examples
 
-First: how we are going about it — the existing layout this extends (e.g. one ingest deployment per product; numbers already served elsewhere). Then: the mechanism in a few sentences (ingest path, keep policy, routing).
-
-Not: env-var / metric / clone inventory, “please review” lists, vague jobs (“for restart” → say what the component actually does). No diagram in this paragraph.
-
-### Diagram / changed components
-
-- Multi-component or boundary change → sketch and/or short component list **between** two `---` lines (after `How:`, before `Testing:`).
-- Tiny single-site fix → omit the whole `---` block.
-
-### Testing
-
-- Name commands, test names (especially tests **in the committed diff**), or honest manual steps.
-- Never bare `N/A` / `tested` without what was checked.
-
-### Accuracy
-
-- Only claim what committed files, the branch diff, and session evidence support.
-- Do not invent features, services, files, or CI runs.
-
-## Voice
-
-- Direct. Technical names, human sentences. No corporate fluff.
-- Short. Conclusions first inside each label.
-
-## Never
-
-- Draft without listing/reading committed changed files and the branch diff.
-- Freeform section titles instead of `Why:` / `How:` / `Testing:`.
-- A “Please review:” checklist.
-- Diagrams inline under `How:` without `---` fences.
-- Empty `---` pair when there is no diagram.
-- Treat this ask as “implement the feature.”
-- Invented validation or file dump with no why.
-
-## Example (small fix — no diagram)
+Small feature, no diagram:
 
 ```text
 Why: `Tesla - Lynx` site data (STST-SM-30162, STST-SM-30164) is not on the kafka producer whitelist, so it is not mirrored into the target env.
 
-How: Same whitelist as the other Tesla sites — add both gateway IDs to kafkaProducerMirroringCriteria in `kcr-mirroring-config.yaml`.
+How: Same whitelist as the other Tesla sites: add both gateway IDs to kafkaProducerMirroringCriteria in `kcr-mirroring-config.yaml`.
 
-Testing: Config review only — confirm both gateway IDs appear in the mirrored criteria list for the target env.
+Testing: Config review only. Confirm both gateway IDs appear in the mirrored criteria list for the target env.
 ```
 
-## Example (structure matters — diagram fenced)
+Fix with an enabling refactor:
 
 ```text
-Why: An empty file list is accepted, so callers get silent empty success instead of a construction error.
+Why: `create_balanced_channel` opens connections without a connect timeout. If the TCP handshake never completes, as can happen right after the server pod restarts, the connect blocks until the kernel stops retrying the SYN (~2 min on Linux), and every request on that channel waits behind it until its own request timeout.
 
-How: Fail closed at the type boundary: `NonEmptyFiles` is built only via `try_from`; the shell maps that error to the API response.
+latest-api hit this during the last latest-data deploy. latest-data runs two replicas per shard and restarts them one at a time, and latest-api sends each read to both, so one replica being down normally goes unnoticed. This time latest-api took ~2 min to reconnect to the first replica after its restart. The second one restarted in the meantime, so for ~90 s neither was reachable and Powergate's requests failed at its 5 s deadline. TEI-36727.
 
----
+How: `GrpcClientConfig` gets `connect_timeout` (default 1 s) and `create_balanced_channel` applies it, so a stuck connect fails fast and the read is served by the other replica. The field is why many files change: the struct had no constructor, so every hand-written config listed all fields. The PR adds `GrpcClientConfig::new(host, api_port)` and moves those configs to struct update syntax, with no behavior change.
 
-caller → shell → NonEmptyFiles::try_from → plan
+Testing: `cargo test -p grpc-common`; `call_fails_within_three_seconds_when_the_server_never_accepts_the_connection` failed before the fix. ENG restart under load: ~5 s requests for 2 min before, slowest 0.69 s after (commands in TEI-36727).
 
----
-
-Testing: `cargo test planner::non_empty` — empty list fails; single file ok.
+Notes: The refactor commit is mechanical; check that each config keeps its non-default values.
 ```

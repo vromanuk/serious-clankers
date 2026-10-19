@@ -1,4 +1,4 @@
-behavior: why-before-how
+behavior: why-before-how-need-intuition-first
 prompt: |
   Write a PR description for the current branch against main. Put the full
   body in PR_DESCRIPTION.md.

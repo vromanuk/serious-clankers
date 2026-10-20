@@ -1,5 +1,6 @@
 ---
 name: skeptic-comments
+spec_hash: c9728d694219
 description: >
   Stage 7 of skeptic: are comments clear, needed, and about why (benefit /
   design reason) — not restating the code or bare rules without explanation.
@@ -33,6 +34,7 @@ description: >
    - Inside the body (`//`): tricky **how/why** — do not copy the public blurb into the body.  
 4. Flag module docs that only list policies (“do X, not Y”) with no benefit or rejected alternative when that is a real design choice.  
 5. On types and functions: purpose and contracts when not obvious. On fields: special values the type doesn’t show.  
+   - Settings (config fields, builder methods, public constants): what it controls, what happens at the limit, special values, relations to other limits, default — HikariCP style. Chosen numbers say **why this value**; provenance alone is not a reason. Detail and examples: `comments.md` § Settings and numbers.  
 6. **Do not state the obvious** — no comment that only repeats the next line.  
 7. TODOs: who owns it and enough context; if time-based, a clear end condition.  
 8. Design headers: purpose (+ why if a choice) + given/expected, **no type line**.  

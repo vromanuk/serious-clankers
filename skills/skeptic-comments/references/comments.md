@@ -246,6 +246,65 @@ pub(crate) frac_unchanged_spread: f64,
 
 ---
 
+## Settings and numbers
+
+A number in code or config is a decision. The reader needs to know what it limits and why it has this value. The model is HikariCP's pool settings ([README](https://github.com/brettwooldridge/HikariCP#gear-configuration-knobs-baby), e.g. `connectionTimeout`, `maxLifetime`): each says what the setting controls, what happens at the limit, what special values mean, how it relates to other limits, and the default.
+
+### Setting docs (config field, builder method, public constant)
+
+In this order, skipping what does not apply:
+
+1. **What it controls**, from the caller's side: who waits for what, or what is limited.
+2. **What happens at the limit**: error returned, item dropped, connection closed.
+3. **Special values**: what `0` / `None` means.
+4. **Relations and bounds**: settings or outside limits it must stay below or above, and the smallest value that makes sense. A wrong relation fails silently, so this line is often the most valuable ("several seconds shorter than any infrastructure imposed connection time limit", HikariCP `maxLifetime`).
+5. **Default**: the value, or a link to the default function/constant that explains it.
+
+Units belong in the type (`Duration`) or the name (`_ms`); that is the naming stage (`HR-api-bare-quantity`). The doc repeats the unit only when neither carries it.
+
+Describe the setting, not the incident that led to it. Replica layouts, deploy order, and outage timelines go in the PR or ticket; the doc states the general behavior the incident exposed, in precise terms ("the TCP handshake does not complete", not "gets no reply").
+
+### Chosen values (defaults, constants, literals)
+
+Next to the value, say why this number: what it is derived from (a measurement, an upstream limit, a protocol constant, a ratio to another setting) and what goes wrong if it is much lower or higher. Provenance alone ("copied from the Scala config", "recommended") is not a reason; keep it only next to one. The reason lives once, at the default; the field doc links there instead of repeating it.
+
+Bad: incident story, vague mechanism, deployment detail in a shared setting:
+
+```rust
+/// Longest wait for a new TCP connection to the server to open. When a server restarts, a
+/// connection attempt can get no reply at all; without this limit it waits for the OS to give
+/// up (about two minutes on Linux) and every request queues behind it until its
+/// `request_handler_timeout`, so callers see a long stall instead of a fast failure they can
+/// retry, for example on another replica.
+pub connect_timeout: Duration,
+```
+
+Good: controls → at the limit → default; the reason for the value sits on the default:
+
+```rust
+/// Maximum time to wait for a new TCP connection to the server to be established. If it is
+/// not established in time, the attempt fails and the requests waiting on it fail with it,
+/// instead of waiting until the OS gives up on the connection (about two minutes on Linux).
+/// Defaults to [`default_connect_timeout`].
+pub connect_timeout: Duration,
+
+/// 1 second. A healthy in-cluster TCP connect takes milliseconds, so this is a wide margin.
+/// Keep it well below `request_handler_timeout`, or requests time out before the connect fails.
+pub fn default_connect_timeout() -> Duration { Duration::from_secs(1) }
+```
+
+Bad: provenance only, so nobody can tell whether 10 s is still right:
+
+```rust
+/// Suggested gRPC default keep_alive_timeout value when using nginx
+/// Copied from our Scala gRPC configuration: https://…
+pub fn default_keep_alive_timeout() -> Duration { Duration::from_secs(10) }
+```
+
+Better: state what the 10 s is measured against and what breaks if it changes; keep the Scala link as provenance next to that reason.
+
+---
+
 ## Coherence across modules
 
 | Check | Fail when |
@@ -290,6 +349,7 @@ Prefer a short block that changes how you **call or change** the code (caller ob
 5. Body does not re-paste the public blurb?  
 6. Unclear code → simplify first?  
 7. Short *what* only for regex/hard math when needed?  
+8. Settings and chosen numbers: what it controls, what happens at the limit, special values, relations, default; why this value (§ Settings and numbers)?  
 
 ### Flag
 
@@ -300,5 +360,7 @@ Prefer a short block that changes how you **call or change** the code (caller ob
 - Ticket-only with no constraint  
 - Missing *why* on truly non-obvious code  
 - Hard-to-read comment text  
+- Setting doc that tells the incident instead of the behavior, or leaves out what happens at the limit  
+- Chosen number with no reason, or provenance only  
 
-Not a flag: short ownership, special values, concurrency, decision rationale, brief *what* on hard algorithms when it helps; tiny modules whose name already is the whole story.
+Not a flag: short ownership, special values, concurrency, decision rationale, brief *what* on hard algorithms when it helps; tiny modules whose name already is the whole story; well-known protocol numbers (port 443); arbitrary test literals.

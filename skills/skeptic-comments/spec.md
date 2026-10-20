@@ -33,6 +33,22 @@ The agent SHALL flag restating and unnecessary comments, prefer *why* / benefit 
 - **WHEN** reviewing comments
 - **THEN** the agent flags it and asks for caller-visible meaning in the doc, with the internals moved into the body
 
+### Behavior: Settings and numbers explained
+
+The agent SHALL check docs on settings (config fields, builder methods, public constants) for what the setting controls, what happens at the limit, special values, relations to other limits, and the default, and SHALL flag setting docs that tell the incident behind the setting instead of its general behavior. The agent SHALL flag chosen numbers (defaults, constants, literals) whose value has no stated reason or only a provenance note.
+
+#### Scenario: Timeout doc tells the incident
+
+- **GIVEN** a `connect_timeout` field doc that describes a server restart, replicas, and retrying elsewhere, but not what happens when the timeout is reached
+- **WHEN** reviewing comments
+- **THEN** the agent flags it and suggests: what the timeout limits, what fails at the limit, and a link to the default
+
+#### Scenario: Default copied from elsewhere
+
+- **GIVEN** `default_keep_alive_timeout() -> 10 s` documented only as "copied from our Scala configuration"
+- **WHEN** reviewing comments
+- **THEN** the agent flags that the value has no reason and asks what the 10 s is chosen against
+
 ### Behavior: Design headers
 
 The agent SHALL flag design headers that only restate types or only restate the function name and SHALL prefer purpose (with why when the shape is a choice) + given/expected without type lines.

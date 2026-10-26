@@ -1,6 +1,6 @@
 ---
 name: pr-description
-spec_hash: 51e63d87c997
+spec_hash: 4917138f025b
 description: >
   Draft pull-request descriptions from committed branch changes. Use when the
   user asks to write, draft, or generate a PR description, fill a PR body, or
@@ -49,9 +49,18 @@ The missing contract and what it causes, in the system's own names, so a reviewe
 
 The approach first (for example, the existing pattern it extends), then the mechanism, with paths or symbols where they help. If a refactor exists only to make the change possible, say why it was needed and whether it changes behavior.
 
+- Open with a full sentence that says what the PR adds or changes ("Adds helm values for … in …"), not a noun phrase ("PRD values for …").
+- Every bullet is a full sentence a reviewer understands without the diff. No fragments joined by colons or semicolons ("12Gi pods, 2 to 6 replicas: …").
+- Keep only the decisions a reviewer should judge. Leave out what code comments, values files or the ticket already carry, and side changes (image bumps, doc or link tweaks).
+- If the change is one step of a rollout or migration, state the plan as its own bullet. Say when and how the new thing gets used; do not call it unused or "nobody reads it" if a later step uses it.
+- Technical, plain wording; no casual phrasing.
+
 ## Testing
 
-Commands, the tests (especially ones added in this diff) and what they cover, or the manual check. Never a bare "N/A" or "tested". Claim only runs the session or the user shows.
+Short: which tests cover the change and where it was verified, with a link to the ticket or PR that holds the evidence. No command output, counts or step lists.
+
+- For a config-only or deploy PR, point to the tests and verification of the code it deploys (for example, "covered by unit tests and verified in eng: TEI-…").
+- Never a bare "N/A" or "tested". Claim only runs the session, the user, or a linked ticket or merged PR shows.
 
 ## Leave out
 
@@ -67,6 +76,16 @@ Why: `Tesla - Lynx` site data (STST-SM-30162, STST-SM-30164) is not on the kafka
 How: Same whitelist as the other Tesla sites: add both gateway IDs to kafkaProducerMirroringCriteria in `kcr-mirroring-config.yaml`.
 
 Testing: Config review only. Confirm both gateway IDs appear in the mirrored criteria list for the target env.
+```
+
+Deploy step of a migration (config only):
+
+```text
+How: Adds helm values for the site and device signals relays in us-smf00-prd-energy, in the same shape as eng. The new relays run next to the legacy relay and write to `telemetry-bulk-v2-prd`.
+- Migration plan: new partners are served from the new bucket from the start. About 25 days later (the bucket's file retention), the existing partners move to it, and the legacy relay is turned off.
+- Each pod gets 12Gi of memory, and the relays scale between 2 and 6 pods, because PRD keeps far more rows than eng.
+
+Testing: The relay is covered by unit tests and was verified in eng against the legacy export: TEI-36123.
 ```
 
 Fix with an enabling refactor:

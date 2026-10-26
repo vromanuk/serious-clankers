@@ -23,6 +23,36 @@ The agent SHALL always run stages purpose, architecture, complexity, testability
 - **WHEN** skeptic runs
 - **THEN** the handoff contains all ten sections in order (findings or N/A with reason each), including `## 3. Complexity` and `## 5. Unit tests`
 
+### Behavior: Fixed file scope before stage 1
+
+Before stage 1 the agent SHALL list the files it will review — the production files that carry the change, then their tests, with only the diff of shared files the change touches — and SHALL leave out build and generated files (BUCK, lockfiles, generated code, deploy templates) unless the change is about them. The agent SHALL state that list to the user and SHALL read every scoped production file in full before stage 1.
+
+#### Scenario: Branch touches code, tests and build files
+
+- **GIVEN** a branch that changes Rust modules, their tests, a BUCK file and a lockfile
+- **WHEN** skeptic starts
+- **THEN** the agent states a scope listing the Rust modules and tests, notes that BUCK and the lockfile are left out, and the report's `Scope:` line repeats it
+
+### Behavior: One stage per pass
+
+The agent SHALL run each stage as its own pass over the whole file scope: load that stage's contract and the references it names, walk every scoped file with only that stage's question, and record that stage's findings (or `ok` / `none` with a reason) before starting the next stage. The agent SHALL NOT apply several stages in one pass, and SHALL NOT judge a stage from memory of an earlier pass without re-opening the code it cites.
+
+#### Scenario: A naming problem is noticed during the architecture stage
+
+- **GIVEN** stage 2 is running and the agent notices a function named as a noun
+- **WHEN** it records stage 2 findings
+- **THEN** the naming concern is not reported under architecture; stage 8 re-walks the scoped files and reports it there with path:line
+
+### Behavior: Visible progress per stage
+
+The agent SHALL keep one task per step — scope, each of stages 1–10, `## Async` and `## SOLID` when they apply, and final checks — and SHALL mark each done as it finishes.
+
+#### Scenario: Long review in progress
+
+- **GIVEN** a review of a dozen files
+- **WHEN** stage 6 is running
+- **THEN** the task list shows scope and stages 1–5 done, stage 6 in progress, and the rest pending
+
 ### Behavior: Reliability and security inside architecture
 
 Stage 2 (architecture) SHALL include `### Reliability` and `### Security` subsections, following the `skeptic-reliability` and `skeptic-security` contracts, when the diff touches failure-relevant code or a trust boundary; otherwise each SHALL be one line with `none` and the reason. This adds no numbered stage.
@@ -82,6 +112,16 @@ The agent SHALL NOT implement fixes unless the user explicitly asked to fix.
 - **GIVEN** the user asked only to review
 - **WHEN** material findings exist
 - **THEN** the agent reports recommended next steps and asks before changing code
+
+### Behavior: Fix mode, stage by stage
+
+When the user asked to fix or address issues, the agent SHALL fix each stage's intent-preserving findings at the end of that stage and run the smallest check covering them (build, clippy, touched tests) before the next stage. A finding with a real design fork SHALL be asked about or listed under `## Open decisions`, never chosen silently. When a fix adds a test for a contract, the agent SHALL break the code once to see the test fail, then restore it. After the last stage the agent SHALL run fmt, clippy and the full relevant test suites, and name any tests that cannot run and why.
+
+#### Scenario: Review with fixes requested
+
+- **GIVEN** the user asked for a full review and to address issues
+- **WHEN** stage 4 finds an untested ordering contract and stage 2 finds a choice between two API shapes
+- **THEN** stage 4 adds a test, shows it failing against a deliberately broken version and passing after restore, then checks before stage 5; the API choice appears under `## Open decisions` with lettered options
 
 ## Constraints
 

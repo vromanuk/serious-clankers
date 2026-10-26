@@ -62,6 +62,16 @@ When the diff includes a refactor that exists only to make the change possible, 
 - **WHEN** the user asks for a PR description
 - **THEN** `How:` explains that the field alone would have required editing every hand-written config, that the constructor removes that cost, and that the migration changes no behavior
 
+### Behavior: How in full sentences, decisions only
+
+Under `How:` the agent SHALL open with a full sentence that names what the PR adds or changes, and SHALL write every bullet as a full sentence a reviewer understands without the diff. The agent MUST NOT use noun-phrase openers ("PRD values for …") or fragments joined by colons or semicolons. `How:` SHALL keep only the decisions a reviewer should judge; it MUST NOT repeat what code comments, values files or the ticket already carry, or list side changes (image bumps, doc or link tweaks). When the change is one step of a rollout or migration, the agent SHALL state the plan as its own bullet, including when the new component starts being used, and MUST NOT describe it as unused if a later step uses it.
+
+#### Scenario: Deploy step of a migration
+
+- **GIVEN** a config-only branch that deploys a new relay to PRD next to the legacy one, plus an image bump and a doc update
+- **WHEN** the user asks for a PR description
+- **THEN** `How:` opens with "Adds helm values for … in …", has a bullet for the migration plan (who uses the new bucket first, when the rest move), states sizing as a full sentence with its reason, and does not list the image bump or the doc update
+
 ### Behavior: Component diagram when structure matters
 
 When the change crosses components or changes boundaries, the agent SHALL include a plain-text diagram or changed-components sketch in its own block between two `---` lines, after `How:` and before `Testing:`, never inside the `How:` paragraph. For a single-site change the agent SHALL omit the block (no empty `---` pair).
@@ -74,13 +84,19 @@ When the change crosses components or changes boundaries, the agent SHALL includ
 
 ### Behavior: Testing section substance
 
-The agent SHALL fill `Testing:` with what was run or what the reviewer should run: commands, the tests (especially those added in the diff) and what they cover, or the manual check. The agent MUST NOT write a bare "N/A", "tested", or "no testing required".
+The agent SHALL keep `Testing:` short: which tests cover the change and where it was verified, with a link to the ticket or PR that holds the evidence. It MUST NOT include command output, counts or step lists. For a config-only or deploy PR, the agent SHALL point to the tests and verification of the code being deployed. The agent MUST NOT write a bare "N/A", "tested", or "no testing required".
 
 #### Scenario: Tests already run
 
 - **GIVEN** the branch added a unit test and `cargo test` was the natural check
 - **WHEN** writing the PR description
 - **THEN** `Testing:` names the test or command and what it covers, not a bare "passed"
+
+#### Scenario: Config-only deploy PR
+
+- **GIVEN** a branch that only adds helm values for code merged earlier and verified in eng
+- **WHEN** writing the PR description
+- **THEN** `Testing:` is one sentence: covered by unit tests and verified in eng, with the ticket link; no helm output or check lists
 
 ### Behavior: Diff-grounded accuracy
 

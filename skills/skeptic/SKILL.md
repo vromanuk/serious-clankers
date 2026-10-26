@@ -15,12 +15,13 @@ Standalone, **read-only** multi-stage code review, **Rust-first**. Snapshot scop
 
 ## Contract
 
-- **Read-only** unless the user explicitly asked to fix.
+- **Read-only** unless the user explicitly asked to fix (fix mode, Loop step 4.4).
 - Run stages **1→10 always**, in report order. Never freestyle a product essay first. **Do not skip** unit-tests (stage 5) — it is not optional depth under testability.
+- **One stage at a time, over a fixed file scope.** Each stage gets its own pass over every scoped file with only that stage's question in mind. A single pass that tries to apply all ten lenses at once skims and misses findings that a dedicated pass catches.
 - **Execution:** run the full review **in this same session**. Do not spawn subagents. Load each stage `SKILL.md`, keep stage boundaries, same report shape. Do not invent a one-lens freestyle essay.
 - **Coordinator:** reject weak, preference-only, or evidence-free findings; label facts vs assumptions.
 - Findings: numbered issues with evidence; **LETTER options** only for material design forks (real alternatives — no “do nothing”). Per option: what / pros / cons / gain / worse when. No time estimates.
-- Ask before implementing fixes.
+- Ask before implementing fixes, unless the user asked to fix (fix mode).
 - Deterministic tools (`rustfmt`, `clippy`, tests) are validation notes — not stages and not taste debates.
 
 ## Stages (always)
@@ -102,11 +103,17 @@ Material design forks: NUMBER the issue, then LETTER real options (recommended f
 ## Loop
 
 1. **Snapshot** — base/dirty tree, real need (mark assumed if needed), non-goals, changed files, validation commands available  
-2. **Load** each stage `SKILL.md` (and that stage’s `references/` as the stage says). Do not skip a stage because the slice “looks safe.”  
-3. **Run stages 1→10** in this session — sequential, one stage at a time, no spawned agents; then the `## Async` section when the diff has async code  
-4. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
-5. **Optional validation note** — smallest relevant checks; not a tenth stage  
-6. **Handoff** — one merged report; do not implement unless asked  
+2. **Scope files** — list the files that carry the change: production code first, then its tests. For a shared file the change only touches, scope the diff, not the whole file. Leave out build and generated files (BUCK, lockfiles, generated code, deploy templates) unless the change is about them. State the list to the user before stage 1. Read every scoped production file in full once; read large test files in full when stage 5 runs.  
+3. **Track progress** — one task per step: scope, stages 1–10, `## Async` / `## SOLID` when they apply, final checks. Mark each done as it finishes, so the user sees which stage is running.  
+4. **Run each stage on its own**, in order 1→10, then `## Async` and `## SOLID` when their triggers match. In this session, no spawned agents. For every stage:  
+   1. Load that stage's `SKILL.md` and each reference it says to load — read the sections it names, not only the headings.  
+   2. Walk every scoped file with only this stage's question. Re-open the code at the lines in question instead of relying on memory of an earlier pass.  
+   3. Write this stage's findings (or `ok` / `none` with a one-line why) before starting the next stage. A concern that belongs to a later stage waits for that stage.  
+   4. **Fix mode** (the user asked to fix or address issues): fix this stage's findings that keep the intent, then run the smallest check that covers them (build, clippy, the touched tests) before the next stage. A finding with a real design fork is asked about or listed as open — never picked silently. When a fix adds a test for a contract, break the code once to see the test fail, then restore it.  
+   Do not skip a stage because the slice “looks safe.”  
+5. **Coordinate** — accept evidence-backed stage-appropriate concerns; dedupe; facts vs assumptions  
+6. **Validation** — review-only: smallest relevant checks, optional, not a tenth stage. Fix mode: fmt, clippy and the full relevant test suites once after the last stage; name tests that cannot run here and why.  
+7. **Handoff** — one merged report; do not implement unless asked  
 
 One full pass unless the user asks for re-review after fixes. Not an implement→review loop.
 
@@ -115,6 +122,7 @@ One full pass unless the user asks for re-review after fixes. Not an implement�
 ```text
 # Skeptic — <scope>
 
+Scope: <files reviewed; what was left out and why>
 Checked: …
 Assumed: …
 Real need: …
@@ -138,11 +146,14 @@ Real need: …
 (ordered by gain and risk of leaving as-is; ask what to implement)
 ```
 
+In fix mode, each stage section lists finding → fix, and a closing `## Open decisions` lists the design forks left for the user (numbered issues, lettered options).
+
 Final line: `skeptic: complete` or `skeptic: blocked` (scope/need missing).
 
 ## Do not
 
 - Freestyle product essay that skips the ten stage contracts  
+- Several stages in one pass over the files, or a stage judged from memory of an earlier pass  
 - Skip unit-tests stage or fold it silently into testability  
 - Spawn subagents for stages  
 - “Do nothing” as a design option  

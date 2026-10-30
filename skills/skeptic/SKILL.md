@@ -157,6 +157,6 @@ Final line: `skeptic: complete` or `skeptic: blocked` (scope/need missing).
 - Skip unit-tests stage or fold it silently into testability  
 - Spawn subagents for stages  
 - “Do nothing” as a design option  
-- Implement without asking  
+- Implement without asking (to write code with the user, using these stages while writing: `code-buddy`)  
 - LLM as formatter/linter  
 - Invent hard-rule IDs  

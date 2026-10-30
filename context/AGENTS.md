@@ -160,6 +160,7 @@ Load when the job matches — not always-on:
 | `skeptic-async` | Async Rust review (Tokio-first): cancellation, blocking, shared state, task lifetimes, load, performance — extra skeptic section when the diff has async code |
 | `skeptic-solid` | SOLID for Rust types and traits, package principles for crates (cohesion, coupling, instability/abstractness), CUPID as the counterweight — extra skeptic section when the diff changes design structure |
 | `design-components` | Design or grow a job-shaped component (one public struct, pure core) |
+| `code-buddy` | Build code together with the user in the loop: top-down design, every decision the user's, an implementation brief, then explained steps that load and run the skeptic stages while writing |
 | `unit-tests` | Write or review unit tests |
 | `observability` | Write or review production telemetry and alert rules (Rust-first) |
 | `grafana-dashboards` | Build or review Grafana dashboards (RED per component) |

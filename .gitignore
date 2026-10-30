@@ -1,5 +1,6 @@
 # Only the skills listed here are published. A new skill stays local until it is added below.
 /skills/*
+!/skills/code-buddy/
 !/skills/create-flashcards/
 !/skills/design-components/
 !/skills/explain-diff/

@@ -44,12 +44,17 @@ The agent SHALL turn the agreed design into an implementation brief from `refere
 
 ### Behavior: Build in explained steps
 
-The agent SHALL build in the brief's order and stop at each stop point and each decision trigger in `references/decision-triggers.md`. Each stop SHALL contain what `references/explanation-format.md` lists: what the piece does, a diagram when there is a flow or states, the code for that piece only, why this shape and what lost, the risks, the tests, open questions, and the check results. Each stop SHALL end with "Continue?". The agent SHALL NOT go further until the user answers. When the user asks a question, the agent answers and stops again. When the user asks for a change, the agent makes it, shows the diff and the reason, and stops again.
+The agent SHALL build in the brief's order and stop at each stop point and each decision trigger in `references/decision-triggers.md`. Each stop SHALL contain what `references/explanation-format.md` lists: what the piece does, a diagram when there is a flow or states, the code for that piece only, why this shape and what lost, the risks, the tests, open questions, and the check results. Explanations SHALL be simple, technical, and literal, as the Language section of `references/explanation-format.md` describes: literal verbs instead of figures of speech, what a thing is before its library name, the code's own names, and why for each unusual step. Each stop SHALL end with "Continue?". The agent SHALL NOT go further until the user answers. When the user asks a question, the agent answers and stops again. When the user asks for a change, the agent makes it, shows the diff and the reason, and stops again.
 
 #### Scenario: Two critical pieces are ready
 
 - **WHEN** the state machine and the configuration mapping are both written
 - **THEN** the agent shows the state machine, ends with "Continue?", and shows the configuration mapping only after the user answers
+
+#### Scenario: A library term needs explaining
+
+- **WHEN** a stop relies on a library feature the user may not know, such as a number attached to each record that the library returns with its result
+- **THEN** the agent first says what that number is and what the code stores in it and why, in plain sentences, and only then gives the library's name for it
 
 #### Scenario: A choice comes up during the build
 

@@ -9,7 +9,7 @@ description: >
   review afterwards finds little. Use when the user asks to build or implement something together, to stay in
   the loop, to pair, or for an implementation prompt or brief. Not for one-line fixes, renames, or reviewing
   existing code (use skeptic).
-spec_hash: ce3b66de5703
+spec_hash: de3bf84d3f8d
 ---
 
 # Code buddy
@@ -61,7 +61,8 @@ Follow the brief's build order. At every stop point in the brief and every trigg
 1. Load the skeptic stages `writing-with-skeptic.md` maps to this kind of piece, write only that piece following
    them, then run those stages' questions on it and fix what fails.
 2. Run the project's checks (format, lint, tests) for it.
-3. Show it in the shape of `explanation-format.md`.
+3. Show it in the shape of `explanation-format.md`, in its simple, literal, technical wording (its Language
+   section).
 4. End with "Continue?" and stop.
 
 When the user asks a question, answer and stop again. When the user asks for a change, make it, show the diff and

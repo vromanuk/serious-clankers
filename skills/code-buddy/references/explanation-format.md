@@ -30,9 +30,35 @@ code. The user should be able to explain the piece to someone else after reading
 
 ## Language
 
-- Plain words. Define a term the first time it appears; do not coin labels.
+Simple, technical, and literal. A developer who knows the language but not this library or this codebase should
+follow every sentence on the first read.
+
+- **Literal verbs.** Say what the code does: returns, stores, calls, waits, copies, frees. Not figures of speech
+  such as "hands back", "packs", "lives", "plumbs", "wires up", "in flight".
+- **Say what a thing is before its library name.** "a number we attach to each record, which librdkafka returns
+  with that record's result (librdkafka calls it the opaque)", not "its opaque value".
+- **One name per thing, the name in the code.** Use the type, field, or function name, and say what it is the
+  first time. Not "the send's key" when the code calls it the slot index in `UnacknowledgedSends`.
+- **Why for each step.** When the code does something unusual (splits a number into bits, skips a lock), say what
+  it makes possible or what it avoids.
+- **One idea per sentence**, short sentences. Well-known terms (mutex, semaphore, bits, callback) are fine;
+  coined labels and unexplained abbreviations are not.
 - Say what was checked and what is assumed.
 - Say why before how.
+
+Before and after:
+
+```text
+Unclear: librdkafka hands back one usize per record (its opaque value). Stop 4 packs two things into it:
+         the send's key in the high 32 bits and the record's index in the low 32 bits.
+
+Clear:   When we give librdkafka a record, we can attach a number (a usize) to it. librdkafka never reads
+         this number; it returns it to us with that record's delivery result. librdkafka calls it the opaque.
+         We store two numbers in it: the upper 32 bits hold the slot index of the send in
+         UnacknowledgedSends, and the lower 32 bits hold the record's position in that send's slice.
+         So when a result arrives, the callback finds the right send and marks the right record
+         without a separate lookup table.
+```
 
 ## Example stop (shortened)
 
@@ -43,8 +69,9 @@ Where we are:
   send ──► [BufferMemory] ──► UnacknowledgedSends ──► librdkafka ──► callbacks ──► SendFuture
              ^ this stop
 
-What it does: holds the bytes of records between `send` and their acknowledgment, up to buffer_memory_bytes.
-A send waits here when the limit is reached; acknowledgments give the bytes back.
+What it does: counts the bytes of records that `send` gave to librdkafka and that are not acknowledged yet,
+up to buffer_memory_bytes. A send waits here when the limit is reached. When a record is acknowledged, its
+bytes are added back to the count of free bytes.
 
   send(300 B) ──reserve──► [ 64 MiB budget ] ◄──release(300 B)── poll thread, on acknowledgment
                   waits while full
@@ -57,8 +84,9 @@ because it re-implements fair waiting that the semaphore already has.
 ```
 
 How it works:
-- `reserve` takes `bytes` permits and forgets them, so no guard lives while records are in flight.
-- `release` adds them back from the poll thread; it never blocks.
+- `reserve` takes `bytes` permits and calls `forget` on them, so the caller keeps no guard object while
+  librdkafka still holds the records.
+- `release` adds the permits back. It runs on the poll thread and never blocks.
 
 Risks: a send larger than the limit would wait forever, so `send` rejects it before calling `reserve`.
 Tests: reserve_waits_until_release_frees_room; send_larger_than_limit_is_rejected.

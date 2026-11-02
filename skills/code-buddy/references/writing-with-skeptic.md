@@ -14,13 +14,13 @@ Load each stage's `SKILL.md` and the references it names for that topic.
 |---|---|
 | Every piece | `skeptic-naming`, `skeptic-comments`, `skeptic-hard-rules` |
 | Public face: job struct, methods, public data types | `skeptic-architecture` (`components.md`, `type-driven.md`, `rust-apis.md`), `design-components` (`guide.md`, `philosophy-of-design.md`), `skeptic-complexity`, `skeptic-solid` |
-| Rules and decisions (no IO) | `skeptic-testability` (`pure-core.md`), `skeptic-complexity`, `skeptic-conventions` |
+| Rules and decisions (no IO) | `skeptic-testability` (`pure-core.md`, `testing.md`), `skeptic-complexity`, `skeptic-conventions` |
 | IO parts: clients, wrappers, callbacks | `skeptic-architecture`, `skeptic-reliability` (remote calls, queues, retries, shutdown), `skeptic-security` (TLS, keys, untrusted input) |
 | Async code: tasks, locks, channels, `select!`, cancellation | `skeptic-async` and the references it names |
 | Settings, defaults, constants | `skeptic-comments` (`comments.md` § Settings and numbers), `skeptic-naming` (public API), `skeptic-reliability` (limits, timeouts) |
 | Errors | `skeptic-complexity` (error design), `skeptic-architecture` (`rust-apis.md`) |
 | Metrics, logs, spans | `skeptic-observability` (and the `observability` skill it loads) |
-| Tests | `skeptic-unit-tests` (and the `unit-tests` skill), `skeptic-testability` (`testing.md`) |
+| Tests | `skeptic-unit-tests` (and the `unit-tests` skill), `skeptic-testability` (`testing.md`); when the crate has a `spec/SPEC.md`, the project's `spec-driven-development` skill, and one test for each acceptance criterion the change adds or changes |
 
 Before the first piece of a session, read the Scars list in `skeptic/SKILL.md`: the misses skeptic sees most often.
 

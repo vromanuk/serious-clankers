@@ -21,13 +21,13 @@ fn window(...) -> Window { ... }
 ```
 
 ```rust
-/// Scale each signal class to target packs; hold per-series sample rate.
+/// Scale each metric class to a target device count; hold the per-series sample rate.
 ///
-/// Holds rates so cardinality stays realistic when pack count changes (avoids
-/// “tiny packs, huge series” that mis-trains query plans).
+/// Holds rates so cardinality stays realistic when the device count changes (avoids
+/// “few devices, huge series” that mis-trains query plans).
 ///
-/// given: measured 489 packs, 1000 signals, total_samples = 489*1000*100, target 250 packs
-/// expected: samples_per_series = 100, packs = 250
+/// given: measured 489 devices, 1000 metrics, total_samples = 489*1000*100, target 250 devices
+/// expected: samples_per_series = 100, devices = 250
 fn scale_plan(...) -> Vec<ClassPlan> { ... }
 ```
 

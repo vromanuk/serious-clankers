@@ -1,6 +1,6 @@
 ---
 name: skeptic-comments
-spec_hash: c9728d694219
+spec_hash: cec3a275530e
 description: >
   Stage 7 of skeptic: are comments clear, needed, and about why (benefit /
   design reason) — not restating the code or bare rules without explanation.
@@ -25,6 +25,7 @@ description: >
    - Clear English?  
    - Needed at all?  
    - Explains **why** / **benefit** / **why not the obvious alternative** — not only **what**, and not a bare rule with no reason?  
+   - Precise: standard technical terms, behavior instead of vague qualities, the operation's verb instead of a person's (“returns rows”, not “answers questions”), threat stated for safety types, claims about other code checked (`comments.md` § Precise wording)? Applies to READMEs, specs, and test comments in the diff too.  
    - Hard to follow code → simplify the code first (OK to explain *what* for regex or hard algorithms).  
    - Keep only what the code cannot say (reasoning, scars, rules **with** their reason).  
 3. **Public docs vs body comments:**  

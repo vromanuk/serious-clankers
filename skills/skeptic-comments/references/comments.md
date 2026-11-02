@@ -18,6 +18,7 @@ A fact that is *true but unexplained* is still a weak comment. Stating a rule wi
 | “Do X, not Y” | “Do X, not Y, **because** …; otherwise …” |
 | Non-obvious *what* only | Non-obvious *what* **plus** *why it is that way* |
 | Narrates the next line | Explains a decision the code cannot show |
+| States a property (“synchronous”, “not `Sync`”) | States what the property means for the caller and what breaks if ignored |
 
 Aligned with:
 
@@ -35,6 +36,43 @@ Aligned with:
 - Do **not** restate the next line.  
 - Dense and useful — not a blog post on every private helper.  
 - Short *what* is OK for regex, dense bit/math, odd protocols — still add one *why* when the choice is non-obvious.
+
+---
+
+## Precise wording
+
+A comment that is about the right thing can still fail by being vague. Write it in the field's own technical terms, so a reader can search for them and check them.
+
+- **Name the mechanism by its standard term.** “Authentication” and “authorization”, not “whether a client may connect”. “A database view over the source files”, not “exposes it as a dataset”. `Send`/`Sync`, JWKS, `fsync` when those are what is meant.
+- **Replace vague qualities with the actual behavior.** “Locked-down”, “hardened”, “safe”, “proper” hide what happens; name the setting and its effect (“file reads are allowed only under `/data`; outbound network access is off”).
+- **Describe systems with the operation's own verb, not a person's.** A service does not “answer questions”, “ask”, “know”, “want”, “help”, or “let you”; it returns rows, sends a request, stores a value, requires a field, accepts a statement. This holds in READMEs, specs, and test comments too (“the server returns rows from the newer file”, not “answers the next query”; “a fake that never returns”, not “never answers”).
+- **A safety type states the threat it stops.** Say what input it guards against, what goes wrong without it (with a concrete example), and why there is one type for it, not just what it does (“quotes a value”).
+- **Lead with the subject, then the reason.** Open a doc with what the item is or does (“The connection pool shared by all requests…”), not with the code (“In a `Mutex` only because…”).
+- **Check claims about other code before writing them.** Behavior of a library, runtime, or service (does a panic abort? does the API retry?) gets verified in its source or docs; a wrong claim misleads more than no comment.
+
+Bad → good:
+
+```rust
+// Bad: paraphrase, no mechanism
+//! Whether a client may connect, and what each of its requests may do.
+// Good: standard terms, then how it plugs in
+//! Authentication and authorization for API clients. On connect, `authenticate`
+//! verifies the client's bearer token (a JWT); before each request runs, `authorize`
+//! checks it against the permissions of the token's role.
+
+// Bad: property without consequence
+/// Synchronous: called from the database's worker threads, where there is no async runtime.
+// Good: what an implementer must do, and why
+/// Runs on a database worker thread, outside the Tokio runtime, while the client waits
+/// for its connection: return using only data already in memory; never block on network I/O.
+
+// Bad: what, not the threat
+/// A value quoted as an SQL string literal.
+// Good: the threat, an example, why one type
+/// File names come from user uploads and can contain `'`. Pasted in raw,
+/// `x'); DROP TABLE t; --` would end the literal and run as SQL; doubling each `'`
+/// keeps it one string. Every such value goes through this type.
+```
 
 ---
 
@@ -95,7 +133,7 @@ If (1) or (2) fail, the doc is still a fact sheet — fix it.
 ### Bad — rules without why (your shape)
 
 ```rust
-//! Clients query views, not raw object keys. One view per data plane (schemas may differ
+//! Clients query views, not raw object keys. One view per dataset (schemas may differ
 //! by writer — not one giant union).
 ```
 
@@ -103,35 +141,35 @@ True, but a new reader does not know:
 
 - why views beat raw keys,  
 - what breaks if they key by object id,  
-- why one view per plane instead of one mega-schema.
+- why one view per dataset instead of one mega-schema.
 
 ### Good — intuition + why + rules that follow
 
 ```rust
-//! Read path for historian data planes: clients query **views**, not object-store keys.
+//! Read path for analytics datasets: clients query **views**, not object-store keys.
 //!
-//! **Idea:** each data plane exposes a stable query shape (a view). Writers may use
+//! **Idea:** each dataset exposes a stable query shape (a view). Writers may use
 //! different on-disk layouts; the view is the contract clients depend on.
 //!
 //! **Why views (not raw keys):** keys and file layout change when we re-shard or change
 //! codecs. Views keep readers stable so we can evolve storage without rewriting every
 //! client. Benefit: cheaper migrations; fewer “wrong key” production bugs.
 //!
-//! **Why one view per plane (not one giant union):** writers and planes evolve on different
-//! schedules. A single union schema forces every reader to understand every writer’s
-//! quirks and breaks when any plane adds a field. Separate views isolate change.
+//! **Why one view per dataset (not one giant union):** writers and datasets evolve on
+//! different schedules. A single union schema forces every reader to understand every
+//! writer’s quirks and breaks when any dataset adds a field. Separate views isolate change.
 //!
-//! **Rules:** query only through the plane’s view API; do not construct object keys in
-//! callers. Schemas may differ by writer — do not assume one row type across planes.
+//! **Rules:** query only through the dataset’s view API; do not construct object keys in
+//! callers. Schemas may differ by writer — do not assume one row type across datasets.
 //!
 //! Entrypoints: `open_view`, `query_range`.
-//! Cold local profiling is `bench`; stats profiles are `parquet_stats`.
+//! Cold-read benchmarks are `bench`; dataset statistics are `profile`.
 ```
 
 ### Good — purpose + why boundary + entrypoints (no multi-step flow)
 
 ```rust
-//! Cold DuckDB read timing and result artifacts for historian-shaped SQL.
+//! Cold-cache read timing and result artifacts for the reporting queries.
 //!
 //! **Why separate from production paths:** production mixes object-store hydration, gRPC
 //! pagination, and connection pools — those dominate latency and hide engine cost.
@@ -147,15 +185,15 @@ True, but a new reader does not know:
 ### Good — intuition + flow + hazard
 
 ```rust
-//! Turn a `stats.json` profile into distribution-matched hive parquet at a chosen scale.
+//! Turn a `profile.json` into distribution-matched hive parquet at a chosen scale.
 //!
-//! **Idea:** treat the profile as a recipe for synthetic series; scale packs while holding
+//! **Idea:** treat the profile as a recipe for synthetic series; scale devices while holding
 //! per-series rates so downstream queries see realistic cardinality.
 //!
-//! Values are a seeded random walk per (pack, signal) series (reproducible benches).
+//! Values are a seeded random walk per (device, metric) series (reproducible benches).
 //!
 //! Entrypoints: `run` (write hive parquet under out_dir), `generate_output_reuse` (suite reuse).
-//! Profiling is `parquet_stats`; cold reads are `bench`.
+//! Profiling is `profile`; cold reads are `bench`.
 //!
 //! ```text
 //! GenerateRun::prepare → write_parquet → finish
@@ -238,7 +276,7 @@ Ticket without the constraint is weak:
 Compat / serde defaults belong on the **type or field** (and a test), not a vague module line:
 
 ```rust
-/// `_spread` / `distinct_values` default to 0 so older stats.json still load;
+/// `_spread` / `distinct_values` default to 0 so older profile.json files still load;
 /// generate treats 0 as no per-signal variation / no quantization.
 #[serde(default)]
 pub(crate) frac_unchanged_spread: f64,
@@ -266,7 +304,7 @@ Describe the setting, not the incident that led to it. Replica layouts, deploy o
 
 ### Chosen values (defaults, constants, literals)
 
-Next to the value, say why this number: what it is derived from (a measurement, an upstream limit, a protocol constant, a ratio to another setting) and what goes wrong if it is much lower or higher. Provenance alone ("copied from the Scala config", "recommended") is not a reason; keep it only next to one. The reason lives once, at the default; the field doc links there instead of repeating it.
+Next to the value, say why this number: what it is derived from (a measurement, an upstream limit, a protocol constant, a ratio to another setting) and what goes wrong if it is much lower or higher. Provenance alone ("copied from the old config", "recommended") is not a reason; keep it only next to one. The reason lives once, at the default; the field doc links there instead of repeating it.
 
 Bad: incident story, vague mechanism, deployment detail in a shared setting:
 
@@ -274,7 +312,7 @@ Bad: incident story, vague mechanism, deployment detail in a shared setting:
 /// Longest wait for a new TCP connection to the server to open. When a server restarts, a
 /// connection attempt can get no reply at all; without this limit it waits for the OS to give
 /// up (about two minutes on Linux) and every request queues behind it until its
-/// `request_handler_timeout`, so callers see a long stall instead of a fast failure they can
+/// `request_timeout`, so callers see a long stall instead of a fast failure they can
 /// retry, for example on another replica.
 pub connect_timeout: Duration,
 ```
@@ -289,7 +327,7 @@ Good: controls → at the limit → default; the reason for the value sits on th
 pub connect_timeout: Duration,
 
 /// 1 second. A healthy in-cluster TCP connect takes milliseconds, so this is a wide margin.
-/// Keep it well below `request_handler_timeout`, or requests time out before the connect fails.
+/// Keep it well below `request_timeout`, or requests time out before the connect fails.
 pub fn default_connect_timeout() -> Duration { Duration::from_secs(1) }
 ```
 
@@ -297,11 +335,11 @@ Bad: provenance only, so nobody can tell whether 10 s is still right:
 
 ```rust
 /// Suggested gRPC default keep_alive_timeout value when using nginx
-/// Copied from our Scala gRPC configuration: https://…
+/// Copied from the previous service's gRPC configuration: https://…
 pub fn default_keep_alive_timeout() -> Duration { Duration::from_secs(10) }
 ```
 
-Better: state what the 10 s is measured against and what breaks if it changes; keep the Scala link as provenance next to that reason.
+Better: state what the 10 s is measured against and what breaks if it changes; keep the link to the previous configuration as provenance next to that reason.
 
 ---
 
@@ -350,6 +388,7 @@ Prefer a short block that changes how you **call or change** the code (caller ob
 6. Unclear code → simplify first?  
 7. Short *what* only for regex/hard math when needed?  
 8. Settings and chosen numbers: what it controls, what happens at the limit, special values, relations, default; why this value (§ Settings and numbers)?  
+9. Precise wording: standard technical terms, actual behavior instead of vague qualities, the operation's verb instead of a person's, threat stated for safety types, subject first, claims about other code checked (§ Precise wording)?  
 
 ### Flag
 
@@ -362,5 +401,6 @@ Prefer a short block that changes how you **call or change** the code (caller ob
 - Hard-to-read comment text  
 - Setting doc that tells the incident instead of the behavior, or leaves out what happens at the limit  
 - Chosen number with no reason, or provenance only  
+- Paraphrase where a standard term exists; vague quality (“locked-down”, “safe”) instead of the behavior; a person's verb for a system (“answers questions”, “lets you”); safety type with no threat; claim about another library that was not checked  
 
 Not a flag: short ownership, special values, concurrency, decision rationale, brief *what* on hard algorithms when it helps; tiny modules whose name already is the whole story; well-known protocol numbers (port 443); arbitrary test literals.

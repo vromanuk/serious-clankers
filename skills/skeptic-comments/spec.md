@@ -33,6 +33,28 @@ The agent SHALL flag restating and unnecessary comments, prefer *why* / benefit 
 - **WHEN** reviewing comments
 - **THEN** the agent flags it and asks for caller-visible meaning in the doc, with the internals moved into the body
 
+### Behavior: Precise wording
+
+The agent SHALL flag comments that paraphrase where a standard technical term exists, that use a vague quality instead of naming the behavior, that document a safety type without the threat it stops, or that state behavior of other code without it having been checked, and SHALL suggest wording per `comments.md` § Precise wording.
+
+#### Scenario: Paraphrase instead of the term
+
+- **GIVEN** a module doc “Whether a Client may connect, and what each of its Queries may do.” on code that verifies tokens and checks statements
+- **WHEN** reviewing comments
+- **THEN** the agent flags it and suggests naming authentication and authorization and how each is applied
+
+#### Scenario: A person's verb for a system
+
+- **GIVEN** a README line “the service answers questions about your orders” or a test comment “the server answers the next query”
+- **WHEN** reviewing comments and docs in the diff
+- **THEN** the agent flags it and suggests the operation's verb (“returns order records matching a filter”, “the server returns rows from the newer file”)
+
+#### Scenario: Vague quality
+
+- **GIVEN** a type documented as “the locked-down database”
+- **WHEN** reviewing comments
+- **THEN** the agent flags “locked-down” and asks which settings make it so and what they refuse
+
 ### Behavior: Settings and numbers explained
 
 The agent SHALL check docs on settings (config fields, builder methods, public constants) for what the setting controls, what happens at the limit, special values, relations to other limits, and the default, and SHALL flag setting docs that tell the incident behind the setting instead of its general behavior. The agent SHALL flag chosen numbers (defaults, constants, literals) whose value has no stated reason or only a provenance note.
@@ -45,7 +67,7 @@ The agent SHALL check docs on settings (config fields, builder methods, public c
 
 #### Scenario: Default copied from elsewhere
 
-- **GIVEN** `default_keep_alive_timeout() -> 10 s` documented only as "copied from our Scala configuration"
+- **GIVEN** `default_keep_alive_timeout() -> 10 s` documented only as "copied from the previous service's configuration"
 - **WHEN** reviewing comments
 - **THEN** the agent flags that the value has no reason and asks what the 10 s is chosen against
 

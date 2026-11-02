@@ -20,7 +20,7 @@ label: String,           // "baseline_*" convention is the only identity
 
 ## C-CUSTOM-TYPE / misuse resistance
 
-- Newtypes when two `u64`s mean different things (`Packs`, ids).  
+- Newtypes when two `u64`s mean different things (`DeviceCount`, ids).  
 - Enums for real alternatives, not magic strings at internal boundaries.  
 - Parse at the edge; inner code uses domain types.  
 - **Witness / non-empty success types** when “empty is an error” must not be forgettable — full worked examples in **`type-driven.md`**.

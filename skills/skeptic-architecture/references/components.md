@@ -166,34 +166,34 @@ This is one crate’s public data, not a workspace-wide types crate. Mixing unre
 
 - **Narrow trait, named for the role.** Only the methods the component calls (`put_object`, not a mirror of the S3 API); named for the role (`ObjectStorage`, `RecordSource`), not the vendor. Keep the typed errors the caller acts on instead of `anyhow`.
 - **`Send` futures behind a type parameter.** Declare async methods as `fn put_object(&self, …) -> impl Future<Output = Result<(), PutError>> + Send;`. A plain `async fn` in a trait does not promise `Send`, and spawned tasks need it. Implementations may still write `async fn`.
-- **One job struct, generic.** Put the rules on the public job struct itself (`AssetClient<R: AssetRpc>`), not on a private generic copy that a public struct only forwards to.
-- **Split the read side** when readers do not need the client: a `DinMapReader` with the shared map, and a `DinMap<A: AssetLookup>` that loads and refreshes it. The type parameter then stays where the client is used.
+- **One job struct, generic.** Put the rules on the public job struct itself (`PricingClient<R: PricingRpc>`), not on a private generic copy that a public struct only forwards to.
+- **Split the read side** when readers do not need the client: a `CustomerMapReader` with the shared map, and a `CustomerMap<A: CustomerLookup>` that loads and refreshes it. The type parameter then stays where the client is used.
 - **No test code in production types:** no `#[cfg(test)]` enum variants, no `cfg` inside production match arms.
 - **Sans-IO the policy; traits for the plumbing.** Fakes are for the thin IO layer. Decisions (what to acknowledge, when to close, what to retry) belong in synchronous code fed with data and tested without fakes (`../../skeptic-testability/references/pure-core.md`).
 - **No in-memory implementation as a config mode** unless someone runs that mode (local development, a demo), and never one that loses data if set in production by mistake.
 - **Fakes lock only in non-async methods,** so no guard is held across an await (`../../skeptic-async/references/shared-state.md`).
 
-**Example: the bulk relay's bucket.**
+**Example: an export service's bucket.**
 
 ```rust
-/// Sends one put to an object store. [`BulkBucket`] adds the deadline.
+/// Sends one put to an object store. [`ExportBucket`] adds the deadline.
 pub trait ObjectStorage: Send + Sync + 'static {
-    fn put_object(&self, key: &S3ObjectKey, body: Bytes)
-        -> impl Future<Output = Result<(), BulkBucketError>> + Send;
+    fn put_object(&self, key: &ObjectKey, body: Bytes)
+        -> impl Future<Output = Result<(), ExportBucketError>> + Send;
 }
 
 pub struct S3Storage { client: aws_sdk_s3::Client, bucket_name: S3Bucket }
 impl ObjectStorage for S3Storage { /* one PutObject */ }
 
-pub struct BulkBucket<S> { storage: S }
-impl<S: ObjectStorage> BulkBucket<S> {
-    pub async fn put_object(&self, key: &S3ObjectKey, body: Bytes) -> Result<(), BulkBucketError> {
+pub struct ExportBucket<S> { storage: S }
+impl<S: ObjectStorage> ExportBucket<S> {
+    pub async fn put_object(&self, key: &ObjectKey, body: Bytes) -> Result<(), ExportBucketError> {
         // the rule lives here once: the put deadline, around any storage
     }
 }
 
 // application.rs, the composition root
-fn build_relay(/* … */, bulk_bucket: BulkBucket<S3Storage>) -> anyhow::Result<Relay<KafkaConsumer, S3Storage>>;
+fn build_relay(/* … */, export_bucket: ExportBucket<S3Storage>) -> anyhow::Result<Relay<KafkaConsumer, S3Storage>>;
 
 // tests only
 #[cfg(test)]
@@ -208,7 +208,7 @@ impl ObjectStorage for FakeStorage { /* refuse, hang or store, as the test sets 
 - “`Arc<dyn ObjectStorage>` whose only other implementation is a test fake — nothing is chosen at runtime. Use a type parameter.”
 - “`pub struct Relay<S = S3Storage>` — the core type names the production client. Drop the default; the composition root writes the full type.”
 - “`trait Storage` mirrors the S3 client (`put`, `get`, `delete`, `list`) while the component calls only `put` — keep the methods it calls.”
-- “`AssetRpcCaller<R>` holds the rules and the public `AssetClient` only forwards — make `AssetClient<R: AssetRpc>` the one generic job struct.”
+- “`PricingRpcCaller<R>` holds the rules and the public `PricingClient` only forwards — make `PricingClient<R: PricingRpc>` the one generic job struct.”
 
 **Sources: what each shows**
 
@@ -355,33 +355,33 @@ The public API of a component is what callers and tests depend on. Implementatio
 | Parallel work | Can the work be split for idle workers to pick up? | units small enough to spread (parts, files) | one huge unit no idle worker can share |
 | Containment | What changes when an implementation is swapped? | only the component's interior | public API exposing upload slots, parts, files, or provider types |
 
-### Worked example: bulk relay (sketch)
+### Worked example: file export service (sketch)
 
 ```rust
 // The window component: rows in, stored windows out. No files, parts or slots in the API.
 pub struct WindowExport<S> { .. }
 impl<S: ObjectStorage> WindowExport<S> {
-    pub fn new(settings: WindowExportSettings, file_format: BulkFileFormat,
-               bulk_bucket: BulkBucket<S>, acknowledgment: Acknowledgment, cancel: CancellationToken) -> Self;
-    pub fn add_rows(&mut self, processing_ms: i64, rows: Vec<(InstanceId, BulkRow)>, ack_id: AckId);
+    pub fn new(settings: WindowExportSettings, file_format: ExportFormat,
+               export_bucket: ExportBucket<S>, acknowledgment: Acknowledgment, cancel: CancellationToken) -> Self;
+    pub fn add_rows(&mut self, processing_ms: i64, rows: Vec<(InstanceId, ExportRow)>, ack_id: AckId);
     pub fn close_due_windows(&mut self, processing_ms: i64);
     pub fn can_accept_rows(&self) -> bool;                  // memory limit in bytes
     pub async fn wait_for_stored_window(&mut self) -> StoredWindow;
 }
 
 // The format: an enum this crate owns. Parquet is one more variant.
-#[derive(Clone, Copy)] pub enum BulkFileFormat { Csv }
+#[derive(Clone, Copy)] pub enum ExportFormat { Csv }
 
-// The store: the deadline lives in BulkBucket; the provider and single vs multipart stay
+// The store: the deadline lives in ExportBucket; the provider and single vs multipart stay
 // behind a narrow trait. Tests implement ObjectStorage for an in-memory fake.
 pub trait ObjectStorage: Send + Sync + 'static {
-    fn put_object(&self, key: &S3ObjectKey, body: Bytes)
-        -> impl Future<Output = Result<(), BulkBucketError>> + Send;
+    fn put_object(&self, key: &ObjectKey, body: Bytes)
+        -> impl Future<Output = Result<(), ExportBucketError>> + Send;
 }
-pub struct BulkBucket<S> { storage: S }
+pub struct ExportBucket<S> { storage: S }
 ```
 
-What changes when part uploads replace whole-file uploads: the interior of `WindowExport` and additions to `BulkBucket`. The relay loop, the record mapper and the tests written against `WindowExport`'s public API stay.
+What changes when part uploads replace whole-file uploads: the interior of `WindowExport` and additions to `ExportBucket`. The consumer loop, the record mapper and the tests written against `WindowExport`'s public API stay.
 
 ### Review one-liners
 

@@ -53,9 +53,9 @@ The agent SHALL treat job-shaped components (public surface at the component bou
 
 #### Scenario: Generic inner type that the public struct only forwards to
 
-- **GIVEN** a public `AssetClient` whose only field is a private `AssetRpcCaller<R: AssetRpc>` holding the rules, where `AssetRpc` has one production implementation (the generated gRPC client) and a test fake
+- **GIVEN** a public `PricingClient` whose only field is a private `PricingRpcCaller<R: PricingRpc>` holding the rules, where `PricingRpc` has one production implementation (the generated gRPC client) and a test fake
 - **WHEN** reviewing architecture
-- **THEN** the agent keeps the trait and flags the forwarding copy, offering `AssetClient<R: AssetRpc>` as the one generic job struct, so tests build the real `AssetClient` with the fake and call its public methods
+- **THEN** the agent keeps the trait and flags the forwarding copy, offering `PricingClient<R: PricingRpc>` as the one generic job struct, so tests build the real `PricingClient` with the fake and call its public methods
 
 #### Scenario: Test-only variant in a production enum
 

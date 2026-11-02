@@ -117,7 +117,7 @@ Aligned with widespread guides: [.NET Framework Design Guidelines](https://learn
 
 A function is named with a **verb or verb phrase**. The call site reads as an action. A bare noun is a value (a type, a field, a variable), not a function.
 
-Do not drop the verb on a getter. `next_offsets()` looks like a field. `get_next_offsets()` is a function.
+**Plain field getters keep Rust's convention: no verb.** A method that only returns something the value already holds, doing no work, is named for that field: `snapshots()`, `files()`, `len()` ([Rust API Guidelines, C-GETTER](https://rust-lang.github.io/api-guidelines/naming.html#getter-names-follow-rust-convention-c-getter)). As soon as the method computes, builds, copies into a new collection, or looks something up, it takes a verb: `list_table_names()` (builds a new `Vec`), `get_hook_names()` (builds a value), `get_next_offsets()` (derives the next offsets). The test: would a reader be surprised that the call does work? Then name the work.
 
 Do not reuse a verb as a noun for a value. `resume` is a verb. `resume_offsets` does not say which offsets those are.
 
@@ -175,7 +175,7 @@ Also fine when they fit better: **`should_`** (policy / recommendation), **`are_
 - **Language / framework protocol names** you must implement (`fmt::Display`, `Iterator::next`, serialization hooks).  
 - **Constructors / conversions** by project idiom (`new`, `from_str`, `of`, `default`).  
 - **Operators** and symbol traits.  
-- **Project-local getters** in a language whose house style drops the verb (Go often drops `Get`). Rust here does not: a getter still starts with a verb.  
+- **Plain field getters** that return a stored field as is, by the language's house style: Rust drops `get_` (`snapshots()`, `files()`), Go drops `Get`. Conversions follow their idiom too (`as_*`, `to_*`, `into_*`). A getter that computes, allocates, or looks up still takes a verb (§ 1).  
 - Returning **optional / result types**, not bool — name the action or the value (`find_user`, `load_config`), not a fake `is_*`.
 
 If none of those apply and the name is still a bare noun or a non-predicate bool, **rename**.

@@ -65,6 +65,6 @@ The agent SHALL NOT invent hard-rule IDs not present in that hard-rules file.
 
 ### Constraint: Pass/fail only
 
-The agent MUST NOT expand this stage into architecture or pure-core essays.
+The agent MUST NOT expand this stage into architecture or pure-core essays. Shallow public surface / leaked use-case steps are architecture `### Component API`, not a hard-rule id.
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

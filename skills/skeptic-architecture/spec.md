@@ -2,7 +2,7 @@
 
 ## Intent
 
-Stage 2 of skeptic: judge and uphold the pack’s **default project architecture** — component-based layout (job-shaped components, public vs private surface as **use-case orchestration** not stray helpers, nested internals, data ownership, edge composition), dependency direction, and whether types force real contracts at boundaries. The same layout is the default when creating structure, not only when reviewing.
+Stage 2 of skeptic: judge and uphold the pack’s **default project architecture** — component-based layout (job-shaped components, public vs private surface as **use-case orchestration** not stray helpers, nested internals, data ownership, edge composition), dependency direction, whether types force real contracts at boundaries, and whether the **provided face** is the smallest complete set of assumptions a caller needs to finish the job. The same layout is the default when creating structure, not only when reviewing.
 
 ## Triggers
 
@@ -113,6 +113,40 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent flags both types and offers reuse, generalize, or keep both. Keep-both is allowed only when the finding names the fact that would be a lie if they were one type. A comment that distinguishes the new struct from some other type is not that fact. A wrapper that holds the existing type plus the extra field is not this finding.
 
+### Behavior: Component provided face
+
+When the diff changes a component’s provided `pub` (job-struct methods, types callers name, library crate root exports), the agent SHALL follow `references/component-api.md`: job in one sentence, sample caller for the main use case, smallest complete surface, assumptions visible at the call site, and unchanged meaning of existing `pub`. The agent SHALL report `### Component API` with `component-api: ok`, findings, or `component-api: none` and the reason. Interior composition quality is conventions; CUPID as a SOLID counterweight is SOLID. HTTP paths, status codes, and UI widgets are not this behavior. When stray exported steps would also be a layout finding, the agent SHALL report them once under `### Component API`.
+
+#### Scenario: Exported load / pick / save
+
+- **GIVEN** a component root that publicly exports `load_batches`, `pick_batch`, and `save_allocation` for one allocate workflow
+- **WHEN** reviewing the provided face
+- **THEN** the agent flags leaked composition and prefers `allocate(...)` on the job struct (sample caller must not sequence the three)
+
+#### Scenario: Caller still builds an index
+
+- **GIVEN** the public surface is `all_recipes` and `all_machines`, and a realistic caller must build a geo-index to answer “what can I get near here?”
+- **WHEN** reviewing the provided face
+- **THEN** the agent flags an incomplete face and prefers a `search` (or equivalent) use-case method
+
+#### Scenario: Execution leaked as busy slots
+
+- **GIVEN** `try_start_upload` returns `AllUploadersBusy` so the caller manages upload slots
+- **WHEN** reviewing the provided face
+- **THEN** the agent flags the wrong abstraction level and prefers a job term such as `can_accept_rows`
+
+#### Scenario: Additive general method
+
+- **GIVEN** a new `prepare(recipe, volume, options)` beside an existing `prepare_lungo(volume)` that still means lungo with the same defaults
+- **WHEN** reviewing the provided face
+- **THEN** the agent does not flag a meaning change
+
+#### Scenario: Private helper rename
+
+- **GIVEN** a diff that only renames private helpers in a pure function module
+- **WHEN** reviewing architecture
+- **THEN** the agent reports `component-api: none` with a one-line reason
+
 ### Behavior: Reliability and security lenses
 
 When the diff touches failure-relevant code, the agent SHALL follow the `skeptic-reliability` contract and report it as `### Reliability` inside this stage; when it touches a trust boundary, the agent SHALL follow the `skeptic-security` contract and report it as `### Security`. Otherwise the agent SHALL write one line per lens with `none` and the reason.
@@ -121,18 +155,18 @@ When the diff touches failure-relevant code, the agent SHALL follow the `skeptic
 
 - **GIVEN** a diff adds a Kafka consumer that uploads files to object storage with a service-account token
 - **WHEN** reviewing architecture
-- **THEN** the `## 2. Architecture` section contains the component findings followed by `### Reliability` (for example commit-after-durable, retries, backlog) and `### Security` (for example token handling and bucket access scope)
+- **THEN** the `## 2. Architecture` section contains the component findings, `### Component API`, then `### Reliability` (for example commit-after-durable, retries, backlog) and `### Security` (for example token handling and bucket access scope)
 
 #### Scenario: Pure formatting change
 
 - **GIVEN** a diff that only renames private helpers in a pure function module
 - **WHEN** reviewing architecture
-- **THEN** the section ends with `reliability: none` and `security: none`, each with a one-line reason
+- **THEN** the section includes `component-api: none` and ends with `reliability: none` and `security: none`, each with a one-line reason
 
 ## Constraints
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT turn this stage into pure-core essays, comment nits, or a full hard-rule checklist walk.
+The agent MUST NOT turn this stage into pure-core essays, comment nits, or a full hard-rule checklist walk. The agent MUST NOT treat HTTP paths, status codes, or UI widgets as component-API rules, and MUST NOT run CUPID as a gate here (SOLID owns that acronym).
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

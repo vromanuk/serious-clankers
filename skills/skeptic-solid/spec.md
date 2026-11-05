@@ -93,6 +93,6 @@ When crates or their dependencies change, the agent SHALL check release/reuse, c
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT repeat component layout, public surface, data ownership, or dependency passing (architecture), depth and conjoined splits (complexity), names (naming), Rust style (conventions), or telemetry (observability); it cross-references or drops those findings instead. The agent MUST NOT gate on metrics.
+The agent MUST NOT repeat component layout, public surface, data ownership, dependency passing, or provided-face smallest-complete / sample caller (architecture `### Component API`), depth and conjoined splits (complexity), names (naming), Rust style (conventions), or telemetry (observability); it cross-references or drops those findings instead. The agent MUST NOT gate on metrics. The CUPID acronym stays in this stage; sequenced public steps on a job face are architecture.
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

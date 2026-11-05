@@ -6,6 +6,7 @@ Actionable rules from John Ousterhout, [*A Philosophy of Software Design*](https
 
 - `guide.md` — component struct + pure-core/shell  
 - `skeptic-architecture/references/components.md` — job layout  
+- `skeptic-architecture/references/component-api.md` — provided-face walk (sample caller, leaked leaves)  
 - `skeptic-conventions/references/write-code.md` — one function per task (**interior**)  
 - `skeptic-comments` — comments as design (adjacent ideas)
 - `skeptic-complexity/references/complexity.md` — every red flag with examples and limits (review depth)

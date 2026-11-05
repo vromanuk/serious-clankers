@@ -33,7 +33,7 @@ description: >
 
 ## Do not
 
-- Component layout, data ownership, or the job struct's public face (→ architecture); report here only depth and leakage inside or across units  
+- Component layout, data ownership, or the job struct's public face (→ architecture), including leaked use-case steps and sample-caller incompleteness (→ `### Component API`); report here only depth and leakage inside or across units  
 - Comment wording (→ comments) or name wording (→ naming)  
 - Pure vs IO placement (→ testability) or test craft (→ unit-tests)  
 - Ask for cleanup of code the change did not touch; offer it as a follow-up  

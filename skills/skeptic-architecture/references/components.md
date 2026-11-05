@@ -296,7 +296,7 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 | Feature split only by layer (`…/service`, `…/repo` for the whole app) | No job owner; deps sprawl |
 | Outside code imports another job’s private module / path | Broken encapsulation (`HR-private-import`) |
 | Public root re-exports everything (no real surface) | Boundary is fake |
-| **Many public step-helpers; callers reassemble the workflow** | Shallow component; missing use-case face |
+| **Many public step-helpers; callers reassemble the workflow** | Shallow component; missing use-case face — file under `### Component API` |
 | **Free public orchestration fns that re-pass the same deps** | Prefer a job struct that holds collaborators |
 | **HTTP/CLI contains load→decide→save for a multi-step job** | Orchestration should sit once on the component struct |
 | **Business rules only inside SQL/HTTP with no pure core** | Hard to test; split thinking vs shell |
@@ -326,7 +326,7 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 - Finding: “handler uses `other_job::store::…` — use the public surface or move code.”  
 - Finding: “layout is controllers/services/repos only; no job-shaped owner for this change.”  
 - Finding: “two crates write `orders` rows — pick one owner.”  
-- Finding: “root re-exports `load_*` / `validate_*` / `write_*`; callers sequence them — fold into methods on a job struct.”  
+- Finding: “root re-exports `load_*` / `validate_*` / `write_*`; callers sequence them — fold into methods on a job struct.” File under `### Component API`.  
 - Finding: “allocate workflow only lives in the HTTP handler — move orchestration onto the component struct.”  
 - Finding: “several `pub fn`s all take the same store — hold it on a public struct.”  
 - Finding: “`KafkaRecord` is declared in `processing/listener.rs` and only re-exported. Move it into `types`. Add `types.rs` or `types/mod.rs` if the crate has none.”  
@@ -340,6 +340,8 @@ From [components-example](https://github.com/thombergs/components-example) (illu
 ## High-level API design checks
 
 The public API of a component is what callers and tests depend on. Implementations behind it will change (another storage provider, another file format, multipart instead of one PUT). Design the API so those changes stay inside.
+
+**Two homes:** this table is **construction and containment** (passed-in, fakes, hot path, slots/parts not on the face). Whether the provided methods are the **smallest complete job** (sample caller, one abstraction level, leaked `opening`/`body` leaves) is `component-api.md`, reported as `### Component API`.
 
 | Check | Ask | Good | Flag |
 |-------|-----|------|------|
@@ -385,7 +387,7 @@ What changes when part uploads replace whole-file uploads: the interior of `Wind
 
 ### Review one-liners
 
-- Finding: "`WindowUploads::try_start_upload` returns `AllUploadersBusy` — the caller now manages upload slots; keep slots inside and expose `can_accept_rows()`."
+- Finding: "`WindowUploads::try_start_upload` returns `AllUploadersBusy` — the caller now manages upload slots; keep slots inside and expose `can_accept_rows()`." File under `### Component API` (wrong level on the provided face).
 - Finding: "`enum Storage { S3 { .. }, #[cfg(test)] Fake(FakeBucket) }` — test code in a production type; make the storage a type parameter behind `ObjectStorage` and implement it for the fake in test code."
 - Finding: "each window keeps one `AckId` per record and the memory limit ignores it — count it, or keep ranges."
 - Finding: "CSV for a 256 MiB file is encoded inside an async task — move it to `spawn_blocking` or encode as rows arrive."
@@ -398,5 +400,6 @@ What changes when part uploads replace whole-file uploads: the interior of `Wind
 - Merged interior design (public face + pure-core/shell, short guide) → **`design-components/references/guide.md`**  
 - Type-level “caller cannot forget X” → `type-driven.md`  
 - Misuse-resistant Rust API craft → `rust-apis.md`  
+- Provided-face principles (smallest complete, sample caller, one level) → `component-api.md`  
 - Pure vs IO placement samples → skeptic-testability `pure-core.md`  
 - Absolute ban IDs → skeptic-hard-rules (`HR-private-import`)

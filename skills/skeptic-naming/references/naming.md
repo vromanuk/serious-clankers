@@ -337,4 +337,5 @@ Not a flag: loop index `i` / `n`; `ok` / `found` in a few lines with one obvious
 | Short form when writing code (verb + bool prefixes) | conventions → `write-code.md` § Names carry the action |
 | Types that force good use | architecture |
 | One function per task (step names) | conventions |
+| Missing helpers, empty-vs-missing *meaning*, leaked use-case steps | architecture `### Component API` |
 | Public bare `status: bool` / double-negation flags | hard-rules (`HR-api-bool-status`, `HR-api-double-negation`) |

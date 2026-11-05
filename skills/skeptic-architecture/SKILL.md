@@ -3,14 +3,15 @@ name: skeptic-architecture
 description: >
   Stage 2 of skeptic: component-based layout (job-shaped components, public vs
   private surface, use-case orchestration surface not stray helpers, data
-  ownership, edge composition), dependency direction, and type-driven contracts
-  at boundaries. Use when skeptic runs or the user asks for architecture/component
-  review only.
+  ownership, edge composition), dependency direction, type-driven contracts
+  at boundaries, and whether the provided face is the smallest complete set of
+  assumptions a caller needs. Use when skeptic runs or the user asks for
+  architecture/component review only.
 ---
 
 # Skeptic architecture
 
-**Question:** Who owns which job, how is the project laid out into components, is the public surface a **job struct with use-case methods** (deep) or a bag of steps (shallow), how may pieces depend, and do types force the real contract at boundaries?
+**Question:** Who owns which job, how is the project laid out into components, is the public surface a **job struct with use-case methods** (deep) or a bag of steps (shallow), how may pieces depend, do types force the real contract at boundaries, and is the **provided face** the smallest complete set of assumptions a caller needs to finish the job?
 
 **Default (build and review):** job-shaped **components**, not horizontal layers. Same default as pack `context/AGENTS.md` § Project layout — this stage enforces it on diffs and guides structure when the change introduces layout.
 
@@ -25,7 +26,8 @@ description: >
 5. `references/type-driven.md` — type-boundary samples when APIs/results change, and when the diff adds a struct  
 6. `../skeptic-reliability/SKILL.md` — when the diff touches remote calls, retries, consumers or producers, queues, caches, config, deployment or health checks, startup dependencies, shared tenant resources, or state that must survive a crash  
 7. `../skeptic-security/SKILL.md` — when the diff touches a trust boundary: untrusted input, authentication or authorization, keys or tokens, TLS, identities and permissions, queries or commands built from data, admin or debug endpoints, dependencies or deployment config, logging of user data  
-6. `references/rust-apis.md` — misuse-resistant API craft  
+8. `references/rust-apis.md` — misuse-resistant API craft  
+9. `references/component-api.md` — **provided face**: smallest complete assumptions, sample caller, one abstraction level (when job-struct methods, exported types, or library crate `pub` change)  
 
 ## Do
 
@@ -85,14 +87,18 @@ When APIs/results changed, or a struct was added, include `type-driven: ok` (wha
 
 ### High-level API design (when a component's API is designed or changed)
 
-Part of component-based architecture: the public API is the contract that stays while implementations change. Check four things on each component surface. Detail and a worked example: `references/components.md` § High-level API design checks.
+Part of component-based architecture: the public API is the contract that stays while implementations change.
+
+**Construction and containment** — four checks on each component surface. Detail: `references/components.md` § High-level API design checks.
 
 1. **Passed in, not built inside (dependency injection through the constructor).** Clients, stores, file formats and consumers are built at the app edge and passed to the component. Flag hidden dependencies too: config read with `std::env::var`, global statics used as services, or clock reads inside component methods — they belong in the constructor or the method parameters (not a hit: logging and tracing globals, constant caches, `main`). Clients that do IO arrive behind a narrow **trait** (item 13); an **enum** stays for closed sets of values such as file formats, never with a test-only variant. Use `Arc` only for values several tasks share.  
 2. **Easy to test.** Each component is built in tests through its real constructor, with fakes implementing the client traits in test code; time is a parameter, not a clock read inside; tests use the public API, so swapping an implementation does not rewrite them.  
 3. **Performance named up front.** For each unit of work, say the hot path and its cost: allocations, locks or atomics per record; CPU-heavy work on async runtime threads (move it off); memory per unit, bookkeeping included; backpressure counted in the resource that runs out (usually bytes); work units small enough to run in parallel.  
 4. **Change stays inside.** List what changes when an implementation is swapped (storage provider, file format, single vs multipart upload). The public API must not expose implementation units such as upload slots, parts or files.  
 
-When a component API is in scope, report `api-design: ok` (one line per check) or findings with path:line.
+When construction is in scope, report `api-design: ok` (one line per check) or findings with path:line.
+
+**Provided face** — when the diff changes job-struct methods, types callers name, or library crate `pub`, run `references/component-api.md` (five-step walk: job sentence, sample caller, smallest complete, assumptions visible, meaning of existing `pub`). Report as `### Component API`: `component-api: ok` (job + sample-caller one-liner), findings, or `component-api: none — <why>`. Interior “one function per task” stays conventions; CUPID as a SOLID counterweight stays SOLID. If stray exported steps would also fire as layout, report them **once** here.
 
 ### Reliability and security (part of this stage)
 
@@ -120,7 +126,10 @@ Architecture decides how failure and trust flow between components, so this stag
 - Treat “no layers” as “no public use-case orchestration on the component”  
 - Demand Cosmic/DDD folder sets or formal UoW/repository types by default  
 - Treat this crate’s `types` module as a god-module, or demand one workspace-wide `types` crate for unrelated jobs  
+- HTTP paths, status codes, or UI widgets as component-API rules (→ not this pack)  
+- CUPID acronym as a gate (→ SOLID `cupid.md`); interior “one function per task” quality (→ conventions)  
+- Repeat stray exported steps as both layout and `### Component API` — report once under `### Component API` when it is the job’s provided face  
 
 ## Output section title
 
-`## 2. Architecture` — with `### Reliability` and `### Security` subsections (or their one-line `none`) after the component findings.
+`## 2. Architecture` — component / type-driven / construction findings, then `### Component API` (`ok` / findings / `none`), then `### Reliability` and `### Security` (or their one-line `none`).

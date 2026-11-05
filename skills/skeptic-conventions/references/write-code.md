@@ -117,7 +117,7 @@ Slogan: **one function per task.**
 
 Same idea as *How to Design Programs* on composing functions: a wish list of tasks → one function each → the main function only glues.
 
-**Public vs private (important):** split tasks freely **inside** a component. Do **not** re-export every leaf as the component’s public API. Outsiders use preferably **one job struct** whose **methods** orchestrate once; pure rules stay thinking code (often private free functions). Otherwise “one function per task” becomes a shallow bag of stray public helpers (Ousterhout: deep face, private composition — `design-components/references/philosophy-of-design.md`). See also `components.md`, skill **`design-components`**, `pure-core.md`.
+**Public vs private (important):** split tasks freely **inside** a component. Do **not** re-export every leaf as the component’s public API. Outsiders use preferably **one job struct** whose **methods** orchestrate once; pure rules stay thinking code (often private free functions). Otherwise “one function per task” becomes a shallow bag of stray public helpers (Ousterhout: deep face, private composition — `design-components/references/philosophy-of-design.md`). Whether those leaves are public is architecture `### Component API` (`skeptic-architecture/references/component-api.md`). See also `components.md`, skill **`design-components`**, `pure-core.md`.
 
 **Why**
 

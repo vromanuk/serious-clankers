@@ -73,10 +73,10 @@ The agent SHALL report a hard-to-pick name or a hard-to-describe interface as a 
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT review component layout or data ownership (architecture), comment or name wording (comments, naming), or test craft (unit-tests), and MUST NOT ask for cleanup of code the change did not touch.
+The agent MUST NOT review component layout, data ownership, or the job’s provided face (architecture `### Component API` owns leaked use-case steps and sample-caller incompleteness), comment or name wording (comments, naming), or test craft (unit-tests), and MUST NOT ask for cleanup of code the change did not touch.
 
 ### Constraint: Limits are not findings
 
 The agent MUST NOT report a red flag in a case the reference lists as a limit, such as hiding information callers need for correctness.
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

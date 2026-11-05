@@ -13,7 +13,7 @@ Load each stage's `SKILL.md` and the references it names for that topic.
 | Writing | Load |
 |---|---|
 | Every piece | `skeptic-naming`, `skeptic-comments`, `skeptic-hard-rules` |
-| Public face: job struct, methods, public data types | `skeptic-architecture` (`components.md`, `type-driven.md`, `rust-apis.md`), `design-components` (`guide.md`, `philosophy-of-design.md`), `skeptic-complexity`, `skeptic-solid` |
+| Public face: job struct, methods, public data types | `skeptic-architecture` (`components.md`, `component-api.md`, `type-driven.md`, `rust-apis.md`), `design-components` (`guide.md`, `philosophy-of-design.md`), `skeptic-complexity`, `skeptic-solid` |
 | Rules and decisions (no IO) | `skeptic-testability` (`pure-core.md`, `testing.md`), `skeptic-complexity`, `skeptic-conventions` |
 | IO parts: clients, wrappers, callbacks | `skeptic-architecture`, `skeptic-reliability` (remote calls, queues, retries, shutdown), `skeptic-security` (TLS, keys, untrusted input) |
 | Async code: tasks, locks, channels, `select!`, cancellation | `skeptic-async` and the references it names |

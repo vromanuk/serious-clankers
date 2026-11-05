@@ -16,7 +16,7 @@ Martin's reply is the other half: "The best way to make a complicated mess is to
 - **Intention-revealing.** "I can easily find your component, and just as quickly decide whether it is the thing I need or not."
 - **Minimal dependencies.** Each dependency adds a library, often a specific version, and a chance of incompatibility.
 
-**Flag:** `pub` where `pub(crate)` would do; callers that must call several functions in an undocumented order for one common task; generic names (`Manager`, `Helper`, `utils`) that hide the purpose; a library pulling in a heavy dependency (or its default features) for a small use.
+**Flag:** `pub` where `pub(crate)` would do; callers that must call several functions in an undocumented order for one common task; generic names (`Manager`, `Helper`, `utils`) that hide the purpose; a library pulling in a heavy dependency (or its default features) for a small use. On a **job’s provided face**, that sequenced-call miss is architecture `### Component API`, not a second CUPID finding.
 
 ### 1.2 Unix philosophy — "does one thing well"
 

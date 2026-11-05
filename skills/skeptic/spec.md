@@ -53,15 +53,15 @@ The agent SHALL keep one task per step — scope, each of stages 1–10, `## Asy
 - **WHEN** stage 6 is running
 - **THEN** the task list shows scope and stages 1–5 done, stage 6 in progress, and the rest pending
 
-### Behavior: Reliability and security inside architecture
+### Behavior: Component API, reliability, and security inside architecture
 
-Stage 2 (architecture) SHALL include `### Reliability` and `### Security` subsections, following the `skeptic-reliability` and `skeptic-security` contracts, when the diff touches failure-relevant code or a trust boundary; otherwise each SHALL be one line with `none` and the reason. This adds no numbered stage.
+Stage 2 (architecture) SHALL include `### Component API` following `skeptic-architecture/references/component-api.md` when the diff changes provided `pub`, otherwise one line `component-api: none` and the reason; then `### Reliability` and `### Security` subsections, following the `skeptic-reliability` and `skeptic-security` contracts, when the diff touches failure-relevant code or a trust boundary; otherwise each of those SHALL be one line with `none` and the reason. This adds no numbered stage.
 
 #### Scenario: Diff adds a remote call with retries
 
 - **GIVEN** a diff that adds an object-storage upload with a retry loop and a new service-account token
 - **WHEN** skeptic runs
-- **THEN** `## 2. Architecture` contains `### Reliability` and `### Security`, and the report still has exactly ten numbered sections
+- **THEN** `## 2. Architecture` contains `### Component API`, `### Reliability` and `### Security`, and the report still has exactly ten numbered sections
 
 ### Behavior: Async section when the diff has async code
 
@@ -129,4 +129,4 @@ When the user asked to fix or address issues, the agent SHALL fix each stage's i
 
 The agent MUST NOT invent hard-rule IDs; stage 10 uses only IDs from `skeptic-hard-rules/references/hard-rules.md`.
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

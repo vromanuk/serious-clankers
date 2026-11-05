@@ -14,7 +14,7 @@ Design and grow **job-shaped components** with a **small public face** — prefe
 
 ### Behavior: One merged model
 
-The agent SHALL treat the component’s public API as preferably **one job struct** whose **methods** are the use cases, holding collaborators as fields when the job has IO or shared deps. The agent SHALL keep multi-step load→decide→save **inside** those methods (or private helpers only they call). The agent SHALL place business rules in **thinking code** (no IO) where they are pure decisions, and IO in thin shell paths. The agent SHALL apply deep-module judgment from `philosophy-of-design.md` when the public face is non-trivial: pull complexity down, hide design decisions, avoid temporal public pipelines and pass-through-only APIs. The agent MUST NOT introduce app-wide `controllers/` / `services/` / `repositories/` as the primary project structure. The agent MUST NOT present Cosmic Python’s full pattern stack as the default. The agent SHOULD prefer methods on a struct over free public orchestration functions that re-pass the same dependencies on every call.
+The agent SHALL treat the component’s public API as preferably **one job struct** whose **methods** are the use cases, holding collaborators as fields when the job has IO or shared deps. The agent SHALL keep multi-step load→decide→save **inside** those methods (or private helpers only they call). The agent SHALL write a short sample caller for the main job and SHALL fold sequenced public steps into one use-case method (`skeptic-architecture/references/component-api.md`). The agent SHALL place business rules in **thinking code** (no IO) where they are pure decisions, and IO in thin shell paths. The agent SHALL apply deep-module judgment from `philosophy-of-design.md` when the public face is non-trivial: pull complexity down, hide design decisions, avoid temporal public pipelines and pass-through-only APIs. The agent MUST NOT introduce app-wide `controllers/` / `services/` / `repositories/` as the primary project structure. The agent MUST NOT present Cosmic Python’s full pattern stack as the default. The agent SHOULD prefer methods on a struct over free public orchestration functions that re-pass the same dependencies on every call.
 
 #### Scenario: Stray public helpers
 
@@ -40,6 +40,12 @@ The agent SHALL treat the component’s public API as preferably **one job struc
 - **WHEN** designing  
 - **THEN** the agent does not invent empty adapter packages or formal UoW without need
 
+#### Scenario: Sample caller still sequences steps
+
+- **GIVEN** listed public methods `load_batches`, `pick_batch`, and `save_allocation`
+- **WHEN** designing the face
+- **THEN** the agent writes a sample caller, sees three calls for one job, and folds them into `allocate` on the job struct
+
 #### Scenario: Temporal public pipeline
 
 - **GIVEN** a design that exports public load / validate / save stages callers must order  
@@ -56,4 +62,4 @@ The agent MUST NOT treat “no layered architecture” as “no public orchestra
 
 The agent MUST prefer the short guide model over pattern catalogs. Optional Cosmic names only when the user asks or a documented pain appears.
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

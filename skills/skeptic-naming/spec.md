@@ -67,6 +67,6 @@ The agent SHALL walk the principles in `naming.md` and SHALL flag names that fai
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT expand this stage into full comment review, composition redesign, or hard-rule walks.
+The agent MUST NOT expand this stage into full comment review, composition redesign, or hard-rule walks. Missing helpers, empty-vs-missing *meaning*, error order, and leaked use-case steps are architecture `### Component API`, not a rename.
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

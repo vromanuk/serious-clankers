@@ -45,6 +45,6 @@ The agent MUST NOT use this stage to re-litigate `rustfmt` / `clippy` output.
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT expand this stage into full comment or naming review.
+The agent MUST NOT expand this stage into full comment or naming review, and MUST NOT judge whether composition leaves are **public** (architecture `### Component API`).
 
-<!-- skillet-version: 1.7.0 -->
+<!-- skillet-version: 1.8.0 -->

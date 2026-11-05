@@ -124,7 +124,7 @@ Skeptic is the source of the rules. Before writing each piece, load the stages f
 then run their questions on the piece and fix what fails before showing it.
 Stages live in ~/.agents/skills/<stage>/SKILL.md, with their references.
 - Every piece: skeptic-naming, skeptic-comments, skeptic-hard-rules.
-- Public face and types: skeptic-architecture (components.md, type-driven.md, rust-apis.md), design-components,
+- Public face and types: skeptic-architecture (components.md, component-api.md, type-driven.md, rust-apis.md), design-components,
   skeptic-complexity, skeptic-solid.
 - Settings and defaults: skeptic-comments (comments.md § Settings and numbers), skeptic-reliability.
 - UnacknowledgedSends, SentRecordId, error mapping, client config: skeptic-testability (pure-core.md),

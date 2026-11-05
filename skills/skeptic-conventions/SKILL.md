@@ -28,6 +28,7 @@ Comments → stage **comments**. Naming → stage **naming**.
    - Helper that only renames a loop → say inline it  
    - Split only when each piece reads on its own; length alone is not a reason (conjoined pieces → `skeptic-complexity`)  
    - Report `composition: ok` or composition findings  
+   - Interior split lives here; **exported** leaves (`opening` / `body` as `pub`, `load_*` / `validate_*` / `write_*` on the job root) → architecture `### Component API`  
 4. **Rust style** — ownership, types at edges, errors, async at the edge, needless clones; don’t re-argue `clippy`/`rustfmt`; allow a measured hot-path tradeoff with a short local why  
 5. **Linters** — run the tools; don’t re-litigate their output here  
 
@@ -36,7 +37,7 @@ Comments → stage **comments**. Naming → stage **naming**.
 - Comment quality as the main job (→ comments)  
 - Naming as the main job (→ naming)  
 - Absolute ban list (→ hard-rules)  
-- Whole system redesign (→ purpose / architecture)  
+- Whole system redesign, or whether composition leaves are public (→ architecture `### Component API`)  
 - Pure vs IO placement (→ testability)  
 
 ## Output section title

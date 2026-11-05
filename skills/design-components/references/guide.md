@@ -9,6 +9,7 @@ One architecture story. Not two books side by side.
 That is the whole model. Cosmic Python’s “service layer” is just a name for the **public face of a component**. We do **not** adopt their full DDD pattern stack (repository theater, UoW types, aggregates) as default.
 
 Layout rules (folders, Hombergs, no app-wide layers): `skeptic-architecture/references/components.md`.  
+Provided face (smallest complete, sample caller): `skeptic-architecture/references/component-api.md`.  
 Thinking vs shell detail: `skeptic-testability/references/pure-core.md`.  
 **Why the face stays small / deep:** `philosophy-of-design.md` (Ousterhout — load for non-trivial design).
 
@@ -231,11 +232,12 @@ One-shot scripts: stay local; no component graph.
 
 1. **Job name?** → public **struct** name?  
 2. **Public use cases?** (list verbs — those are **methods**)  
-3. **What deps live on the struct?**  
-4. **Which rules are pure?** (thinking code; pass time in)  
-5. **Where is IO?** (methods / private shell — not inside pure rules)  
-6. **Can a stranger use only the struct?** (no step order to learn)  
-7. **What are we not building yet?**  
+3. **Sample caller** for the main job — one call (or an obvious pair), no sequenced `load`/`validate`/`write`  
+4. **What deps live on the struct?**  
+5. **Which rules are pure?** (thinking code; pass time in)  
+6. **Where is IO?** (methods / private shell — not inside pure rules)  
+7. **Can a stranger use only the struct?** (no step order to learn)  
+8. **What are we not building yet?**  
 
 ---
 
@@ -293,6 +295,7 @@ Prefer Cosmic Python’s own trade-off tables before adopting the ceremony. Defa
 |------|------|
 | `philosophy-of-design.md` | Ousterhout: deep modules, leakage, pull complexity down |
 | `skeptic-architecture/references/components.md` | Layout default, review one-liners |
+| `skeptic-architecture/references/component-api.md` | Provided face: smallest complete, sample caller |
 | `skeptic-testability/references/pure-core.md` | Thinking vs shell |
 | `skeptic-conventions/references/write-code.md` | One function per task (interior) |
 | `design-components/SKILL.md` | Design workflow |

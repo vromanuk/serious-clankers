@@ -37,7 +37,7 @@ Load only what the diff touches:
 6. **Dependency inversion:** flag policy depending on mechanism, dependencies named for the technology instead of the role, traits that leak the mechanism (`table_name()`), traits declared on the implementing side, and vendor types in a library's public API. Add a trait only for Noback's cases (trimmed public surface, I/O, isolated third-party code, an open set, a replaceable piece of a composed graph); otherwise a concrete struct. Flag `FooService` + `FooServiceImpl` pairs.  
 7. **Packages (when crates or `Cargo.toml` change):** release/reuse (breaking public changes in a minor release, missing deprecation path, growing parameter lists, overly tight version requirements); common reuse (feature strata, bundled integrations, bonus features, implicit dependencies); common closure (one crate changing for dependency, layer, and business reasons); no cycles between modules or via dev-dependencies; dependencies point toward more stable crates; stable crates are abstract, and no concrete crate sits under most of the workspace.  
 8. **Metrics when useful:** compute instability `I = C-out / (C-in + C-out)` and abstractness `A = C-abstract / (C-concrete + C-abstract)` over the workspace for crates in question, and report the distance `|A + I − 1|` as a hint, never a gate.  
-9. **CUPID lens:** check composability (narrow but sufficient surface, intention-revealing, minimal dependencies), a clear outside-in purpose, predictability, idiom, and domain language and structure — only where another stage does not already own the point.  
+9. **CUPID lens:** check composability (narrow but sufficient surface, intention-revealing, minimal dependencies), a clear outside-in purpose, predictability, idiom, and domain language and structure — only where another stage does not already own the point. Component **provided-face** shape (sample caller, leaked use-case steps, one abstraction level) → architecture `### Component API`.  
 10. **Findings:** skeptic concern format, naming the principle **and** the change pressure, path:line, what the next change would cost, and the smallest fix. LETTER options for real design forks (enum vs trait, split vs keep, invert vs depend directly). When run inside skeptic, merge or drop findings another stage already reported.  
 11. When in scope: `solid: ok` (one line naming what was checked) or findings.  
 
@@ -46,7 +46,7 @@ Load only what the diff touches:
 - Report an acronym without a change pressure ("violates SRP")  
 - Demand traits for closed sets of values the crate owns, or one trait per struct. A narrow trait for an IO client whose other implementation is a test fake is the architecture default (`skeptic-architecture` item 13), not over-abstraction  
 - Ask to split units that change together, or into pieces that must be read together (→ complexity owns depth and conjoined splits)  
-- Repeat component layout, public surface, data ownership, or "passed in, not built inside" (→ architecture), names (→ naming), Rust style (→ conventions), telemetry (→ observability)  
+- Repeat component layout, public surface, data ownership, "passed in, not built inside", or provided-face smallest-complete / sample caller (→ architecture `### Component API`), names (→ naming), Rust style (→ conventions), telemetry (→ observability)  
 - Propose new crates for an application's internal layers or subdomains — modules do that job  
 - Gate on metrics  
 

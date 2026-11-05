@@ -30,7 +30,7 @@ description: >
 9. **Plain words** — no made-up pattern labels as names.  
 10. **Match this project’s style** (e.g. Rust: `snake_case` functions, `CamelCase` types). Don’t force another language’s style.  
 11. If a comment only exists to explain a bad name → say **rename**, not “add more comment.”  
-12. **Public / API surface (stronger):** apply `naming.md` § Public API naming — soft nits stay here; absolute API interface bans are hard-rules (`HR-api-*`).  
+12. **Public / API surface (stronger):** apply `naming.md` § Public API naming — soft nits stay here; absolute API interface bans are hard-rules (`HR-api-*`). Missing helpers, empty-vs-missing *meaning*, error order, leaked use-case steps → architecture `### Component API`, not a rename.  
 13. When naming is in scope: `naming: ok` (one line) or findings with path:line and a better name when easy.  
 14. If a hit is clearly an `HR-api-*` ban, note it and leave the formal id to hard-rules (or report once if running this stage alone).  
 

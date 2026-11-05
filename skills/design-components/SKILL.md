@@ -26,12 +26,13 @@ Cosmic Python’s “service layer” ≈ **that public struct**. We do **not** 
 1. `references/guide.md` — component + pure-core/shell merge (required for non-trivial design)  
 2. `references/philosophy-of-design.md` — deep modules, pull complexity down, leakage (required when the face or splits are non-trivial)  
 3. `../skeptic-architecture/references/components.md` — layout rules  
-4. `../skeptic-testability/references/pure-core.md` — thinking vs shell samples  
+4. `../skeptic-architecture/references/component-api.md` — when listing public methods (smallest complete face, sample caller)  
+5. `../skeptic-testability/references/pure-core.md` — thinking vs shell samples  
 
 ## Do
 
 1. **Name the job** — not a technical layer.  
-2. **Public struct** for the job; **list methods** = use cases (default exports).  
+2. **Public struct** for the job; **list methods** = use cases (default exports). Write a short **sample caller**; if it still sequences private-looking steps, those steps are not the face (`component-api.md`).  
 3. **Deps on the struct** — store/clients/clock as fields; construct at app edge.  
 4. **Orchestrate once** per method: read → decide (prefer pure) → write → return.  
 5. **Split thinking vs shell** (sans-IO for rules; time as a parameter).  
@@ -54,7 +55,7 @@ Cosmic Python’s “service layer” ≈ **that public struct**. We do **not** 
 ## Output when designing
 
 1. Job + public **struct** name  
-2. Methods (use cases)  
+2. Methods (use cases) + a short sample caller that finishes the main job  
 3. Fields / deps  
 4. Pure rules vs IO bits  
 5. Data owned  

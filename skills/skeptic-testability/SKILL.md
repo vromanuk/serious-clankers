@@ -19,6 +19,7 @@ description: >
 
 - `references/testing.md` — property/snapshot shapes  
 - `references/pure-core.md` — thinking vs shell samples  
+- `../skeptic-async/references/actors.md` — when the unit is an actor: private sync `step`, tests call the job struct then `serve`, no spawn-then-sleep  
 
 ## Plain words
 
@@ -30,7 +31,7 @@ description: >
 
 1. Flag business rules buried between DB/network/file/clock calls.  
 2. Flag async decision logic that is async only because IO is.  
-3. Prefer `step(state, event) -> (state, decision)` for long-lived state.  
+3. Prefer `step(state, event) -> (state, decision)` for long-lived state. For an actor, that is a **private** sync `step`; flag `.await` there, and tests that spawn the actor then `sleep` instead of calling the job struct's use cases and awaiting `serve` — `actors.md`. Do not demand that `step` be `pub` (architecture).  
 4. New pure behavior → must be coverable by tests; prefer outcomes as data (not mock call counts).  
 5. Prefer public-contract surfaces so tests can stay stable under pure refactor — flag pure logic only reachable via private helpers (stage 5 will flag bad tests of those helpers).  
 6. **Test shape** (when new/changed pure contracts need coverage — not every diff):

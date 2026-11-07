@@ -31,6 +31,12 @@ When pure contracts gain behavior, the agent SHALL prefer table, property, or sn
 - **WHEN** reviewing tests
 - **THEN** the agent prefers snapshot/golden (with normalization) over weak generic properties
 
+#### Scenario: Actor covered by spawn and sleep
+
+- **GIVEN** an actor with a sync `step` (or that could have one) and a test that spawns it, sends messages, then `sleep`s before asserting
+- **WHEN** reviewing testability
+- **THEN** the agent flags that the decisions are not tested as data in / data out, and suggests calling the job struct's use cases, dropping it, and awaiting `serve` (`actors.md`). Same-module tests may call private `step`; the agent does not demand that `step` be `pub`.
+
 ## Constraints
 
 ### Constraint: Stage boundary

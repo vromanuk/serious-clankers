@@ -36,6 +36,8 @@ async fn handler(jobs: &mpsc::Sender<String>, body: String) -> StatusCode {
 }
 ```
 
+A `Handle::new()` that `tokio::spawn`s the actor is the same failure: the constructor detaches the task. Create the actor and mailbox at the edge and own the `JoinHandle` (`actors.md`).
+
 ### 2.2 Ignored `JoinHandle` results
 
 ```rust

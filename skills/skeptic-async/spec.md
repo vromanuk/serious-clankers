@@ -2,7 +2,7 @@
 
 ## Intent
 
-Review async Rust (Tokio-first) for the failures the compiler does not catch: futures cancelled mid-operation, futurelock, blocking the runtime, unsafe sharing of state across `.await`, tasks with no owner, unbounded or unsized queues, and slow async I/O on hot paths. Runs standalone, or as an extra section of a skeptic review when the diff contains async code.
+Review async Rust (Tokio-first) for the failures the compiler does not catch: futures cancelled mid-operation, futurelock, blocking the runtime, unsafe sharing of state across `.await`, tasks with no owner, unbounded or unsized queues, actors that mix state with IO, and slow async I/O on hot paths. Runs standalone, or as an extra section of a skeptic review when the diff contains async code.
 
 ## Triggers
 
@@ -63,6 +63,40 @@ The agent SHALL flag a lock held across an `.await`, including the cases the com
 - **WHEN** reviewing async code
 - **THEN** the agent suggests a wrapper struct around a `std::sync::Mutex` with non-async `insert` and `get` methods, since no await happens under the lock
 
+### Behavior: Sans-IO actors
+
+The agent SHALL treat an actor as a job struct plus private state: the state SHALL NOT own channel handles or sockets, `step` / `handle_message` SHALL NOT `.await`, spawn SHALL belong to the caller, and tests SHALL call use-case methods without spawn-then-sleep. On new or changed actors the agent SHALL flag the opposite, and SHALL flag sender cycles, bounded `send().await` cycles, heartbeat-only actors, and in-process actor frameworks. The agent SHALL NOT report a public `step` or a free `pub fn` that re-passes `Sender` as an async finding (architecture, component API).
+
+#### Scenario: Actor owns the mailbox
+
+- **GIVEN** a public struct with both `next_id` and `mpsc::Receiver<Request>` as fields, and a `run(&mut self)` loop
+- **WHEN** reviewing a new or changed actor
+- **THEN** the agent flags that the state holds a runtime resource, and suggests a job struct (`UniqueIds`), an inbox token the edge passes to `UniqueIds::serve`, and private state with a sync `step`
+
+#### Scenario: Spawn in the job-struct constructor
+
+- **GIVEN** `UniqueIds::new()` that creates a channel and `tokio::spawn`s `serve`, dropping the `JoinHandle`
+- **WHEN** reviewing a new or changed actor
+- **THEN** the agent flags a detached task (high) and suggests `new` return `(UniqueIds, UniqueIdsInbox)` so the caller owns `tokio::spawn(UniqueIds::serve(inbox))`
+
+#### Scenario: Method folds the oneshot
+
+- **GIVEN** a job-struct method that sends a request with a oneshot and `.await`s the reply before returning
+- **WHEN** reviewing async code
+- **THEN** the agent flags that callers cannot join several replies, and suggests returning the `oneshot::Receiver` from the use-case method (`issue_id`)
+
+#### Scenario: Actor test waits with sleep
+
+- **GIVEN** a test that `tokio::spawn`s the actor, sends messages, then `sleep`s before asserting
+- **WHEN** reviewing async code
+- **THEN** the agent flags timing-dependent coverage and suggests calling the use-case methods, dropping the job struct, awaiting `UniqueIds::serve(inbox)`, and asserting on replies
+
+#### Scenario: Heartbeat-only actor
+
+- **GIVEN** a task whose only job is to tick a timer and send a heartbeat while other actors do the work
+- **WHEN** reviewing async code
+- **THEN** the agent flags a false liveness signal and suggests the tick live in the actor whose health it represents
+
 ### Behavior: Task ownership and shutdown
 
 The agent SHALL flag detached spawns and ignored `JoinHandle` results, and SHALL check that long-running tasks get a stop signal and that shutdown waits for them.
@@ -113,6 +147,6 @@ The agent SHALL NOT flag a cancel-unsafe future that cannot be cancelled in its 
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT report timeouts as a hard-rule ban (hard-rules), tracing on spawned tasks (observability), or component API shape (architecture), and MUST NOT ask for a runtime change without a measured reason.
+The agent MUST NOT report timeouts as a hard-rule ban (hard-rules), tracing on spawned tasks (observability), or component API shape (architecture), MUST NOT ask for a runtime change without a measured reason, MUST NOT demand a `poll_transmit` / `poll_timeout` driver on a worker that only serializes one resource, and MUST NOT demand a rewrite of an existing `Handle::new()` the diff did not change.
 
 <!-- skillet-version: 1.7.0 -->

@@ -9,7 +9,7 @@ Reference for reviewing how async code shares mutable state. Tokio-first.
 Two ways to share state between tasks:
 
 1. **Guard it with a mutex** — for plain data with quick synchronous operations.
-2. **Give it to one task and send that task messages** (an actor) — for things that need async work, such as an IO resource.
+2. **Give it to one task and send that task messages** (an actor) — for things that need async work, such as an IO resource. Shape, spawn, and tests: `actors.md`.
 
 Async does not remove the need to think about exclusion. **Mutual exclusion is a property of the logic, not the runtime**: even on one thread, inserting an `.await` in the middle of code that must be atomic lets other tasks run there and see half-updated state.
 
@@ -20,7 +20,7 @@ Async does not remove the need to think about exclusion. **Mutual exclusion is a
 | Situation | Use |
 |-----------|-----|
 | Plain data, short critical sections, never held across `.await` | `std::sync::Mutex` (or `parking_lot`) — preferred, cheaper |
-| An IO resource that must be held across `.await` | `tokio::sync::Mutex` works, but an actor that owns the resource is usually better |
+| An IO resource that must be held across `.await` | `tokio::sync::Mutex` works, but an actor whose loop owns the resource is usually better (`actors.md`) |
 | A pipelined client (many requests in flight on one connection) | Actor — a Tokio mutex allows only one request in flight |
 | A contended `std::sync::Mutex` | Shard it, move the state into an actor, or restructure — rarely switch to the Tokio mutex |
 | A database connection | A connection pool (`bb8`, `deadpool`), not a mutex around one connection |
@@ -134,7 +134,7 @@ let current = guard.take().unwrap();
 *guard = Some(current.advance().await);
 ```
 
-Prefer an actor or a std mutex not held across awaits. See `cancellation.md` § 3.4.
+Prefer an actor (`actors.md`) or a std mutex not held across awaits. See `cancellation.md` § 3.4.
 
 ### 3.3 State read before an `.await` and trusted after it
 
@@ -169,58 +169,11 @@ Every source of concurrency needs an explicit bound: spawn loops, `select!`/`joi
 
 ## 4. Actors
 
-An actor is a task that owns some state and a **handle** that other code uses to send it messages. The handle keeps the actor alive.
+When the work is async or holds an IO resource, give it to **one task** and send that task messages — do not put the resource in a mutex. A Tokio mutex around a connection allows only one request in flight; an actor can pipeline.
 
-```rust
-use tokio::sync::{mpsc, oneshot};
+The actor is its data; the event loop owns sockets and channels. Recipe, spawn, shutdown, and tests: `actors.md`.
 
-enum Message {
-    NextId { reply: oneshot::Sender<u64> },
-}
-
-struct IdActor { inbox: mpsc::Receiver<Message>, next_id: u64 }
-
-impl IdActor {
-    fn handle(&mut self, msg: Message) {
-        match msg {
-            Message::NextId { reply } => {
-                self.next_id += 1;
-                let _ = reply.send(self.next_id); // the caller may have given up; that is fine
-            }
-        }
-    }
-}
-
-async fn run(mut actor: IdActor) {
-    while let Some(msg) = actor.inbox.recv().await { actor.handle(msg); }
-    // every handle dropped → recv() returns None → actor exits
-}
-
-#[derive(Clone)]
-pub struct IdHandle { tx: mpsc::Sender<Message> }
-
-impl IdHandle {
-    pub fn new() -> Self {
-        let (tx, inbox) = mpsc::channel(8);
-        tokio::spawn(run(IdActor { inbox, next_id: 0 }));
-        Self { tx }
-    }
-    pub async fn next_id(&self) -> u64 {
-        let (reply, response) = oneshot::channel();
-        let _ = self.tx.send(Message::NextId { reply }).await; // if this fails, so will the recv
-        response.await.expect("actor task stopped")
-    }
-}
-```
-
-Rules:
-- **Separate handle and actor.** A `run(&mut self)` method that calls `tokio::spawn` cannot compile (`'static`), and merging the two lets every handle touch actor-only fields.
-- **Spawn in the handle's constructor**, with a top-level `async fn run(actor)`.
-- **Bounded inbox**, even when no reply is sent. For fire-and-forget producers that must not wait, `try_send` and treat a full inbox as an error (e.g. drop a writer that cannot keep up).
-- **Shutdown = all handles dropped.** A cycle of actors holding each other's handles never shuts down; an actor holding a clone of its own sender never sees `None`. Break the cycle with a second channel whose closing ends the loop, or abort one actor.
-- **No cycle of bounded channels.** If A awaits sending to B while B awaits sending to A and both queues are full, both wait forever. `oneshot` replies and `try_send` do not count toward a cycle (they never wait).
-- **IO actors:** one reader task and one writer task per connection keep IO isolated.
-- **No IO resources inside a locked collection.** A `Mutex<HashMap<UserId, TcpStream>>` "never really" turns out well: give each connection its own task that owns the stream, and keep the actor *handles* in the map.
+- **No IO resources inside a locked collection.** A `Mutex<HashMap<UserId, TcpStream>>` "never really" turns out well: each connection's task owns the stream; the map holds senders.
 
 ---
 
@@ -245,7 +198,6 @@ Rules:
 - https://tokio.rs/tokio/tutorial/shared-state — Shared state (Tokio tutorial)
 - https://tokio.rs/tokio/tutorial/channels — Channels (Tokio tutorial)
 - https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html — `tokio::sync::Mutex` (which mutex to use)
-- https://ryhl.io/blog/actors-with-tokio/ — Actors with Tokio (Alice Ryhl)
 - https://matklad.github.io/2025/11/04/on-async-mutexes.html — On Async Mutexes (matklad)
 - https://without.boats/blog/futures-unordered/ — FuturesUnordered and the order of futures (without.boats)
 - https://rfd.shared.oxide.computer/rfd/0397 — Challenges with async/await in the control plane (Oxide)

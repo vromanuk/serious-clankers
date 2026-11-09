@@ -107,6 +107,30 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent does not ask for typestate, because the code holding the machine cannot know its state at compile time
 
+#### Scenario: Typestate states built from outside
+
+- **GIVEN** a typestate pipeline whose later state (`ParsedText(Vec<Word>)`) has a public field or public constructor
+- **WHEN** reviewing architecture
+- **THEN** the agent flags that callers can skip the earlier step, and suggests private fields so only the transition builds the state
+
+#### Scenario: Correlated flags
+
+- **GIVEN** a struct with `is_connected: bool`, `is_connecting: bool`, and `session_id: Option<String>` that is meaningful only when connected
+- **WHEN** reviewing architecture
+- **THEN** the agent offers an enum of states with each state's data inside its variant
+
+#### Scenario: Rejected transition silently keeps state
+
+- **GIVEN** a transition method on an enum of states whose `match` ends in `other => other`
+- **WHEN** reviewing architecture
+- **THEN** the agent flags that the rejected event is dropped without a decision, and offers returning the state with the reason in `Err`, a named no-op arm, or a panic for an impossible case
+
+#### Scenario: Required builder field checked at run time
+
+- **GIVEN** a builder with `url: Option<Url>` that code always sets, and `build()` returning `Err("url is required")`
+- **WHEN** reviewing architecture
+- **THEN** the agent suggests taking `url` in `new` so `build()` cannot fail on a missing field, and does not ask for a typestate builder
+
 #### Scenario: New struct repeats an existing one
 
 - **GIVEN** a diff adds a struct whose fields match an existing struct or enum variant under different names (for example `KafkaRecord` repeating `BrokerRecord`: topic, partition, offset, key, and payload, plus registration)

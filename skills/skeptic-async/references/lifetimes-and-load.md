@@ -12,6 +12,8 @@ Plain function calls form a tree: when a function returns, everything it started
 2. **Errors propagate** — a child's failure reaches someone who can handle it.
 3. **Ordering holds** — when a parent returns, its work is done.
 
+**The black box rule** (Nathaniel J. Smith): a call can be read at its call site only if, when it returns, the work it started is finished — or is held by an owner the caller passed in. A function that spawns and returns breaks this for every caller above it: to learn that work is still running, you must read its body and its callees' bodies. One detached spawn deep in a helper takes local reasoning away from the whole call chain, not just that function.
+
 Futures composed with `.await`, `join!`, `select!` keep these guarantees. **`tokio::spawn` breaks them**: dropping a `JoinHandle` detaches the task. A detached task has no parent: nobody can cancel it, wait for it, or see its panic. Global "background tasks" are structured only if their pool is reachable — owned, cancellable, and joined.
 
 ---
@@ -72,6 +74,45 @@ A worker that exits when its channel closes hangs if its `Sender` is still alive
 ### 2.6 Async cleanup in `Drop`
 
 `Drop` is synchronous; there is no async drop. A destructor cannot await a flush or a graceful close, and blocking in it stalls the runtime. Give the type an explicit `async fn close(self)` / `shutdown(self)`, call it on every exit path, and make sure cleanup runs on normal completion too — not only on the cancel branch (cancel-only paths are the least tested). Correctness must not depend on cleanup running: values can leak and futures can be dropped without it.
+
+### 2.7 Work that must outlive the call
+
+Sometimes a function really must start work that keeps running after it returns. Take the owner as an argument instead of reaching for `tokio::spawn`:
+
+```rust
+// Worse: returns (), yet work keeps running. No call site can tell.
+pub fn start_refresh(&self) {
+    let cache = self.cache.clone();
+    tokio::spawn(async move { cache.refresh_forever().await });
+}
+
+// Better: the caller passes the owner and the stop signal
+pub fn start_refresh(&self, tasks: &TaskTracker, stop: CancellationToken) {
+    let cache = self.cache.clone();
+    tasks.spawn(async move { cache.refresh_until(stop).await });
+}
+```
+
+Passing the owner (`&TaskTracker`, `&mut JoinSet<T>`) keeps three properties: the call site shows that work is started; the work lives no longer than an owner the caller holds; and a caller can pass only an owner it already has. Returning the `JoinHandle` also makes the work visible, but leaves the caller free to drop it and detach the task.
+
+Flag helpers and library functions that call `tokio::spawn` or `Handle::current().spawn` and return nothing that owns the task. Spawning in `main` or the app's wiring code is the edge, not a finding.
+
+### 2.8 A guard that outlives its scope through a spawned task
+
+`tokio::spawn` needs `'static`, so code clones a path or an `Arc` into the task instead of borrowing the guard. The borrow checker then no longer ties the work to the guard's scope:
+
+```rust
+// Worse: the TempDir is deleted when this function returns; the task still writes into it
+let dir = tempfile::tempdir()?;
+let path = dir.path().to_owned();
+tokio::spawn(async move { write_chunks(&path).await });
+Ok(())
+
+// Better: move the guard into the task that uses it (or await the work before the guard drops)
+tasks.spawn(async move { write_chunks(dir.path()).await });
+```
+
+The same happens with a semaphore permit kept in the parent: it is released while the spawned work still runs, so the limit does not hold. Move the permit into the task.
 
 ---
 
@@ -183,6 +224,7 @@ Async stacks show little about what an idle task is waiting for, and channels lo
 - https://docs.rs/tokio-util/latest/tokio_util/sync/struct.CancellationToken.html — `CancellationToken`
 - https://docs.rs/tokio-util/latest/tokio_util/task/task_tracker/struct.TaskTracker.html — `TaskTracker`
 - https://docs.rs/tokio/latest/tokio/task/struct.JoinSet.html — `JoinSet`
+- https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/ — Notes on structured concurrency, or: Go statement considered harmful (Nathaniel J. Smith)
 - https://blog.yoshuawuyts.com/tree-structured-concurrency/ — Tree-Structured Concurrency (Yoshua Wuyts)
 - https://blog.yoshuawuyts.com/replacing-tasks-with-actors/ — Replacing Background Tasks With Actors (Yoshua Wuyts)
 - https://blog.yoshuawuyts.com/tasks-are-the-wrong-abstraction/ — Tasks are the wrong abstraction (Yoshua Wuyts)

@@ -9,6 +9,7 @@ agent stops, presents it, and waits. The brief records each answer in its decisi
 |---|---|
 | **Default values and constants** | Buffer sizes, timeouts, batch sizes, retry counts, limits. Each needs its reason and what goes wrong if it is much lower or higher. |
 | **Concurrency** | Mutex, channel, actor, or atomic; std or tokio mutex; spawn a task or run inline; the size of a bounded queue. |
+| **State** | Typestate (the caller drives the steps), an enum of states (events decide), or plain fields; what a rejected transition returns. |
 | **Simple or fuller** | The smallest version that meets the need, or a fuller one that covers more cases. |
 | **Skip, defer, or build** | A feature, a check, an edge case, a test, a method nobody calls yet. |
 | **Public API** | Names, signatures, owned or borrowed inputs, error variants, which states the types make impossible. |

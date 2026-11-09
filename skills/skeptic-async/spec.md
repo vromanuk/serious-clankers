@@ -107,6 +107,18 @@ The agent SHALL flag detached spawns and ignored `JoinHandle` results, and SHALL
 - **WHEN** reviewing async code
 - **THEN** the agent flags that panics are lost and shutdown can neither stop nor wait for the work, and suggests an owned worker with a bounded queue, or a `JoinSet`/`TaskTracker` owned by the caller
 
+#### Scenario: Helper that spawns hides running work
+
+- **GIVEN** a library method `pub fn start_refresh(&self)` that calls `tokio::spawn` and returns `()`
+- **WHEN** reviewing async code
+- **THEN** the agent flags that no call site can see the work is still running, and suggests taking a `&TaskTracker` (or `&mut JoinSet`) and a stop signal from the caller
+
+#### Scenario: Guard dropped while a spawned task uses it
+
+- **GIVEN** a function that creates a `TempDir`, clones its path into a `tokio::spawn`ed task, and returns
+- **WHEN** reviewing async code
+- **THEN** the agent flags that the directory is deleted while the task still writes to it, and suggests moving the guard into the task
+
 ### Behavior: Load and backpressure
 
 The agent SHALL flag unbounded queues and fan-out, backpressure that does not reach the producer, and remote calls without timeouts.

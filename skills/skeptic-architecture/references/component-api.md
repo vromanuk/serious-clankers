@@ -65,6 +65,8 @@ Callers work in job terms (`allocate`, `can_accept_rows`, `issue_invoice`). Exec
 
 A stranger writes correct code from names and types, without docs for the happy path **or** the failure path. Hidden assumptions (order, units, “empty means missing”, silent defaults) **are** the API whether you wrote them down or not. Make them small, true, and visible.
 
+Work still running after a method returns is a hidden assumption too: take the task owner as an argument or return the handle (skeptic-async `lifetimes-and-load.md` § 2.7).
+
 ### 7. Hard to misuse
 
 Illegal states should be hard to represent. Don’t make the client do work the component can do. Don’t pass the buck (a thin wrapper that still dumps every decision on the caller).

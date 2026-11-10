@@ -63,6 +63,7 @@ A sharded lock (`Vec<Mutex<_>>` indexed by hash) is the cheap first step; an own
 - Avoid copying to skip a prefix or write a tail: use views/slices (`bytes::Bytes`, `split_off`) instead of `memmove`.
 - Keep results small: a large error type returned by value on every hot call costs memory traffic — box rare large errors so `Result` stays register-sized.
 - Avoid `Arc::clone` per message; move or borrow. Watch for `Box::pin` per item in loops.
+- For a component with a hard maximum, consider allocating every slot at startup and passing over all of them each cycle — ideas and trade-offs in `skeptic-reliability/references/upstream.md` § 5.6.
 
 ### 3.4 Keep work and data local
 

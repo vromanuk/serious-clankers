@@ -138,6 +138,95 @@ Paginate any API that can return a list and cap per-request memory, CPU, and ban
 
 - **Flag:** list, query, or scan endpoints with no page size or continuation token; a consumer that loads an unbounded result set into memory.
 
+### 5.6 Considerations: fixed slots and passes over every slot
+
+These are ideas to weigh, not review rules. They fit a component with a hard maximum and a latency budget (an order-matching engine, a session table, a connection pool); they do not fit most request handlers. The running example is an order book that must hold at most one million open orders.
+
+**Allocate every slot at startup, and reject at the limit.** The usual design allocates an order when it arrives and frees it when it completes. That brings uncertainty a latency-sensitive engine may not want: allocation takes unpredictable time, memory fragments, allocation can fail under load, and threads compete inside the allocator. The alternative is to allocate one million slots at startup: a new order takes a free slot, a finished order frees it, and a full book rejects the next order. TigerBeetle goes further — no allocation at all after startup ("TigerStyle").
+
+Why reject when memory is still free? Because the limit is what was designed and tested. Growing past it trades one extra order for the risk that the kernel's OOM killer ends the process and loses the million orders already held. Rejecting one request is the smaller failure, and it is the same choice as load shedding (§ 1.1).
+
+What it costs:
+- the memory is held even when the book is empty;
+- the maximum must be a stated number — Little's Law gives one: open orders = arrival rate × how long an order stays open;
+- "book full" becomes a normal answer that callers must handle and that needs its own metric;
+- tests must run at the maximum (§ 5.4), or the full case is never exercised.
+
+**Visit every slot, not a list of active ones.** The usual way to manage the slots keeps a second collection with the indexes of active orders and loops over it: 100 orders cost 100 steps, 100 000 cost 100 000. The constant-work alternative treats every slot as always holding an order in some state, with "reserved" as the empty state, and each pass visits all of them:
+
+```rust
+/// One preallocated place for an order. `Reserved` is an empty slot: it holds no stale
+/// order data, and every slot is the same size whichever variant it holds.
+enum Slot {
+    Reserved,
+    Active { side: Side, order: Order },
+}
+
+/// Open orders in a fixed number of slots, allocated once at startup.
+pub struct OrderBook {
+    slots: Box<[Slot]>,
+    /// Indexes of reserved slots. Allocated at startup with room for every slot, so it never grows.
+    free_slots: Vec<usize>,
+}
+
+impl OrderBook {
+    pub fn new(max_open_orders: usize) -> OrderBook {
+        OrderBook {
+            slots: vec![Slot::Reserved; max_open_orders].into_boxed_slice(),
+            free_slots: (0..max_open_orders).rev().collect(),
+        }
+    }
+
+    /// Puts the order in a reserved slot, or rejects it when every slot holds an open order.
+    pub fn place(&mut self, side: Side, order: Order) -> Result<SlotIndex, BookFull> {
+        let index = self.free_slots.pop().ok_or(BookFull)?;
+        self.slots[index] = Slot::Active { side, order };
+        Ok(SlotIndex(index))
+    }
+
+    /// Returns the slot to reserved and gives back the order, if the slot still holds order
+    /// `id`. A slot is reused after removal, so a stale index must not remove a newer order.
+    pub fn remove(&mut self, slot: SlotIndex, id: OrderId) -> Option<Order> {
+        match self.slots[slot.0] {
+            Slot::Active { order, .. } if order.id == id => {
+                self.slots[slot.0] = Slot::Reserved;
+                self.free_slots.push(slot.0);
+                Some(order)
+            }
+            Slot::Active { .. } | Slot::Reserved => None,
+        }
+    }
+
+    /// Visits every slot, open or not, so the cost is the same at any load.
+    pub fn sum_open_shares(&self, side: Side) -> u64 {
+        self.slots
+            .iter()
+            .map(|slot| match slot {
+                Slot::Active { side: slot_side, order } if *slot_side == side => {
+                    u64::from(order.shares)
+                }
+                Slot::Active { .. } | Slot::Reserved => 0,
+            })
+            .sum()
+    }
+}
+```
+
+Doing more iterations can still be the better trade:
+- **Memory locality:** the active-index loop jumps around memory; the full pass reads it in order. CPUs fetch memory in cache lines (64 bytes) and prefetch the next ones when access is sequential.
+- **Simpler code for the compiler:** a plain loop over contiguous memory is easier to optimize (no index lookup, branches that predict well).
+- **Predictable cost:** a pass costs the same with ten orders or a million, so a load test measures the worst case, and nothing gets slower at the moment the book fills up.
+- **Less bookkeeping:** there is no active list to keep in sync with the slots.
+
+Things to weigh before choosing it:
+- **The pass costs the maximum every time, even when idle.** That is the point for latency, but it wastes CPU when the book is mostly empty and work is billed or shared.
+- **Size the pass in bytes.** Here `Order` is 32 bytes and `Slot` is 48: a `u128` id aligns the whole slot to 16 bytes, so the one-byte `side` and the variant tag cost a full 16. One million slots is about 48 MB per pass, much larger than CPU caches, so a pass is limited by memory bandwidth — at a rough 10–20 GB/s, a few milliseconds. Measure it against the latency budget. Storing the id as `[u64; 2]` makes the slot 32 bytes (32 MB per pass); splitting the fields a pass reads into their own array cuts the bytes further.
+- **Finding a free slot still needs bookkeeping.** The free list above is allocated once and never grows, so placing stays O(1) without a list of active orders. Scanning for a reserved slot instead makes placing cost a full pass.
+- **Slot indexes are reused.** A caller holding an old index can reach a newer order; `remove` checks the order id for that reason (a generation counter per slot is the other common answer).
+- **In Rust, an enum of slot states keeps the empty state honest.** A struct with a `state` field leaves price and shares readable in a reserved slot; `enum Slot` has no stale fields, and every slot is still the same size.
+
+Related ideas: batching (`skeptic-async/references/select-and-tasks.md` § 2.7) makes work grow slower than load; constant work makes it not grow at all. Both remove the moment where a busier system takes a different, less-tested path.
+
 ---
 
 ## Sources
@@ -148,4 +237,5 @@ Paginate any API that can return a list and cap per-request memory, CPU, and ban
 - https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/ — Avoiding insurmountable queue backlogs
 - https://aws.amazon.com/builders-library/fairness-in-multi-tenant-systems/ — Fairness in multi-tenant systems
 - https://aws.amazon.com/builders-library/reliability-and-constant-work/ — Reliability, constant work, and a good cup of coffee
+- https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md — TigerStyle (TigerBeetle; static allocation at startup)
 - System Design for Interviews and Beyond (Mikhail Smarshchok), reliability module — useful vs total throughput, deadline-aware and priority shedding

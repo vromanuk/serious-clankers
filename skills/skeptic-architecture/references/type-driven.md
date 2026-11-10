@@ -240,6 +240,91 @@ Transitions are data in, data out — a pure `step(state, event)` that sequence 
 
 ---
 
+## Example E2 — time as data in the state, not a sleep
+
+**Need:** state that changes with time as well as with events — a traffic light, a retry backoff, a lease, a session timeout.
+
+**Bad:** the steps are separated by `sleep`. While it sleeps, the code cannot react: a button pressed during a 30-second green waits until the sleep ends. The state ("green, 12 s in") exists only as *the line the program is on*, so it cannot be printed, checked in a test, or used as a test's starting point. One cycle takes 63 real seconds to test, and each step lasts its sleep plus however long the step before it took.
+
+```rust
+loop {
+    show(Color::Green);
+    sleep(Duration::from_secs(30));
+    show(Color::Yellow);
+    sleep(Duration::from_secs(3));
+    show(Color::Red);
+    sleep(Duration::from_secs(30));
+}
+```
+
+**Good:** the state stores **when it should change**; the current time is passed in; a tick is just another event. Nothing sleeps.
+
+```rust
+/// How soon green ends after a pedestrian presses the button, unless it was ending sooner.
+const BUTTON_WAIT: Duration = Duration::from_secs(5);
+
+/// Which color is showing and when it should change. The change time is data, so a button
+/// can move it and a test can choose it.
+pub struct Light {
+    pub color: Color,
+    pub change_at: Instant,
+}
+
+impl Light {
+    pub fn start(now: Instant) -> Light {
+        Light { color: Color::Green, change_at: now + Color::Green.duration() }
+    }
+
+    /// Applies one event at time `now`; returns the new light and what to display, if anything.
+    pub fn step(self, event: Event, now: Instant) -> (Light, Option<Command>) {
+        match event {
+            Event::Tick if now >= self.change_at => {
+                let color = self.color.next();
+                // Schedule from the planned change time, not from `now`, so a late tick
+                // does not push every later change back.
+                let change_at = self.change_at + color.duration();
+                (Light { color, change_at }, Some(Command::Show(color)))
+            }
+            Event::Button if self.color == Color::Green => {
+                let change_at = self.change_at.min(now + BUTTON_WAIT);
+                (Light { change_at, ..self }, None)
+            }
+            // A tick before the change time, or a button while not green: nothing to do.
+            Event::Tick | Event::Button => (self, None),
+        }
+    }
+}
+
+#[test]
+fn button_while_green_moves_the_change_to_five_seconds_away() {
+    let start = Instant::now();
+    let green = Light { color: Color::Green, change_at: start + secs(30) };
+
+    let (light, command) = green.step(Event::Button, start + secs(10));
+
+    assert_eq!(light, Light { color: Color::Green, change_at: start + secs(15) });
+    assert_eq!(command, None);
+}
+
+#[test]
+fn late_tick_keeps_the_schedule() {
+    let start = Instant::now();
+    let yellow = Light { color: Color::Yellow, change_at: start + secs(18) };
+
+    let (light, _) = yellow.step(Event::Tick, start + secs(20));
+
+    assert_eq!(light, Light { color: Color::Red, change_at: start + secs(48) });
+}
+```
+
+`Color::next` and `Color::duration` are plain `match`es over the three colors. A struct with a `color` field fits better than an enum of states here because every color carries the same data — the change time (an enum of states pays off when each state holds different data, Example E).
+
+Once the change time is data, the button is one more event: it moves the change time earlier the moment it arrives. The test chooses `now`, so 30 seconds pass in one line. Storing *when to change* rather than counting ticks means a late tick cannot make green longer: whenever the next tick comes, it sees `now >= change_at`. Scheduling the next change from `change_at` rather than from `now` keeps lateness from adding up, which the sleeping loop cannot avoid. The shell that waits for the next tick, a button, or a stop signal is in `skeptic-async/references/select-and-tasks.md` § 2.8.
+
+**Review check:** a long-running loop that separates its steps with `sleep` (sync or async), or counts ticks to measure time? → store the deadline in the state, pass `now` in, and let the shell wait until the deadline or the next event.
+
+---
+
 ## Example F — required fields (builders)
 
 **Source:** [Builder Pattern and Typestate](https://learn.sunnstech.com/tutorials/rust/builder-pattern-and-typestate/) (Sunns Technologies).
@@ -331,5 +416,6 @@ Highlight this. Do not decide it off-stage. The finding offers:
 - Finding: “`header()` checks `self.stage` at runtime, but the caller controls the order. Option: typestate — `status_line(self) -> Response<Headers>`, `header` only on `Response<Headers>`, `body(self)` consumes.”  
 - Finding: “`is_connected`, `is_connecting`, and `session_id: Option` must agree, and nothing enforces it. Option: enum of states with `session_id` inside `Connected`.”  
 - Finding: “`on_session` ends in `other => other`, so a session event while `Failed` is silently dropped. Options: return `Err((state, NotConnecting))`; name the states where it is a no-op; `unreachable!` if it cannot happen.”  
+- Finding: “`run_light` shows a color, then `sleep(30 s)`; a button press waits out the sleep, and the state exists only as the paused line. Option: `Light { color, change_at }` with a pure `step(self, event, now)`; the shell waits until `change_at` or the next event.”  
 - Finding: “`RequestBuilder::build()` fails when `url` was never set, but code always sets it. Option: take `url` in `new`; `build()` stops returning `Result`.”  
 - Finding: “new `KafkaRecord` repeats `BrokerRecord` (topic, partition, offset, key, payload). Options: reuse and carry registration beside it; generalize to one record and one payload enum; keep both only because registration does not exist before register.”

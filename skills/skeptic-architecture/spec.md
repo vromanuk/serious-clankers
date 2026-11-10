@@ -125,6 +125,12 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent flags that the rejected event is dropped without a decision, and offers returning the state with the reason in `Err`, a named no-op arm, or a panic for an impossible case
 
+#### Scenario: Sleep between steps hides the state
+
+- **GIVEN** a traffic-light loop that shows a color and calls `sleep(30 s)` before the next one, and a button that should end green early
+- **WHEN** reviewing architecture
+- **THEN** the agent flags that the state exists only as the paused line and the button waits out the sleep, and suggests a `Light { color, change_at }` with a pure `step(self, event, now)` and a shell that waits until `change_at` or the next event
+
 #### Scenario: Required builder field checked at run time
 
 - **GIVEN** a builder with `url: Option<Url>` that code always sets, and `build()` returning `Err("url is required")`

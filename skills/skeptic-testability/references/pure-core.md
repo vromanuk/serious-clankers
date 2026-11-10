@@ -50,3 +50,5 @@ fn expired(now: Instant, deadline: Instant) -> bool { now >= deadline }
 // Bad: now() inside the core
 fn expired(deadline: Instant) -> bool { Instant::now() >= deadline }
 ```
+
+The same applies to `sleep` between steps: it hides the state in *where the program is paused*. Store the deadline in the state and pass `now` in — see `skeptic-architecture/references/type-driven.md` § Example E2.

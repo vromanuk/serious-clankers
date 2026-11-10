@@ -55,6 +55,28 @@ The agent SHALL flag new or changed public async methods that callers will race 
 - **WHEN** reviewing async code
 - **THEN** the agent flags that the popped item is lost on cancel despite the doc, suggests reserve-then-pop, and suggests a test that polls once with a full channel (`now_or_never`), then finishes and asserts every item arrives once in order
 
+### Behavior: Batching instead of scalar select
+
+The agent SHALL flag an event loop that handles one event per wakeup when handling has a fixed cost per event, events can replace or combine, or some inputs must win over others, and SHALL check a batching loop for a cap on every drain, per-channel handling of closed channels, and per-source order.
+
+#### Scenario: Every edit starts its own diagnostics job
+
+- **GIVEN** a language server loop `while let Some(event) = rx.recv().await { process(event).await }` where each edit event starts a diagnostics job
+- **WHEN** reviewing async code
+- **THEN** the agent flags that edits queued during one step each start a job, and suggests `recv_many` with a stated cap, a pure `plan_batch` that orders writes before reads and drops superseded events, and one diagnostics job per batch
+
+#### Scenario: One break for every closed channel
+
+- **GIVEN** a batching loop over an events channel and a clients channel that breaks out of the loop when any `recv_many` returns 0
+- **WHEN** reviewing async code
+- **THEN** the agent flags that the server stops when only the acceptor goes away, and suggests shutting down when the events channel closes and only disabling the clients branch when the clients channel closes
+
+#### Scenario: Task sleeps between steps
+
+- **GIVEN** a long-running task that shows a color, awaits `sleep(30 s)`, shows the next color, and awaits again, with a button channel it must react to
+- **WHEN** reviewing async code
+- **THEN** the agent flags that the task cannot see the button or a stop signal while sleeping, and suggests keeping the change time in the state and selecting on `sleep_until(change_at)`, the button, and the stop token
+
 ### Behavior: Futurelock
 
 The agent SHALL flag a task that stops polling a future that may hold a resource another future in the same task needs.

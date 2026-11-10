@@ -60,6 +60,7 @@ description: >
 | Typestate when the caller drives the steps: methods only on the state that allows them, each step consumes `self` | A stage field checked at runtime in each method (“wrong stage” errors, `Option` filled in one step and unwrapped later) |
 | Enum of states for run-time state: data inside its variant, transitions take `self`, a rejected transition returns the state with the reason | Correlated bools / an `Option` valid only under a flag; a catch-all arm that silently keeps or invents a state |
 | Required values as constructor arguments | A required `Option` in a builder that `build()` checks at run time |
+| The time of the next change stored in the state, with `now` passed in | `sleep` between steps, so the state is only the line the program is paused on |
 
 **Ask on each changed boundary:**
 
@@ -70,6 +71,7 @@ description: >
 5. Is an **order of steps** the caller controls checked at runtime? Typestate fits only when the caller always knows the current step; when incoming events decide the state, keep an enum of states. Detail: `references/type-driven.md` § Example D.  
 6. Do **flags that must agree** stand in for one state, or does a transition `match` end in a catch-all arm? Offer an enum of states and one of the three answers for a rejected transition. Detail: § Example E.  
 7. Does a builder check at run time a **required field** that code always sets? Move it to `new`. Detail: § Example F.  
+8. Does a long-running loop separate its steps with **`sleep`**, or count ticks to measure time? Store when the next change is due in the state, pass `now` in, and let the shell wait for that time or the next event. Detail: § Example E2.  
 
 **Flag:** silent empty success; optional fields that only make sense together; duplicate empty-checks with the same string.
 

@@ -114,6 +114,30 @@ tasks.spawn(async move { write_chunks(dir.path()).await });
 
 The same happens with a semaphore permit kept in the parent: it is released while the spawned work still runs, so the limit does not hold. Move the permit into the task.
 
+### 2.9 Spawning from `Drop`
+
+With no async drop, a destructor that needs async cleanup is tempted to spawn it. The cleanup then runs after the value is gone, with no owner and no way for anyone to wait for it:
+
+```rust
+// Worse: the handle closes some time later; opening a new one right after the drop fails at random
+impl Drop for Database {
+    fn drop(&mut self) {
+        if let Some(conn) = self.conn.take() {
+            tokio::spawn(async move { conn.close().await });
+        }
+    }
+}
+
+// Better: an explicit close that the caller awaits on every exit path
+impl Database {
+    pub async fn close(mut self) -> Result<(), Error> {
+        self.conn.take().expect("open until close").close().await
+    }
+}
+```
+
+Tyler Mandry's example is an async SQLite wrapper that closed its handle this way: SQLite allows one open handle, so reopening right after a drop failed nondeterministically. Keep a synchronous `Drop` as a fallback that logs or leaks, not one that spawns (§ 2.6).
+
 ---
 
 ## 3. Graceful shutdown with Tokio
@@ -145,18 +169,40 @@ async fn main() {
 
     token.cancel();        // notify
     tracker.close();       // no more tasks expected
-    tracker.wait().await;  // wait until every task has exited
-}
+
+    // wait until every task has exited, but not forever
+    if tokio::time::timeout(SHUTDOWN_DEADLINE, tracker.wait()).await.is_err() {
+        tracing::warn!(tasks = tracker.len(), "tasks still running at the shutdown deadline");
+    }
+}   // returning drops the runtime: anything still running is cancelled at its next await
 ```
+
+A shutdown wait needs a deadline (an orchestrator will SIGKILL the process anyway), and what happens after it must be a decision: log and let the runtime drop the rest, or abort the handles still held. Abort is the fallback after the cooperative request, not the first step.
 
 | Tool | What it does | Watch for |
 |------|-------------|-----------|
-| `CancellationToken` | Cooperative stop signal; `cancelled().await` is cancel safe | Clones cancel each other; `child_token()` lets a subtree be cancelled alone; `drop_guard()` cancels on scope exit (including panic and `?`) |
+| `CancellationToken` | Cooperative stop signal; `cancelled().await` is cancel safe and completes at once if the token is already cancelled | Clones cancel each other; `child_token()` lets a subtree be cancelled alone; `drop_guard()` cancels on scope exit (including panic and `?`) — `disarm()` it on the success path |
+| `run_until_cancelled(fut)` | Runs `fut` until the token is cancelled, then drops it and returns `None` | Prefers `fut` when both are ready (the opposite of a `biased;` stop-first `select!`); cancel safe only if `fut` is; cleanup in the `None` arm runs after `fut`'s state is gone (`cancellation.md` § 3.11) |
 | `TaskTracker` | Waits for tasks; frees each task's memory when it exits | `wait()` returns only after `close()`; dropping it neither aborts nor waits; does not report panics |
 | `JoinSet` | Owns tasks and their results | Dropping it **aborts** every task; `abort_all` still needs a `join_next` drain; `shutdown()` = abort + drain (ignores panics); `join_all` panics on the first `JoinError`; results pile up until drained |
-| `JoinHandle` | One task | Drop = detach; `abort()` stops at the next await (avoid as normal control flow) |
+| `JoinHandle` | One task | Drop = detach; `abort()` stops at the next await (avoid as normal control flow) and cannot stop `spawn_blocking` work that already started |
+| `AbortOnDropHandle` (tokio-util) | One task that must not outlive its owner | Drop = abort, so the task stops with the parent like a future would; `detach()` gives back a plain `JoinHandle` |
 
 Shutdown multiple triggers through one place (e.g. `select!` over `ctrl_c()` and an internal channel).
+
+### 3.1 Choosing a stop signal
+
+| Mechanism | Fits | Watch for |
+|-----------|------|-----------|
+| `CancellationToken` | Default for telling tasks to stop | — |
+| `watch::channel` | Stop signal that also carries state (e.g. a config generation) | Wait with `wait_for(\|stop\| *stop)`, which checks the current value first; a bare `changed()` on a receiver from `subscribe()` misses a stop sent before it subscribed |
+| `broadcast::channel` | Rarely for shutdown | A receiver created by `subscribe()` after the send never sees it; a slow receiver gets `Lagged` |
+| `oneshot::channel` | Exactly one task to stop | One receiver only; dropping the sender also completes `recv` (with `Err`) — decide whether that means stop |
+| Dropping every `Sender` | A worker that should stop when its input ends | Any forgotten clone keeps it alive (§ 2.5) |
+| `JoinHandle::abort` | Fallback after the deadline; tasks scoped to a parent (`AbortOnDropHandle`) | Stops at any await (`cancellation.md` § 3.7) |
+| `drop(handle)` | Never as a stop signal | Detaches: the task keeps running |
+
+Flag hand-rolled broadcast or oneshot shutdown plumbing where a `CancellationToken` fits, and code that drops a `JoinHandle` expecting the task to stop.
 
 ---
 
@@ -173,6 +219,7 @@ When producers are faster than consumers, something must slow them down or rejec
 - **Every limit needs a ceiling and a failure threshold.** An uncapped delay can hide a dead dependency indefinitely; pair the delay with a point where the component reports itself faulted.
 - **Rate limits must feed backpressure.** A throttle in front of an unbounded buffer just moves the pile-up into the buffer.
 - **Fast acknowledgement hides latency.** If writes are acknowledged before completion, measure the latency of the next operation that must wait for them.
+- **`send().await` on a bounded channel adds a second, unbounded queue:** the senders waiting for capacity. A tiny capacity (1) with many senders blocked in `send().await` is a queue with no bound and no visibility, and the setting where Oxide hit futurelock. Prefer a stated capacity with `try_send` and a failure the caller handles. Making the channel bigger does not fix futurelock, and `send_timeout` does not either (`cancellation.md` § 3.5).
 
 ### 4.2 Size every bound with Little's Law
 
@@ -224,6 +271,10 @@ Async stacks show little about what an idle task is waiting for, and channels lo
 - https://docs.rs/tokio-util/latest/tokio_util/sync/struct.CancellationToken.html — `CancellationToken`
 - https://docs.rs/tokio-util/latest/tokio_util/task/task_tracker/struct.TaskTracker.html — `TaskTracker`
 - https://docs.rs/tokio/latest/tokio/task/struct.JoinSet.html — `JoinSet`
+- https://docs.rs/tokio-util/latest/tokio_util/task/struct.AbortOnDropHandle.html — `AbortOnDropHandle`
+- https://cybernetist.com/2024/04/19/rust-tokio-task-cancellation-patterns/ — Rust Tokio task cancellation patterns (Cybernetist)
+- https://tmandry.gitlab.io/blog/posts/making-async-reliable/ — Making Async Rust Reliable (Tyler Mandry; detached execution from `Drop`)
+- https://rfd.shared.oxide.computer/rfd/0609 — Futurelock (Oxide; bounded channels)
 - https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/ — Notes on structured concurrency, or: Go statement considered harmful (Nathaniel J. Smith)
 - https://blog.yoshuawuyts.com/tree-structured-concurrency/ — Tree-Structured Concurrency (Yoshua Wuyts)
 - https://blog.yoshuawuyts.com/replacing-tasks-with-actors/ — Replacing Background Tasks With Actors (Yoshua Wuyts)

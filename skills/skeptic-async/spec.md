@@ -13,7 +13,7 @@ Review async Rust (Tokio-first) for the failures the compiler does not catch: fu
 
 ### Behavior: Cancellation points and cancel safety
 
-The agent SHALL find every cancellation point that reaches changed code (`select!`, `timeout`, `try_join*`, `abort`, runtime shutdown, client disconnect, cancelled parents) and SHALL flag futures that lose data or leave state broken when dropped there, with the smallest fix.
+The agent SHALL find every cancellation point that reaches changed code (`select!`, `timeout`, `try_join*` and `try_*` stream combinators, `run_until_cancelled`, `abort`, runtime shutdown, client disconnect, cancelled parents), SHALL read each changed async function as the cancelled future, the parent, the runtime, and other tasks, and SHALL flag futures that lose data, leave state broken, or cancel side effects halfway when dropped there, with the smallest fix.
 
 #### Scenario: Send inside select
 
@@ -26,6 +26,34 @@ The agent SHALL find every cancellation point that reaches changed code (`select
 - **GIVEN** code that takes a `tokio::sync::Mutex`, calls `take()` on the guarded `Option`, awaits, then restores it
 - **WHEN** reviewing async code
 - **THEN** the agent flags that cancellation at the await leaves `None` behind with no poisoning, and offers an actor or a std mutex not held across the await
+
+#### Scenario: Batch read recreated in a select loop
+
+- **GIVEN** an `async fn` that reads a batch from a file and sends each parsed item with `tx.send(item).await`, called as one branch of a `loop { select! { … } }` next to `socket.read_packet()`
+- **WHEN** reviewing async code
+- **THEN** the agent flags that each packet drops the future mid-batch and loses the remaining items silently, and suggests merging both sources as streams, or keeping pending items on `self` with reserve-then-send
+
+#### Scenario: try_for_each_concurrent over external deletes
+
+- **GIVEN** `try_for_each_concurrent(8, uninstall)` over a list of zones, where `uninstall` changes state outside the process
+- **WHEN** reviewing async code
+- **THEN** the agent flags that the first error cancels the other uninstalls midway, and suggests running all of them to the end and then reporting the first error (`join!` / `buffer_unordered` + collect, or `for_each_concurrent_then_try`)
+
+#### Scenario: Cleanup in the cancelled arm of run_until_cancelled
+
+- **GIVEN** a batching loop wrapped in `token.run_until_cancelled(work)`, with the `None` arm meant to flush the partial batch
+- **WHEN** reviewing async code
+- **THEN** the agent flags that the batch was dropped with `work` before `None` is returned, and suggests a `select!` whose stop arm breaks out to a flush that still owns the batch
+
+### Behavior: Cancel safety marked and tested
+
+The agent SHALL flag new or changed public async methods that callers will race or time out without a `# Cancel safety` doc section, cancel-unsafe methods named like cancel-safe ones, and cancel-unsafe code placed under a cancellation point (or documented cancel safe) without a test that drops it at an await.
+
+#### Scenario: Documented claim with no test
+
+- **GIVEN** a new `pub async fn flush(&mut self, tx: &Sender<T>)` documented "cancel safe" that pops an item and then awaits `tx.send(item)`, with no test that cancels it
+- **WHEN** reviewing async code
+- **THEN** the agent flags that the popped item is lost on cancel despite the doc, suggests reserve-then-pop, and suggests a test that polls once with a full channel (`now_or_never`), then finishes and asserts every item arrives once in order
 
 ### Behavior: Futurelock
 
@@ -119,6 +147,28 @@ The agent SHALL flag detached spawns and ignored `JoinHandle` results, and SHALL
 - **WHEN** reviewing async code
 - **THEN** the agent flags that the directory is deleted while the task still writes to it, and suggests moving the guard into the task
 
+#### Scenario: Spawn in Drop
+
+- **GIVEN** a `Drop` impl that takes a database handle and `tokio::spawn`s its async close
+- **WHEN** reviewing async code
+- **THEN** the agent flags cleanup with no owner that can race a reopen, and suggests an explicit `async fn close(self)` awaited on every exit path
+
+### Behavior: Stop signals
+
+The agent SHALL check how each long-running task is told to stop: a cooperative signal checked at consistent points, a matching wait, and a shutdown deadline with a stated decision for what still runs after it.
+
+#### Scenario: Dropped handle as a stop signal
+
+- **GIVEN** code that keeps a task's `JoinHandle` in a struct and drops the struct to stop the task
+- **WHEN** reviewing async code
+- **THEN** the agent flags that dropping a `JoinHandle` detaches the task, and suggests a `CancellationToken` plus waiting on the handle, or `AbortOnDropHandle` when the task is scoped to the struct and abrupt stop is acceptable
+
+#### Scenario: Broadcast shutdown subscribed late
+
+- **GIVEN** a shutdown `broadcast::Sender<()>` where workers call `subscribe()` when they start, possibly after shutdown was sent
+- **WHEN** reviewing async code
+- **THEN** the agent flags that a late subscriber never sees the signal and suggests a `CancellationToken`, whose `cancelled()` completes at once when already cancelled
+
 ### Behavior: Load and backpressure
 
 The agent SHALL flag unbounded queues and fan-out, backpressure that does not reach the producer, and remote calls without timeouts.
@@ -155,10 +205,16 @@ The agent SHALL NOT flag a cancel-unsafe future that cannot be cancelled in its 
 - **WHEN** reviewing async code
 - **THEN** the agent reports it as safe in context and does not raise a cancellation finding
 
+#### Scenario: Partial download lost on Ctrl-C
+
+- **GIVEN** a CLI download loop that writes with `write_all` and is cancelled only by Ctrl-C at process exit
+- **WHEN** reviewing async code
+- **THEN** the agent says the lost partial write is acceptable in context and does not raise a finding
+
 ## Constraints
 
 ### Constraint: Stage boundary
 
-The agent MUST NOT report timeouts as a hard-rule ban (hard-rules), tracing on spawned tasks (observability), or component API shape (architecture), MUST NOT ask for a runtime change without a measured reason, MUST NOT demand a `poll_transmit` / `poll_timeout` driver on a worker that only serializes one resource, and MUST NOT demand a rewrite of an existing `Handle::new()` the diff did not change.
+The agent MUST NOT report timeouts as a hard-rule ban (hard-rules), tracing on spawned tasks (observability), or component API shape (architecture), MUST NOT ask for a runtime change without a measured reason, MUST NOT demand a `poll_transmit` / `poll_timeout` driver on a worker that only serializes one resource, MUST NOT demand a rewrite of an existing `Handle::new()` the diff did not change, and MUST NOT require the `cancel-safe-futures` dependency when the plain `join!`-then-check form works.
 
 <!-- skillet-version: 1.7.0 -->

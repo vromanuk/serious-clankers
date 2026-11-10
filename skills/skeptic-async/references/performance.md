@@ -56,6 +56,9 @@ A sharded lock (`Vec<Mutex<_>>` indexed by hash) is the cheap first step; an own
 | Disk / network writes | One `write` per item | Vectored writes (`write_vectored` / `pwritev`), buffered writers |
 | Many reads that are all needed | Await one at a time | Issue all, then wait for the group (`join_all` / `JoinSet` / a completion group) |
 | Wake-ups | Wake per completion | Reap several completions per syscall (trade a little latency for fewer syscalls) |
+| A component's API | One call per item, the loop at the caller | A batch method as the base case (`skeptic-architecture/references/component-api.md` § 11) |
+
+TigerStyle puts the same idea at the program level: do not act directly on each external event; let the program run at its own pace and take what has arrived in batches. That keeps control flow in the program's hands and puts a bound on the work done per step (`select-and-tasks.md` § 2.7).
 
 ### 3.3 Allocate less on the hot path
 

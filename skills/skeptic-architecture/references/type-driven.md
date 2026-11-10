@@ -366,6 +366,69 @@ In order of preference:
 
 ---
 
+## Example G — arguments that can be swapped; index, count, and size
+
+**Sources:** TigerStyle ("a function taking two `u64` must use an options struct"; off-by-one errors between index, count, and size); matklad, [Newtype Index Pattern](https://matklad.github.io/2018/06/04/newtype-index-pattern.html).
+
+**Need:** two arguments of the same type that mean different things — accounts to debit and credit, source and target offsets, an index and a count — where a swap compiles and corrupts data.
+
+**Bad:** positional arguments of one primitive type. `transfer(credit, debit, amount)` compiles and moves money the wrong way.
+
+```rust
+fn transfer(debit: u64, credit: u64, amount_cents: u64) -> Result<(), TransferError>
+```
+
+**Good:** newtypes stop mixing *different kinds* of value (an account id is not an amount); a struct with named fields stops swapping *two values of the same kind*, because the call site names each one:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(pub u64);
+
+/// A transfer is built with named fields, so `debit` and `credit` cannot be swapped by position.
+pub struct Transfer {
+    pub id: TransferId,
+    pub debit: AccountId,
+    pub credit: AccountId,
+    pub amount_cents: u64,
+}
+
+let transfer = Transfer { id, debit: buyer, credit: seller, amount_cents: 5_000 };
+```
+
+Newtypes alone are not enough here: `debit` and `credit` are both `AccountId`, so `transfer(seller, buyer, …)` would still compile.
+
+**Index, count, and size are different numbers.** An index counts from 0, a count from 1, and a size is a count times a unit. Most off-by-one errors are a casual mix of the three. Name the unit (`size_bytes`, `count`, `index`), give an index into one collection its own type, and let the collection accept only that type:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SlotIndex(pub usize);
+
+// Allowed by Rust's orphan rule because `SlotIndex` is local. `slots[slot_index]` works, and
+// `slots[order_index]` with an `OrderIndex` does not compile. A bare `usize` still indexes the
+// slice, so keep raw indexes out of signatures.
+impl std::ops::Index<SlotIndex> for [Slot] {
+    type Output = Slot;
+    fn index(&self, index: SlotIndex) -> &Slot {
+        &self[index.0]
+    }
+}
+```
+
+**Say how a division rounds.** `size_bytes / PAGE_SIZE_BYTES` silently rounds down; when a partial page still takes a page, say so:
+
+```rust
+/// Pages needed to hold `size_bytes`; a partial page still takes a whole page.
+pub fn count_pages(size_bytes: u64) -> u64 {
+    size_bytes.div_ceil(PAGE_SIZE_BYTES)
+}
+```
+
+**Fixed-size integers at the boundary.** In memory, `usize` is the natural index type in Rust. In anything written to disk or sent over the network, use fixed-size types (`u32`, `u64`) so the format is the same on every machine.
+
+**Review check:** two or more arguments of the same type with different meanings at a public or widely used call site? → named fields in a struct, or distinct newtypes when the kinds differ. An index into a specific collection passed as bare `usize` where several collections are in scope? → an index newtype. Division on sizes or counts with no stated rounding? → `div_ceil` or a comment saying round-down is intended.
+
+---
+
 ## New struct vs one that already exists
 
 **Need:** a new struct only when no existing type can be reused or generalized.
@@ -417,5 +480,6 @@ Highlight this. Do not decide it off-stage. The finding offers:
 - Finding: “`is_connected`, `is_connecting`, and `session_id: Option` must agree, and nothing enforces it. Option: enum of states with `session_id` inside `Connected`.”  
 - Finding: “`on_session` ends in `other => other`, so a session event while `Failed` is silently dropped. Options: return `Err((state, NotConnecting))`; name the states where it is a no-op; `unreachable!` if it cannot happen.”  
 - Finding: “`run_light` shows a color, then `sleep(30 s)`; a button press waits out the sleep, and the state exists only as the paused line. Option: `Light { color, change_at }` with a pure `step(self, event, now)`; the shell waits until `change_at` or the next event.”  
+- Finding: “`fn transfer(debit: u64, credit: u64, amount_cents: u64)` — swapping `debit` and `credit` compiles. Option: a `Transfer` struct with named fields and `AccountId` newtypes.”  
 - Finding: “`RequestBuilder::build()` fails when `url` was never set, but code always sets it. Option: take `url` in `new`; `build()` stops returning `Result`.”  
 - Finding: “new `KafkaRecord` repeats `BrokerRecord` (topic, partition, offset, key, payload). Options: reuse and carry registration beside it; generalize to one record and one payload enum; keep both only because registration does not exist before register.”

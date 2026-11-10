@@ -59,6 +59,18 @@ The agent SHALL check each new error against defining it out, masking it lower d
 - **WHEN** reviewing complexity
 - **THEN** the agent flags that callers cannot detect lost messages and asks for the failure to be exposed
 
+#### Scenario: Broken invariant returned as an error
+
+- **GIVEN** a ledger method that returns `Err(LedgerError::BalanceOverflow)` when crediting an account, although the constructor guarantees all balances together fit in `u64`
+- **WHEN** reviewing complexity
+- **THEN** the agent flags a bug returned as an error that no caller can act on, and suggests `expect` with the invariant as its message
+
+#### Scenario: Error enum mirrors the implementation
+
+- **GIVEN** a public `PriceError` with variants `Http(reqwest::Error)`, `Json(serde_json::Error)`, and `Parse(ParseIntError)`
+- **WHEN** reviewing complexity
+- **THEN** the agent flags that callers cannot tell which errors to retry and that a library swap changes the type, and suggests one variant per caller action with the cause attached as the source
+
 ### Behavior: Design signals routed
 
 The agent SHALL report a hard-to-pick name or a hard-to-describe interface as a design problem, and SHALL leave the wording fix to the naming or comments stage.

@@ -94,6 +94,82 @@ In batch or stream processing without real-time needs, put failed work on a retr
 
 Count retry attempts and alert when retries become frequent: retries can sit idle for months and then kick in during a scenario nobody tested.
 
+### 2.7 The shape of the retry loop
+
+The loop itself is a common source of small bugs. A correct one has four properties:
+
+1. **The bound is visible.** The reader sees the attempt limit in the loop header, not a `loop` with a counter somewhere inside.
+2. **The last real error is returned**, not a generic "retries exhausted" that hides why the call failed.
+3. **No sleep after the last attempt.** A loop that sleeps and then checks the counter makes every final failure slower by one backoff.
+4. **Errors that are not transient return at once** (§ 2.2).
+
+```rust
+pub struct RetryPolicy {
+    /// Attempts including the first; at least one by type, so the loop always runs.
+    pub max_attempts: NonZeroU32,
+    pub base_delay: Duration,
+    pub max_delay: Duration,
+}
+
+impl RetryPolicy {
+    /// Longest wait after failed attempt `attempt` (counting from 1): base × 2^(attempt − 1),
+    /// capped at `max_delay`.
+    pub fn compute_delay_cap(&self, attempt: u32) -> Duration {
+        assert!(attempt >= 1, "attempts count from 1");
+        let factor = 2u32.saturating_pow(attempt - 1);
+        self.base_delay.saturating_mul(factor).min(self.max_delay)
+    }
+}
+
+/// Calls `action` until it succeeds, fails with an error that is not transient, or runs out of
+/// attempts, and returns the last real error rather than "retries exhausted". It never sleeps
+/// after the last attempt. Waits use full jitter: `random_fraction()` (in `0.0..=1.0`) times the
+/// capped delay. Each call to `action` needs its own timeout; this loop only spaces the calls.
+pub async fn retry<T, E, Fut>(
+    policy: &RetryPolicy,
+    is_transient: impl Fn(&E) -> bool,
+    mut random_fraction: impl FnMut() -> f64,
+    mut action: impl FnMut() -> Fut,
+) -> Result<T, E>
+where
+    Fut: Future<Output = Result<T, E>>,
+{
+    let max_attempts = policy.max_attempts.get();
+    for attempt in 1..=max_attempts {
+        let error = match action().await {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        if attempt == max_attempts || !is_transient(&error) {
+            return Err(error);
+        }
+        let fraction = random_fraction();
+        assert!((0.0..=1.0).contains(&fraction), "jitter fraction {fraction} out of range");
+        tokio::time::sleep(policy.compute_delay_cap(attempt).mul_f64(fraction)).await;
+    }
+    unreachable!("max_attempts is at least 1, and the last attempt always returns")
+}
+```
+
+`NonZeroU32` makes "at least one attempt" a type, so the `unreachable!` after the loop is true by construction. In production, `random_fraction` is `rand::random::<f64>` (which returns values in `0.0..1.0`); tests pass `|| 1.0` so waits are exact. With paused time the four properties are one test each:
+
+```rust
+#[tokio::test(start_paused = true)]
+async fn does_not_sleep_after_the_last_attempt() {
+    let started = Instant::now();
+
+    let _: Result<(), _> =
+        retry(&policy(3), is_transient, || 1.0, || async { Err(CallError::Transient(0)) }).await;
+
+    // Two waits between three attempts: 100 ms, then 200 ms.
+    assert_eq!(started.elapsed(), Duration::from_millis(300));
+}
+```
+
+This loop is the floor; on hot paths add the retry budget (§ 2.4) and retry at one layer only (§ 2.3).
+
+- **Flag:** a retry loop that sleeps after the final attempt, returns a generic error instead of the last one, retries errors that are not transient, or hides its bound inside the body.
+
 ### 2.7 When the dependency throttles you
 
 Synchronous callers should stop retrying when rate-exceeded responses are frequent. Asynchronous callers (consumers, batch jobs) should apply backpressure: slow their own processing until requests succeed again, instead of hammering at full speed.

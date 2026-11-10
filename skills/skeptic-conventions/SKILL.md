@@ -30,7 +30,10 @@ Comments → stage **comments**. Naming → stage **naming**.
    - Report `composition: ok` or composition findings  
    - Interior split lives here; **exported** leaves (`opening` / `body` as `pub`, `load_*` / `validate_*` / `write_*` on the job root) → architecture `### Component API`  
 4. **Rust style** — ownership, types at edges, errors, async at the edge, needless clones; don’t re-argue `clippy`/`rustfmt`; allow a measured hot-path tradeoff with a short local why  
-5. **Linters** — run the tools; don’t re-litigate their output here  
+5. **Assertions** — flag an invariant the code depends on with no assertion and no type enforcing it, compound assertions that hide which condition failed, and an expensive `assert!` on a hot path where `debug_assert!` fits. Panics on outside input are error design (→ complexity). Detail: `references/rust-craft.md` § Assertions  
+6. **Settings written out** — flag a client or consumer built on library defaults for timeouts, commit behavior, offset reset, isolation, retries, or delivery guarantees the code relies on (`rust-craft.md` § Pass settings explicitly)  
+7. **One copy of each fact** — flag a stored field that duplicates a value derivable from others (a count beside its collection) without a measured reason, and a check whose result is used after code that can change what was checked (`rust-craft.md` § One copy of each fact)  
+8. **Linters** — run the tools; don’t re-litigate their output here  
 
 ## Do not
 

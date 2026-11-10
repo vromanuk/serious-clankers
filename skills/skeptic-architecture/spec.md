@@ -131,6 +131,12 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent flags that the state exists only as the paused line and the button waits out the sleep, and suggests a `Light { color, change_at }` with a pure `step(self, event, now)` and a shell that waits until `change_at` or the next event
 
+#### Scenario: Swappable arguments of one type
+
+- **GIVEN** a public `fn transfer(debit: u64, credit: u64, amount_cents: u64)`
+- **WHEN** reviewing architecture
+- **THEN** the agent flags that swapping `debit` and `credit` compiles, and suggests a `Transfer` struct with named fields and `AccountId` newtypes
+
 #### Scenario: Required builder field checked at run time
 
 - **GIVEN** a builder with `url: Option<Url>` that code always sets, and `build()` returning `Err("url is required")`

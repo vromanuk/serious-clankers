@@ -401,6 +401,71 @@ let quantity = params.get_u32("quantity")?; // RequestError::BadParameter { name
 - Crashing depends on the product: a replicated store must recover from a disk error, because recovery is what it sells. Don't turn frequent errors into crashes.
 - Keep errors that end one request separate from errors that are fatal to the process.
 
+### Bugs are not errors
+
+An **operating error** is expected — a timeout, a missing file, bad input from outside — and belongs in the return type. A **bug** is the program contradicting itself: an invariant it relies on is false. Returning a bug as an error variant adds a branch to every caller that none of them can act on; it should stop the program close to the cause (`assert!`, `expect("why this cannot happen")`). The opposite mistake is as costly: `unwrap` or `assert!` on input from outside the process turns an operating error into a crash. Assertion craft (where, how, `assert!` vs `debug_assert!`) is in `skeptic-conventions/references/rust-craft.md` § Assertions.
+
+```rust
+// Money only moves between accounts, and `Ledger::new` checked that all balances together fit
+// in u64, so this cannot overflow. If it does, the ledger is already wrong: stop.
+let new_credit_cents = credit_cents
+    .checked_add(transfer.amount_cents)
+    .expect("the sum of all balances fits in u64");
+
+// Insufficient funds is an operating error: the caller gets it as this transfer's result.
+let new_debit_cents = debit_cents
+    .checked_sub(transfer.amount_cents)
+    .ok_or(TransferError::InsufficientFunds)?;
+```
+
+### Reporting an error is not handling it
+
+An error goes one of two places: up to a boundary where an operator reads it (a log line, an HTTP 500, stderr), or to a caller that takes a different action because of it. These need different shapes. **For handling**, the type needs one variant per *different action* callers take — not one per underlying cause. **For reporting**, the message needs the chain of what the program was doing, added where that is known.
+
+```rust
+// Worse: one variant per cause the implementation happens to have. Callers cannot tell
+// which ones to retry, and swapping the HTTP or JSON library changes the public type.
+pub enum PriceError {
+    Http(reqwest::Error),
+    Json(serde_json::Error),
+    Parse(std::num::ParseIntError),
+}
+
+// Better: one variant per caller action; the cause stays attached for the report
+#[derive(Debug, thiserror::Error)]
+pub enum PriceError {
+    /// The symbol is not listed. Callers reject the order.
+    #[error("unknown symbol {symbol}")]
+    UnknownSymbol { symbol: String },
+    /// The price service failed or sent something unreadable. Callers retry later or fail the
+    /// order; the cause stays attached for the report.
+    #[error("price service failed")]
+    ServiceFailed(#[source] Box<dyn std::error::Error + Send + Sync>),
+}
+
+// At the reporting boundary, context says what the program was doing:
+let price = parse_price_response(symbol, status, body)
+    .with_context(|| format!("pricing order {order_id}"))?;
+// The report reads: "pricing order 7: price service failed: status 503"
+```
+
+In Rust the usual split is an enum (often with `thiserror`) for errors callers branch on, and `anyhow` with `.context(…)` in application code that only reports. A library returns the enum; the application adds the context.
+
+### Simpler return types mean fewer branches at every call site
+
+Each extra layer in a return type is a branch every caller must write, and it spreads up the call chain. From fewest to most branches: no value, `bool`, a plain value, `Option`, `Result`, `Result<Option<…>>`. Pick the smallest type that says what callers need:
+
+```rust
+// Worse: two spellings of "not there" — Ok(None) and Err(BookError::NotFound) — and an error
+// path an in-memory lookup can never take; every caller handles all three
+pub fn find_order(&self, id: OrderId) -> Result<Option<&Order>, BookError>
+
+// Better: absence has one spelling
+pub fn find_order(&self, id: OrderId) -> Option<&Order>
+```
+
+This is a consideration, not a rule: return the richer type when callers really branch on the difference.
+
 ---
 
 ## 5. Pull complexity down
@@ -520,7 +585,7 @@ For each new or changed unit:
 3. **Structure by knowledge:** are pieces split by when they run while sharing knowledge?
 4. **Common case:** can the common use be written without learning rare options? Could the module derive a required value or setting itself?
 5. **General vs special:** does a general mechanism contain one caller's special case? Do special-case `if`s appear where an empty or default value would do?
-6. **Errors:** for each new error: can the operation be redefined so it disappears, handled lower down, handled with many others in one place, or should it abort? Is anything swallowed that callers need?
+6. **Errors:** for each new error: can the operation be redefined so it disappears, handled lower down, handled with many others in one place, or should it abort? Is anything swallowed that callers need? Is a bug returned as an error variant, or an operating error turned into a panic? Does the error type have one variant per caller action, or one per underlying cause?
 7. **Split / join:** can each piece be read alone? Was something split for length only? Is code repeated?
 8. **Signals:** is a name hard to pick, or a complete doc long? Treat it as a design problem.
 9. **Obvious:** tuples with meaning, hidden side effects, callbacks with no "when called"?

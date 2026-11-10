@@ -41,6 +41,16 @@ The agent SHALL flag retries at more than one layer of a call chain, and hot-pat
 - **WHEN** reviewing reliability
 - **THEN** the agent flags multiplied retries (up to nine attempts per call), and suggests retrying at one layer, with a success-funded retry budget if the call is on a hot path
 
+### Behavior: Retry loop shape
+
+The agent SHALL flag retry loops that sleep after the final attempt, return a generic error instead of the last one, retry errors that are not transient, or hide their bound inside the body.
+
+#### Scenario: Loop sleeps, then gives up with a generic error
+
+- **GIVEN** `loop { match call().await { Ok(v) => return Ok(v), Err(_) => { attempts += 1; sleep(backoff(attempts)).await; if attempts == 3 { return Err(RetriesExhausted) } } } }`
+- **WHEN** reviewing reliability
+- **THEN** the agent flags the sleep after the last attempt, the lost underlying error, and that every error is retried, and suggests a `for attempt in 1..=max_attempts` loop that returns the last error at once on the final or a non-transient failure
+
 ### Behavior: Load protection
 
 The agent SHALL flag services with no admission limit, reject paths that do expensive work, shedding of health checks, global-only limits in multi-tenant services, and consumers with no backlog plan.

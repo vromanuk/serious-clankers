@@ -72,6 +72,7 @@ description: >
 6. Do **flags that must agree** stand in for one state, or does a transition `match` end in a catch-all arm? Offer an enum of states and one of the three answers for a rejected transition. Detail: § Example E.  
 7. Does a builder check at run time a **required field** that code always sets? Move it to `new`. Detail: § Example F.  
 8. Does a long-running loop separate its steps with **`sleep`**, or count ticks to measure time? Store when the next change is due in the state, pass `now` in, and let the shell wait for that time or the next event. Detail: § Example E2.  
+9. Do **two arguments of the same type** mean different things (debit and credit accounts, source and target offsets, an index and a count) where a swap would compile? Offer named fields in a struct, or newtypes when the kinds differ; an index newtype for a specific collection; `div_ceil` or a stated rounding for sizes. Detail: § Example G.  
 
 **Flag:** silent empty success; optional fields that only make sense together; duplicate empty-checks with the same string.
 

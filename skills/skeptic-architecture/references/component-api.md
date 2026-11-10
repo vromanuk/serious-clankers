@@ -85,6 +85,43 @@ For anything others already call: additive change; the old method keeps its mean
 
 One job, one namespace, one provided face (prefer one struct + use-case methods), private interior, data owned here, wired at the app edge. A slice with no dedicated face is not a component — every internal type becomes accidental API. Nesting is allowed; nested parts do not become public just because they exist. Layout detail: `components.md`.
 
+### 11. Consider a batch as the base case
+
+A consideration, not a rule (matklad, "Push Ifs Up And Fors Down"; TigerBeetle's API takes transfers in batches). When callers have many items — records, transfers, edits — a face that takes one item at a time pushes the loop, and every per-call cost, onto them. A face that takes a batch lets the component pay fixed costs once, choose the order, and check everything before changing anything. A single item is a batch of one.
+
+A batch face must say what happens when some items fail, because that choice is visible to every caller. Two common answers: **one result per item** (later items still run), or **all or nothing**. Either way, say when the batch is durable relative to its effects.
+
+```rust
+pub struct Bank<J: Journal> {
+    ledger: Ledger,
+    journal: J,
+}
+
+impl<J: Journal> Bank<J> {
+    /// Applies a batch: one result per transfer, in order, and one journal write for the whole
+    /// batch. The batch is durable before any balance changes, so if the write fails the ledger
+    /// is untouched and the whole batch can be retried.
+    pub fn create_transfers(
+        &mut self,
+        transfers: &[Transfer],
+    ) -> std::io::Result<Vec<Result<(), TransferError>>> {
+        let batch = self.ledger.prepare(transfers);
+        self.journal
+            .append_durably(&select_accepted_transfers(transfers, &batch.results))?;
+        Ok(self.ledger.commit(batch))
+    }
+}
+```
+
+`Ledger::prepare` works out every result as if the earlier transfers had been applied, without changing the ledger; `commit` applies them only after the journal write succeeds. The tests that pin the face down:
+
+- a failed transfer does not stop the rest of the batch;
+- a later transfer sees the balance left by an earlier one;
+- the journal is written once per batch;
+- a failed journal write leaves every balance unchanged.
+
+Not every face needs this: a single-item face fits when items arrive one at a time and nothing is shared between them. The batching that happens *inside* an event loop is in `skeptic-async/references/select-and-tasks.md` § 2.7.
+
 ---
 
 ## Walk

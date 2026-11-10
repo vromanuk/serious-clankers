@@ -106,6 +106,33 @@ let mut records = RecordReader::open(path)?;
 
 **Limits:** some small pieces are unavoidable. Small private functions are fine when each one reads on its own (see 3.8).
 
+**Consideration: the shape of a function.** matklad ("Size Matters") puts the same idea as a shape: a function's interface is its inputs plus its outputs, and its body is the work. Aim for a large body behind a small interface — an inverted hourglass. Many inputs and outputs around a tiny body is the hourglass, and a warning sign:
+
+```rust
+// Worse: five inputs for one comparison; every caller must pass the buffer's internals
+pub fn should_flush(
+    buffered_bytes: usize,
+    max_bytes: usize,
+    oldest_at: Option<Instant>,
+    now: Instant,
+    max_age: Duration,
+) -> bool {
+    buffered_bytes >= max_bytes || oldest_at.is_some_and(|oldest_at| now - oldest_at >= max_age)
+}
+
+// Better: two inputs; the buffer keeps its own bookkeeping and hands back a batch when one is due
+impl FlushBuffer {
+    /// Adds a record; returns the batch to write when the buffer reached `max_bytes` or its
+    /// oldest record is `max_age` old.
+    pub fn push(&mut self, record: Record, now: Instant) -> Option<Vec<Record>> { … }
+
+    /// Returns the batch when its oldest record is `max_age` old, even if nothing new arrived.
+    pub fn take_if_due(&mut self, now: Instant) -> Option<Vec<Record>> { … }
+}
+```
+
+Size alone decides nothing: keep related code together and independent code apart, whatever the line count. One physical limit is worth honoring, though: a function that fits on one screen (roughly 60–70 lines; TigerStyle uses 70 as a hard limit) can be read without scrolling, and two such functions — caller and callee — fit side by side. When a function grows past a screen, look for the split that leaves each piece readable alone (3.8), not for the first cut that gets under the limit.
+
 ### 3.2 Information Leakage
 
 A design decision (a format, a rule, an ordering, a storage shape) is known in more than one module, so changing it means changing all of them. The worst kind is hidden: two modules agree on something no interface shows.

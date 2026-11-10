@@ -225,6 +225,30 @@ Things to weigh before choosing it:
 - **Slot indexes are reused.** A caller holding an old index can reach a newer order; `remove` checks the order id for that reason (a generation counter per slot is the other common answer).
 - **In Rust, an enum of slot states keeps the empty state honest.** A struct with a `state` field leaves price and shares readable in a reserved slot; `enum Slot` has no stale fields, and every slot is still the same size.
 
+**More ideas from the same design** (matklad, "Static Allocation, Constant Work"):
+
+- **Objects move between states; they are not created or destroyed.** With a fixed set of slots, every order is always somewhere — reserved or active — so "where did this order come from?" has an answer as well as "where does it go?". Writing one transition per pair of states, and asserting the state you expect at each step, makes it hard to lose one.
+- **Too slow at the declared maximum is a bug.** Declaring a limit is a promise to serve that much. Test at the maximum; a system that becomes unusably slow at its limit has failed as surely as one that crashes.
+- **In the small, let a search run its full course.** A lookup that stops at the first match hides a second one. Over a small, validated table, visiting every entry and asserting there is at most one match costs little and catches the bug where two entries overlap:
+
+```rust
+/// Visits every range instead of stopping at the first match, and asserts there is at most
+/// one. `new` rejected overlaps and nothing changes the table after it, so a second match
+/// means `new` has a bug.
+pub fn find_shard(&self, key: u64) -> Option<u32> {
+    let mut found = None;
+    for range in &self.ranges {
+        if range.start <= key && key < range.end {
+            assert!(found.is_none(), "key {key} is in two ranges");
+            found = Some(range.shard);
+        }
+    }
+    found
+}
+```
+
+Changing `key < range.end` to `key <= range.end` makes ranges `0..100` and `100..200` both claim key 100; the assertion reports it on the first lookup instead of routing the key to whichever range comes first. This fits small tables checked on every lookup; a large table needs an index, and the uniqueness check then belongs where the table is built.
+
 Related ideas: batching (`skeptic-async/references/select-and-tasks.md` § 2.7) makes work grow slower than load; constant work makes it not grow at all. Both remove the moment where a busier system takes a different, less-tested path.
 
 ---

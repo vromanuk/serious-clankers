@@ -385,6 +385,22 @@ pub struct ExportBucket<S> { storage: S }
 
 What changes when part uploads replace whole-file uploads: the interior of `WindowExport` and additions to `ExportBucket`. The consumer loop, the record mapper and the tests written against `WindowExport`'s public API stay.
 
+### Consideration: a back-of-the-envelope sketch before building
+
+TigerStyle: "the best time to solve performance … is in the design phase, which is precisely when we can't measure or profile." A sketch takes minutes: for each of the four resources — network, disk, memory, CPU — estimate bandwidth (bytes per second) and latency (time per operation) from the expected load, and see which one runs out first. Optimize the slowest resources first, weighted by how often each is used: a cache miss can cost as much as a disk sync if it happens a thousand times more often.
+
+A rough sketch for the export service above, at an assumed peak of 50 000 records per second of about 1 KB each, on 4 cores:
+
+| Resource | Estimate | What it decides |
+|---|---|---|
+| Network in | 50 000 × 1 KB = 50 MB/s ≈ 400 Mbit/s | 40% of a 1 Gbit link: fine on 10 Gbit, tight on 1 Gbit |
+| Memory | a 60 s window held as raw rows: 60 s × 50 MB/s = 3 GB | too much to hold raw; encode and compress rows as they arrive, or use shorter windows |
+| CPU | 4 cores / 50 000 records/s = 80 µs per record | if parsing and encoding take about 20 µs, the consumer uses about a quarter of the machine |
+| Network out (object store) | an assumed 50–100 ms per PUT; one PUT per window per partition | a PUT per record would need 50 000 × 0.1 s = 5 000 requests in flight (Little's Law): batching into windows is required, not optional |
+| Disk | nothing written locally | no disk budget, unless windows spill when memory is short |
+
+Write the sketch next to the design, with the assumptions marked, so a reviewer can redo it when the load estimate changes. "Roughly right" is the goal: within a factor of two is enough to pick a design.
+
 ### Review one-liners
 
 - Finding: "`WindowUploads::try_start_upload` returns `AllUploadersBusy` — the caller now manages upload slots; keep slots inside and expose `can_accept_rows()`." File under `### Component API` (wrong level on the provided face).

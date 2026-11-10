@@ -317,6 +317,34 @@ write_batch(&mut batch).await
 
 When the runtime shuts down (end of `main`, end of a test, a panic unwinding past the runtime), every task is dropped at its next `.await`, in no fixed order. A task that `unwrap()`s a send to a sibling, or expects a sibling's channel to stay open, panics nondeterministically during shutdown — Dropshot hit this. A task with a dropped `JoinHandle` does not "run forever" either: it dies with the runtime. Treat a closed channel to a sibling as a stop signal, not a bug, and shut down in an explicit order (`lifetimes-and-load.md` § 3) instead of relying on runtime drop.
 
+
+### 3.13 A check made before an `.await` is stale after it
+
+A function that never suspends can rely on what it checked at the top for its whole body. Every `.await` breaks that: other tasks run, and the checked condition can change. TigerStyle states it as "ensure functions run to completion without suspending, so that precondition assertions are true throughout". In async Rust, hold what you checked across the await (a permit, a guard, an owned value), or check again after it:
+
+```rust
+// Worse: the check is true when it runs, and stale after the await
+pub async fn send_if_capacity(limit: &Semaphore) -> Result<String, Busy> {
+    if limit.available_permits() == 0 {
+        return Err(Busy);
+    }
+    let request = build_request().await; // other calls pass the same check here
+    let permit = limit.try_acquire().expect("a permit was available above"); // can panic
+    Ok(send(request, permit).await)
+}
+
+// Better: take the permit before awaiting, so what was checked is held across the await
+pub async fn send_if_capacity(limit: &Semaphore) -> Result<String, Busy> {
+    let Ok(permit) = limit.try_acquire() else {
+        return Err(Busy);
+    };
+    let request = build_request().await;
+    Ok(send(request, permit).await)
+}
+```
+
+Two concurrent calls with one permit show it: in the worse version both pass the check, and the second panics at `expect`; in the better version the second returns `Busy`. An `assert!` on a precondition before an `.await` documents a fact that may be false by the time the code after the await runs.
+
 ---
 
 ## 4. Tokio cancel-safety table

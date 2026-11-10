@@ -112,6 +112,27 @@ Tokio's `tokio::fs` runs file operations on the blocking pool, so most Tokio ser
 - Keep hot and cold fields apart in frequently touched structs (a cache line is 64–128 bytes).
 - Check for pending work with a cheap atomic load before taking a lock.
 - Mark cold paths `#[inline(never)]`; keep per-item work out of an outer loop's I/O checks.
+- Consider writing a hot loop as a free function that takes plain slices and values instead of `&self` (TigerStyle). Its inputs are then exactly its parameters, so a reader sees everything it touches and spots repeated work, a benchmark can call it on a plain slice, and the compiler does not have to prove that fields of `self` stay unchanged across the loop:
+
+```rust
+impl OrderBook {
+    pub fn sum_open_shares(&self, side: Side) -> u64 {
+        sum_open_shares(&self.slots, side)
+    }
+}
+
+/// The hot loop as a free function: its inputs are exactly its parameters, so a reader sees
+/// everything it touches, and a benchmark can call it on a plain slice.
+pub fn sum_open_shares(slots: &[Slot], side: Side) -> u64 {
+    slots
+        .iter()
+        .map(|slot| match slot {
+            Slot::Active { side: slot_side, shares } if *slot_side == side => u64::from(*shares),
+            Slot::Active { .. } | Slot::Reserved => 0,
+        })
+        .sum()
+}
+```
 
 ---
 

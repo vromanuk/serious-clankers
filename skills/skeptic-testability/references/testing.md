@@ -111,6 +111,61 @@ Helpers are fine for **boring** defaults (`newCalculator()`, blank fixtures). Th
 
 ---
 
+## Test where valid becomes invalid
+
+TigerStyle: "tests must test exhaustively, not only with valid data but also with invalid data, and as valid data becomes invalid." Bugs gather at the boundary: the last accepted value, the first rejected one, and the step that moves a valid state into an invalid one. For each limit, test the value at it and the values on either side:
+
+```rust
+#[test]
+fn decode_accepts_whole_transfers_and_rejects_the_bytes_on_either_side() {
+    let max_size_bytes = TRANSFERS_PER_BATCH_MAX * TRANSFER_SIZE_BYTES;
+    let cases = [
+        (0, Ok(0)),
+        (31, Err(DecodeError::PartialTransfer { size_bytes: 31 })),
+        (32, Ok(1)),
+        (33, Err(DecodeError::PartialTransfer { size_bytes: 33 })),
+        (max_size_bytes, Ok(TRANSFERS_PER_BATCH_MAX)),
+        (max_size_bytes + 32, Err(DecodeError::TooLarge { size_bytes: max_size_bytes + 32 })),
+    ];
+
+    for (size_bytes, expected) in cases {
+        let decoded = decode_batch(&vec![0; size_bytes]).map(|transfers| transfers.len());
+        assert_eq!(decoded, expected, "{size_bytes} bytes");
+    }
+}
+```
+
+An off-by-one in the size check (`>=` instead of `>`) fails the `max_size_bytes` row; a test with only typical sizes passes. For state, a property test drives random sequences across the boundary and checks the invariant after every step:
+
+```rust
+proptest! {
+    /// Any mix of places and removes: open orders never exceed capacity, and a book that is
+    /// not full always accepts the next order.
+    #[test]
+    fn book_never_holds_more_than_its_capacity(steps in proptest::collection::vec(any::<bool>(), 0..200)) {
+        const CAPACITY: usize = 8;
+        let mut book = OrderBook::new(CAPACITY);
+        let mut open = Vec::new();
+        for (id, is_place) in (1u128..).zip(steps) {
+            if is_place {
+                let result = book.place(Side::Bid, Order { id, price_cents: 1, shares: 1 });
+                prop_assert_eq!(result.is_ok(), open.len() < CAPACITY);
+                if let Ok(slot) = result {
+                    open.push((slot, id));
+                }
+            } else if let Some((slot, id)) = open.pop() {
+                prop_assert!(book.remove(slot, id).is_some());
+            }
+        }
+        prop_assert_eq!(book.sum_open_shares(Side::Bid), open.len() as u64);
+    }
+}
+```
+
+The test keeps a simple model (`open`) of what the book should hold and checks the book against it; the model is a list, so it is easy to trust. Assertions in the code under test (`skeptic-conventions/references/rust-craft.md` § Assertions) make these tests stronger: the generator explores, and the assertions report the first step where an invariant broke.
+
+---
+
 ## Snapshot / golden tests (when applicable)
 
 **What:** compare output (string, JSON, bytes, rendered HTML) to a checked-in **golden** file; failures show a diff; update goldens deliberately when behavior changes on purpose.

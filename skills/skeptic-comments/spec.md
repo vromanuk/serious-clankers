@@ -71,6 +71,16 @@ The agent SHALL check docs on settings (config fields, builder methods, public c
 - **WHEN** reviewing comments
 - **THEN** the agent flags that the value has no reason and asks what the 10 s is chosen against
 
+### Behavior: Docs of renamed or changed items
+
+The agent SHALL re-read the doc comment of every function or type the diff renames or whose behavior it changes, even when the diff does not touch that comment, and SHALL flag a doc that no longer describes what the item does.
+
+#### Scenario: Renamed function keeps a doc about something else
+
+- **GIVEN** a diff that renames `find_distinct_columns` to `check_unique_columns`, and the unchanged doc above it describes the time column instead of the duplicate check the function does
+- **WHEN** reviewing comments
+- **THEN** the agent flags the doc as stale and suggests one that states the result and each way the function fails
+
 ### Behavior: Design headers
 
 The agent SHALL flag design headers that only restate types or only restate the function name and SHALL prefer purpose (with why when the shape is a choice) + given/expected without type lines.

@@ -1,6 +1,6 @@
 ---
 name: skeptic-comments
-spec_hash: cec3a275530e
+spec_hash: b08a85561812
 description: >
   Stage 7 of skeptic: are comments clear, needed, and about why (benefit /
   design reason) — not restating the code or bare rules without explanation.
@@ -40,6 +40,7 @@ description: >
 7. TODOs: who owns it and enough context; if time-based, a clear end condition.  
 8. Design headers: purpose (+ why if a choice) + given/expected, **no type line**.  
 9. Flag: restating lines, unexplained rules, useless comments, wrong/stale comments, hard-to-read comment text.  
+10. **Renamed or changed items:** for every function or type the diff renames or whose behavior it changes, re-read its doc comment even when the diff does not touch that comment. Flag a doc that no longer describes what the item does.  
 
 ## Do not
 

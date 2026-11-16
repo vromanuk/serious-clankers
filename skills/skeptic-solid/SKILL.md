@@ -1,5 +1,6 @@
 ---
 name: skeptic-solid
+spec_hash: 4c0f2cf17bab
 description: >
   SOLID and package design review (Rust): single responsibility as reasons to
   change, open/closed, substitutable trait implementations, client-specific

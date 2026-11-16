@@ -1,5 +1,6 @@
 ---
 name: skeptic-purpose
+spec_hash: b18bd680b044
 description: >
   Stage 1 of skeptic: real need, structure diagrams, whether the change makes
   sense, serious bugs, alternatives with pros/cons. Use when skeptic runs or

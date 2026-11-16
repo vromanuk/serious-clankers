@@ -1,5 +1,6 @@
 ---
 name: skeptic-testability
+spec_hash: 57a577b716ab
 description: >
   Stage 4 of skeptic: thinking code vs shell, decisions as data, whether new
   contracts can be covered (table / property / snapshot as fit). Use when skeptic

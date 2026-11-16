@@ -1,5 +1,6 @@
 ---
 name: skeptic-hard-rules
+spec_hash: 5921137b8c94
 description: >
   Stage 10 of skeptic: absolute bans and pass/fail checks only. Use when skeptic
   runs or the user asks for hard-rules / must-not review. Not for soft style

@@ -1,5 +1,6 @@
 ---
 name: skeptic-reliability
+spec_hash: 1e1b0a59f9b3
 description: >
   Reliability review: what happens when each part fails — failure modes and
   redundancy, timeouts, retries and idempotency, load shedding, rate limits and

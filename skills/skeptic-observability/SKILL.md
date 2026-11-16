@@ -1,5 +1,6 @@
 ---
 name: skeptic-observability
+spec_hash: 5dcca065b0a9
 description: >
   Stage 6 of skeptic: production observability — structured logs, spans, metrics,
   panic hooks, async span attachment, alert rules. Use when skeptic runs or the

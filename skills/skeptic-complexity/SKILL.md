@@ -1,5 +1,6 @@
 ---
 name: skeptic-complexity
+spec_hash: 7266396e6909
 description: >
   Stage 3 of skeptic: does the change make code harder to understand or change?
   Deep vs shallow units, information leakage, pass-throughs, overexposure,

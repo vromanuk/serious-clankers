@@ -1,5 +1,6 @@
 ---
 name: skeptic
+spec_hash: f03d117557d3
 description: >
   Coordinate a multi-stage code review in fixed order: purpose, architecture,
   complexity, testability, unit-tests, observability, comments, naming,

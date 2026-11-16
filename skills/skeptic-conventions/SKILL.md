@@ -1,5 +1,6 @@
 ---
 name: skeptic-conventions
+spec_hash: 82dab7a60657
 description: >
   Stage 9 of skeptic: plain words in code, one function per task, clear Rust
   style. Use when skeptic runs or the user asks for composition or Rust style

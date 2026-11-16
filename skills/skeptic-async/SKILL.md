@@ -1,5 +1,6 @@
 ---
 name: skeptic-async
+spec_hash: 7b2d8a542547
 description: >
   Async Rust review (Tokio-first): cancellation and cancel safety, cancel-safe
   API design and cancel tests, stop signals, futurelock,

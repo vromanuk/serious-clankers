@@ -1,5 +1,6 @@
 ---
 name: skeptic-naming
+spec_hash: 45b287992909
 description: >
   Stage 8 of skeptic: are names clear — long enough to say what something is or
   does, without being hard to read. Use when skeptic runs or the user asks for

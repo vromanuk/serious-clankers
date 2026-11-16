@@ -1,5 +1,6 @@
 ---
 name: skeptic-security
+spec_hash: 3b42d954475d
 description: >
   Security review: least privilege (identities, authentication, authorization,
   safe proxies, multi-party approval, emergency access, audit), trust boundaries

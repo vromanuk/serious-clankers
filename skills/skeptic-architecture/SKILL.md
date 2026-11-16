@@ -1,5 +1,6 @@
 ---
 name: skeptic-architecture
+spec_hash: 418b2a93dcca
 description: >
   Stage 2 of skeptic: component-based layout (job-shaped components, public vs
   private surface, use-case orchestration surface not stray helpers, data

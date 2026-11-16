@@ -1,5 +1,6 @@
 ---
 name: skeptic-unit-tests
+spec_hash: 4d1a83d18515
 description: >
   Stage 5 of skeptic: unit-test craft on the scoped diff — unchanging tests,
   public API of the unit, state not interactions, behaviors not methods, DAMP

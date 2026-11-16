@@ -1,0 +1,20 @@
+behavior: title-names-the-change
+prompt: |
+  Draft a PR title and description for this branch. Save the title alone on the first line
+  of PR_TITLE.txt and the description as PR_DESCRIPTION.md.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p telemetry/eng
+  printf 'record "metrics-api" { name = "metrics-api.eng.example.com" }\n' > telemetry/eng/dns.tf
+  git add -A && git commit -qm "TEI-1: telemetry: add metrics-api eng DNS"
+  git checkout -q -b TEI-2-alerts-api-dns
+  printf 'record "alerts-api" { name = "alerts-api.eng.example.com" }\n' >> telemetry/eng/dns.tf
+  git add -A && git commit -qm "add alerts-api record"
+checks:
+  - file_exists: PR_TITLE.txt
+  - shell: "head -n 1 PR_TITLE.txt | grep -Eq '^TEI-2: [A-Z][a-z]+ '"
+  - shell: "! head -n 1 PR_TITLE.txt | grep -Eiq '^TEI-2: (telemetry|infra|feat|fix|chore):'"
+  - shell: "head -n 1 PR_TITLE.txt | grep -q 'alerts-api'"
+timeout: 300

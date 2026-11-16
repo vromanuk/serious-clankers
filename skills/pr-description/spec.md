@@ -24,13 +24,25 @@ The agent SHALL emit the PR body with these line-start labels, in this order, ea
 - **WHEN** the user asks for a PR description
 - **THEN** the body starts with `Why:` stating the sites were not whitelisted, then `How:` stating the IDs were added to the named config list
 
+### Behavior: Title names the change
+
+When the agent proposes a PR title, it SHALL write the ticket key (when there is one), a colon, then one sentence that starts with a verb and names what changes and for which service, table or component: `ABC-123: Add staging DNS for the orders-api`. The agent MUST NOT add a team, area or type prefix after the ticket key (`payments:`, `infra:`, `feat:`), even when older titles in the repo have one: such a prefix does not say what changes, and a reader cannot tell whether it names a team, a folder or a service.
+
+#### Scenario: DNS record in an infrastructure repo
+
+- **GIVEN** a branch that adds one DNS record under a `payments/` folder, in a repo whose older titles read `ABC-1: payments: add … DNS`
+- **WHEN** the user asks for a PR description and title
+- **THEN** the title reads `ABC-…: Add staging DNS for the <service>`, with no `payments:` prefix
+
 ### Behavior: Why before how (need + intuition first)
 
 Under `Why:` the agent SHALL state the missing contract and its consequence in the system's own names, so a reviewer new to the area understands the need:
 
 - For a feature: the value that is not available and the caller that cannot get it.
 - For a fix: what the code does or fails to guarantee, stated as the precise technical mechanism, followed by the observed impact in a sentence or two as evidence. `Why:` SHALL open with the mechanism, not with an incident narrative or a date.
+- For one step toward a larger goal (a migration, cutover or teardown): `Why:` SHALL open with one sentence naming that goal, then state what blocks it and why. Without the goal, a reviewer sees a change with no visible purpose.
 - Team shorthand SHALL be replaced with plain words or defined where first used.
+- Sentences SHALL read as natural prose: a subject doing something with an ordinary verb ("only that certificate has access to …", "the certificate is defined in the legacy chart"), not inverted or stilted constructions ("is the one granted", "X is what creates it").
 
 `Why:` MUST NOT be a file list or describe the implementation. Under `How:` the agent SHALL give the intuition for the approach first (for example, the existing pattern it extends), then the mechanism.
 
@@ -45,6 +57,12 @@ Under `Why:` the agent SHALL state the missing contract and its consequence in t
 - **GIVEN** a branch that adds a missing connect timeout after a deploy caused errors
 - **WHEN** the user asks for a PR description
 - **THEN** `Why:` opens with the missing timeout and what it makes the code do (a TCP connect blocking until the kernel stops retrying the SYN), then gives the outage briefly as evidence; it does not open with "In the <date> rollout"
+
+#### Scenario: One step of a teardown
+
+- **GIVEN** a branch that moves a certificate from a legacy app to its replacement so the legacy app can be removed later
+- **WHEN** the user asks for a PR description
+- **THEN** `Why:` opens with the teardown goal in one sentence, then explains that the replacement still depends on the legacy app for that certificate and what removing the app would break
 
 #### Scenario: Why is only a file dump
 
@@ -64,11 +82,11 @@ When the diff includes a refactor that exists only to make the change possible, 
 
 ### Behavior: How in full sentences, decisions only
 
-Under `How:` the agent SHALL open with a full sentence that names what the PR adds or changes, and SHALL write every bullet as a full sentence a reviewer understands without the diff. The agent MUST NOT use noun-phrase openers ("PRD values for …") or fragments joined by colons or semicolons. `How:` SHALL keep only the decisions a reviewer should judge; it MUST NOT repeat what code comments, values files or the ticket already carry, or list side changes (image bumps, doc or link tweaks). When the change is one step of a rollout or migration, the agent SHALL state the plan as its own bullet, including when the new component starts being used, and MUST NOT describe it as unused if a later step uses it.
+Under `How:` the agent SHALL open with a full sentence that names what the PR adds or changes, and SHALL write every bullet as a full sentence a reviewer understands without the diff. The agent MUST NOT use noun-phrase openers ("Production values for …") or fragments joined by colons or semicolons. `How:` SHALL keep only the decisions a reviewer should judge; it MUST NOT repeat what code comments, values files or the ticket already carry, or list side changes (image bumps, doc or link tweaks). When the change is one step of a rollout or migration, the agent SHALL state the plan as its own bullet, including when the new component starts being used, and MUST NOT describe it as unused if a later step uses it.
 
 #### Scenario: Deploy step of a migration
 
-- **GIVEN** a config-only branch that deploys a new relay to PRD next to the legacy one, plus an image bump and a doc update
+- **GIVEN** a config-only branch that deploys a new service to production next to the legacy one, plus an image bump and a doc update
 - **WHEN** the user asks for a PR description
 - **THEN** `How:` opens with "Adds helm values for … in …", has a bullet for the migration plan (who uses the new bucket first, when the rest move), states sizing as a full sentence with its reason, and does not list the image bump or the doc update
 
@@ -94,9 +112,9 @@ The agent SHALL keep `Testing:` short: which tests cover the change and where it
 
 #### Scenario: Config-only deploy PR
 
-- **GIVEN** a branch that only adds helm values for code merged earlier and verified in eng
+- **GIVEN** a branch that only adds helm values for code merged earlier and verified in staging
 - **WHEN** writing the PR description
-- **THEN** `Testing:` is one sentence: covered by unit tests and verified in eng, with the ticket link; no helm output or check lists
+- **THEN** `Testing:` is one sentence: covered by unit tests and verified in staging, with the ticket link; no helm output or check lists
 
 ### Behavior: Diff-grounded accuracy
 

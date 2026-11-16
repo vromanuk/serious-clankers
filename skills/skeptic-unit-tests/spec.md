@@ -14,7 +14,7 @@ Stage 5 of skeptic: always judge **unit-test craft** on the scoped change (uncha
 
 ### Behavior: Always run unit-test craft
 
-The agent SHALL apply the unit-tests skill checklist to new/changed tests and to production changes that need unit coverage. The agent SHALL flag brittle, helper-hidden, private-API, or interaction-only unit tests with path:line evidence. When no tests and no new pure behavior are in scope, the agent SHALL report `none` (or `unit-tests: ok`) with a one-line reason rather than omitting the stage.
+The agent SHALL apply the unit-tests skill checklist to new/changed tests and to production changes that need unit coverage. The agent SHALL flag brittle, helper-hidden, private-API, or interaction-only unit tests with path:line evidence. When no tests and no new pure behavior are in scope, the agent SHALL report `none` (or `unit-tests: ok`) with a one-line reason rather than omitting the stage. The agent SHALL flag a new error variant that callers act on with no test that produces it through the public API, and assertions on non-obvious conditions with no message showing the actual value.
 
 #### Scenario: Brittle private helper test
 
@@ -33,6 +33,12 @@ The agent SHALL apply the unit-tests skill checklist to new/changed tests and to
 - **GIVEN** thinking-code decision logic added with no unit test on the public contract
 - **WHEN** reviewing unit tests
 - **THEN** the agent flags the coverage gap (and may note `HR-new-behavior-no-test` for hard-rules)
+
+#### Scenario: Retryable error variant never produced in a test
+
+- **GIVEN** a diff that adds `SnapshotError::Timeout`, which callers retry, and tests only the success path
+- **WHEN** reviewing unit tests
+- **THEN** the agent flags the missing test that makes the upload time out through the public API and asserts the `Timeout` variant (not its message text)
 
 ## Constraints
 

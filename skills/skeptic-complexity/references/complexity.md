@@ -252,6 +252,34 @@ outcome
 
 **Limits:** a one- or two-line snippet may not be worth a function; a snippet that touches many locals needs a complex signature, which removes most of the benefit.
 
+**Code that only looks the same.** Repetition means the same *decision* in several places. Two snippets that look
+alike but encode different decisions are not repetition: each will change for its own reason. Merging them needs a
+parameter that picks which decision runs — usually a `bool` — and the shared function then holds both decisions,
+so a change to one risks the other (Apollo *Rust Best Practices* § 1.8; Sandi Metz: "duplication is far cheaper than
+the wrong abstraction").
+
+```rust
+// Worse: two formats merged because the lines looked alike; every change to one format edits both
+fn write_entry(out: &mut String, key: &str, value: &str, quoted: bool) {
+    if quoted { writeln!(out, "{key}=\"{value}\"").unwrap() } else { writeln!(out, "{key} = {value}").unwrap() }
+}
+write_entry(&mut env_file, "PORT", "8080", true);
+write_entry(&mut toml_file, "port", "8080", false);
+
+// Better: each format keeps its own line; they change independently
+writeln!(env_file, "PORT=\"8080\"")?;
+writeln!(toml_file, "port = 8080")?;
+```
+
+Extract only when the snippets make the **same decision** (one `is_retryable(status)` used in five places), the name
+adds meaning, and the signature stays small with no flag. When a mode parameter is truly needed, a two-variant enum
+reads better at the call site than `true` / `false` — but if the two modes share almost no code, split the function
+instead. To undo a wrong merge: inline the shared function back into each caller, simplify each copy, then see what
+they really share.
+
+**In a diff:** a new `bool` (or a mode enum) parameter added so two callers can share a function whose two branches
+share little; clippy `fn_params_excessive_bools` catches the many-bools case.
+
 ### 3.7 Special-General Mixture
 
 A general mechanism contains code for one particular use. The mechanism gets harder, and every change to that use now touches the mechanism. Over-specialization is one of the largest sources of complexity.
@@ -613,7 +641,7 @@ For each new or changed unit:
 4. **Common case:** can the common use be written without learning rare options? Could the module derive a required value or setting itself?
 5. **General vs special:** does a general mechanism contain one caller's special case? Do special-case `if`s appear where an empty or default value would do?
 6. **Errors:** for each new error: can the operation be redefined so it disappears, handled lower down, handled with many others in one place, or should it abort? Is anything swallowed that callers need? Is a bug returned as an error variant, or an operating error turned into a panic? Does the error type have one variant per caller action, or one per underlying cause?
-7. **Split / join:** can each piece be read alone? Was something split for length only? Is code repeated?
+7. **Split / join:** can each piece be read alone? Was something split for length only? Is code repeated? Was code that only looks the same merged behind a `bool` or mode parameter (§ 3.6)?
 8. **Signals:** is a name hard to pick, or a complete doc long? Treat it as a design problem.
 9. **Obvious:** tuples with meaning, hidden side effects, callbacks with no "when called"?
 10. **Change shape:** was the change bolted on (special case, flag, extra dependency) where fitting it in was cheap? For a new interface, was a different design considered?

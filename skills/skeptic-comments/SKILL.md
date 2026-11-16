@@ -1,6 +1,6 @@
 ---
 name: skeptic-comments
-spec_hash: b08a85561812
+spec_hash: 0060b35adabb
 description: >
   Stage 7 of skeptic: are comments clear, needed, and about why (benefit /
   design reason) — not restating the code or bare rules without explanation.
@@ -33,11 +33,12 @@ description: >
    - Public docs describe what callers see, not internal mechanisms; flag implementation detail in `///` that callers don't need (move it into the body).  
    - On the **module** (`//!`): follow `comments.md` template — **role → intuition → why → rules → entrypoints → related → flow** (skip empty parts).  
    - Inside the body (`//`): tricky **how/why** — do not copy the public blurb into the body.  
+   - Public Rust items: the contract the signature does not show goes in rustdoc sections — `# Errors` (each variant a caller acts on, and when), `# Panics` (the condition), `# Safety` (what the caller must guarantee), and a doc-test example when use is not obvious. Clippy checks they exist; this stage checks they are right (`comments.md` § Contract sections on public items).  
 4. Flag module docs that only list policies (“do X, not Y”) with no benefit or rejected alternative when that is a real design choice.  
 5. On types and functions: purpose and contracts when not obvious. On fields: special values the type doesn’t show.  
    - Settings (config fields, builder methods, public constants): what it controls, what happens at the limit, special values, relations to other limits, default — HikariCP style. Chosen numbers say **why this value**; provenance alone is not a reason. Detail and examples: `comments.md` § Settings and numbers.  
 6. **Do not state the obvious** — no comment that only repeats the next line.  
-7. TODOs: who owns it and enough context; if time-based, a clear end condition.  
+7. TODOs: who owns it and enough context (a linked issue carries both: `// TODO(ABC-123): remove after the v2 cutover`); if time-based, a clear end condition.  
 8. Design headers: purpose (+ why if a choice) + given/expected, **no type line**.  
 9. Flag: restating lines, unexplained rules, useless comments, wrong/stale comments, hard-to-read comment text.  
 10. **Renamed or changed items:** for every function or type the diff renames or whose behavior it changes, re-read its doc comment even when the diff does not touch that comment. Flag a doc that no longer describes what the item does.  

@@ -33,6 +33,12 @@ The agent SHALL flag restating and unnecessary comments, prefer *why* / benefit 
 - **WHEN** reviewing comments
 - **THEN** the agent flags it and asks for caller-visible meaning in the doc, with the internals moved into the body
 
+#### Scenario: Public fallible function without an errors section
+
+- **GIVEN** a new `pub fn write_snapshot(...) -> Result<(), SnapshotError>` whose doc says only what it writes, while `SnapshotError` has a retryable `Timeout` and a non-retryable `Rejected`
+- **WHEN** reviewing comments
+- **THEN** the agent asks for a `# Errors` section that lists both variants, when each happens, and whether retrying helps
+
 ### Behavior: Precise wording
 
 The agent SHALL flag comments that paraphrase where a standard technical term exists, that use a vague quality instead of naming the behavior, that document a safety type without the threat it stops, or that state behavior of other code without it having been checked, and SHALL suggest wording per `comments.md` § Precise wording.

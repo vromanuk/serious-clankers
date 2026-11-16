@@ -149,6 +149,12 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **WHEN** reviewing architecture
 - **THEN** the agent flags both types and offers reuse, generalize, or keep both. Keep-both is allowed only when the finding names the fact that would be a lie if they were one type. A comment that distinguishes the new struct from some other type is not that fact. A wrapper that holds the existing type plus the extra field is not this finding.
 
+#### Scenario: Borrowed argument cloned inside
+
+- **GIVEN** a new public `fn register(&mut self, device: &Device)` whose body stores `device.clone()`
+- **WHEN** reviewing type-driven boundaries
+- **THEN** the agent flags the hidden copy and suggests taking `Device` by value, so a caller that is done with it moves it and the cost shows at the call site (`rust-apis.md` § Ownership)
+
 ### Behavior: Component provided face
 
 When the diff changes a component’s provided `pub` (job-struct methods, types callers name, library crate root exports), the agent SHALL follow `references/component-api.md`: job in one sentence, sample caller for the main use case, smallest complete surface, assumptions visible at the call site, and unchanged meaning of existing `pub`. The agent SHALL report `### Component API` with `component-api: ok`, findings, or `component-api: none` and the reason. Interior composition quality is conventions; CUPID as a SOLID counterweight is SOLID. HTTP paths, status codes, and UI widgets are not this behavior. When stray exported steps would also be a layout finding, the agent SHALL report them once under `### Component API`.

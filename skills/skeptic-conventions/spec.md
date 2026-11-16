@@ -73,6 +73,22 @@ The agent SHALL flag stored values that duplicate derivable ones and checks whos
 - **WHEN** reviewing conventions
 - **THEN** the agent flags the stale check and suggests `let Some(index) = free_slots.pop() else { … }` at the point of use
 
+### Behavior: Lint baseline
+
+For Rust crates, the agent SHALL check the lint setup against `references/lint-baseline.md`: a `[lints]` baseline in `Cargo.toml` that member crates opt into, no crate-wide `#![allow(clippy::…)]` added by the diff, and local silencing written as `#[expect(…, reason = "…")]`. When a finding is one a clippy lint catches, the agent SHALL name the lint and suggest enabling it, so the check moves from review into the linter.
+
+#### Scenario: Manual early return the linter could flag
+
+- **GIVEN** a diff with three `match` blocks that only return early on `None`, in a crate whose lints do not include `manual_let_else`
+- **WHEN** reviewing conventions
+- **THEN** the agent reports one finding naming `manual_let_else` and suggests enabling it in the workspace lints, instead of three hand-written findings
+
+#### Scenario: Crate-wide allow
+
+- **GIVEN** a diff that adds `#![allow(clippy::pedantic)]` to `lib.rs`
+- **WHEN** reviewing conventions
+- **THEN** the agent flags it, because it hides every future hit, and asks for local `#[expect(…, reason = "…")]` on the items that need it
+
 ## Constraints
 
 ### Constraint: Not a linter

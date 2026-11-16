@@ -27,6 +27,12 @@ The agent SHALL load `references/complexity.md` when the diff changes code, SHAL
 - **WHEN** reviewing complexity
 - **THEN** the agent flags information leakage and suggests one module that owns the layout
 
+#### Scenario: Look-alike code merged behind a bool
+
+- **GIVEN** a diff that replaces two `writeln!` lines (one for a `.env` file, one for a TOML file) with `write_entry(out, key, value, quoted: bool)`
+- **WHEN** reviewing complexity
+- **THEN** the agent flags that the two formats are different decisions that change independently, and suggests keeping each line inline (`complexity.md` § 3.6)
+
 ### Behavior: Depth before length
 
 The agent SHALL treat length alone as no reason to split, and SHALL flag splits whose pieces can only be understood together.

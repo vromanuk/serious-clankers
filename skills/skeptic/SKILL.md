@@ -95,7 +95,16 @@ Hard-rule IDs only from stage 10 / `skeptic-hard-rules/references/hard-rules.md`
 [severity][evidence:<label[,label]> <locator>] path:line — concern. impact: <impact>. fix: <smallest change or "ask user">.
 ```
 
-Severity: `blocker` | `high` | `medium` | `low`  
+Severity: `blocker` | `high` | `medium` | `low`, by what the problem causes if it ships:
+
+| Severity | Causes | Examples |
+|---|---|---|
+| `blocker` | data loss or corruption, a crash or panic on a recoverable production path, a security hole, memory unsafety | `unwrap` on outside input in a request path; offsets committed past what was stored; `unsafe` with no stated invariant |
+| `high` | wrong behavior or a broken contract callers rely on, a missing error path, a remote call that can hang | an error swallowed that callers need; a public API whose docs and behavior disagree; no timeout on a remote call |
+| `medium` | harder to change or operate: likely performance regression, missing public docs, flaky or brittle tests, leaked design decisions | a clone of a large value in a hot loop; a public fallible function with no `# Errors`; a test of a private helper |
+| `low` | readability and style the linters do not catch | an unclear local name; a comment that restates the code |
+
+Pick by consequence, not by stage: a naming finding can be `high` when the name makes callers misuse a public API.  
 Evidence: `direct` | `spec` | `policy` | `test` | `validation` | `missing` | `inferred`  
 (`inferred` never sole label on `blocker`)
 

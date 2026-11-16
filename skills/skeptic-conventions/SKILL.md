@@ -16,6 +16,7 @@ Comments → stage **comments**. Naming → stage **naming**.
 
 1. `references/write-code.md` — composition, write for the reader  
 2. `references/rust-craft.md` — control flow and clear style samples  
+3. `references/lint-baseline.md` — lint setup, silenced lints, and which clippy lint catches a finding (Rust crates)  
 
 ## Do
 
@@ -33,7 +34,7 @@ Comments → stage **comments**. Naming → stage **naming**.
 5. **Assertions** — flag an invariant the code depends on with no assertion and no type enforcing it, compound assertions that hide which condition failed, and an expensive `assert!` on a hot path where `debug_assert!` fits. Panics on outside input are error design (→ complexity). Detail: `references/rust-craft.md` § Assertions  
 6. **Settings written out** — flag a client or consumer built on library defaults for timeouts, commit behavior, offset reset, isolation, retries, or delivery guarantees the code relies on (`rust-craft.md` § Pass settings explicitly)  
 7. **One copy of each fact** — flag a stored field that duplicates a value derivable from others (a count beside its collection) without a measured reason, and a check whose result is used after code that can change what was checked (`rust-craft.md` § One copy of each fact)  
-8. **Linters** — run the tools; don’t re-litigate their output here  
+8. **Linters** — run the tools; don’t re-litigate their output here. Then check the setup (`lint-baseline.md`): the crate has a `[lints]` baseline; the diff adds no crate-wide `#![allow(clippy::…)]`; local silencing uses `#[expect(…, reason = "…")]`. When a finding in any stage is one a clippy lint catches, name the lint and suggest enabling it instead of checking by hand next time (`lint-baseline.md` § 3)  
 
 ## Do not
 

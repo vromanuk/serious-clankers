@@ -13,7 +13,7 @@ Stage 10 of skeptic: pass/fail absolute bans only, from `references/hard-rules.m
 
 ### Behavior: Checklist only
 
-The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces, IO rules such as `HR-io-timeout` for external/remote calls and `HR-retry-backoff` for their retries, and `HR-sleep-in-tests` for sleeps and wall-clock spins in tests.
+The agent SHALL walk `references/hard-rules.md` against the diff and report only rule-id hits with locators, or `none`. That checklist includes API/interface rules (`HR-api-*`) for public surfaces, IO rules such as `HR-io-timeout` for external/remote calls and `HR-retry-backoff` for their retries, `HR-sleep-in-tests` for sleeps and wall-clock spins in tests, and `HR-silenced-lint-without-reason` for silenced lints that do not say why.
 
 #### Scenario: Private import
 
@@ -50,6 +50,12 @@ The agent SHALL walk `references/hard-rules.md` against the diff and report only
 - **GIVEN** a test sleeps, or spins until wall-clock time passes, before asserting — including a test that calls production code and waits out that code’s real sleep
 - **WHEN** reviewing hard rules
 - **THEN** the agent reports `HR-sleep-in-tests` as a blocker with path:line and the smallest fix (fake clock, or wait on the event). A comment explaining the sleep is not a fix. Production sleep outside tests is not this rule.
+
+#### Scenario: Lint silenced with no reason
+
+- **GIVEN** a diff that adds `#[allow(clippy::too_many_arguments)]` above a public function, with no `reason` and no comment
+- **WHEN** reviewing hard rules
+- **THEN** the agent reports `HR-silenced-lint-without-reason` with path:line and the fix: `#[expect(…, reason = "…")]`, or change the function
 
 ### Behavior: No invented IDs
 

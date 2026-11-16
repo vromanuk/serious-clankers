@@ -95,13 +95,19 @@ The agent SHALL run stages 1→10 in the current session without spawning subage
 
 ### Behavior: Evidence-backed coordination
 
-The agent SHALL accept only evidence-backed, stage-appropriate findings, reject preference-only or evidence-free concerns, and merge into one report using the skeptic concern format.
+The agent SHALL accept only evidence-backed, stage-appropriate findings, reject preference-only or evidence-free concerns, and merge into one report using the skeptic concern format. The agent SHALL set each finding's severity by what the problem causes if it ships, using the severity table in `SKILL.md` (blocker: data loss, a crash on a recoverable production path, a security hole; high: wrong behavior or a broken contract; medium: harder to change or operate; low: readability), not by which stage found it.
 
 #### Scenario: Mixed weak and strong findings
 
 - **GIVEN** stage reports include one vague taste nit and one path:line contract bug
 - **WHEN** coordinating
 - **THEN** the agent drops or demotes the taste nit and keeps the contract bug with severity and evidence labels
+
+#### Scenario: Panic on outside input in a request path
+
+- **GIVEN** a request handler that calls `unwrap()` on a value parsed from the request body
+- **WHEN** coordinating
+- **THEN** the agent rates the finding `blocker` (a crash on a recoverable production path), even though complexity found it
 
 ### Behavior: Read-only unless asked
 

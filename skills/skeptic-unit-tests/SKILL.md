@@ -36,8 +36,9 @@ This stage **always runs** in the skeptic pipeline. It is not optional depth und
    - tests that sleep or poll because the code under test spawns work they cannot wait for — the fix is in the production API (guide §7.3)  
    - a trait added only as a test seam that no code is generic over (concrete abstraction, guide §7.5)  
 3. Flag **missing** unit coverage when thinking-code / pure contracts gained behavior and no public-API unit test was added (overlap with testability — report craft + gap here; pure-vs-shell placement stays stage 4).  
-4. When tests are in scope: `unit-tests: ok` (one line) or findings.  
-5. When **no** test files and **no** new pure behavior in the diff: `none` with one-line why (still run the stage — do not skip silently).  
+4. **Error paths:** flag a new error variant that callers act on (retry, reject, fall back) with no test that produces it through the public API. Assert the variant, not the message text, when the type allows it (`assert!(matches!(…))` or `assert_matches!` on toolchains that have it); assert the message only when the message is the contract. Flag `assert!` / `assert!(matches!(…))` on a non-obvious condition with no message showing the actual value — a failure should be readable without a rerun under a debugger. (Apollo *Rust Best Practices*, chapters 4 and 5.)  
+5. When tests are in scope: `unit-tests: ok` (one line) or findings.  
+6. When **no** test files and **no** new pure behavior in the diff: `none` with one-line why (still run the stage — do not skip silently).  
 
 ## Do not
 

@@ -237,6 +237,34 @@ fn window(...) -> Window { ... }
 Design headers (purpose + given/expected, no type line): `design-headers.md`.  
 Purpose line should not be only a synonym of the function name — include the **problem it solves** or the **non-obvious constraint** when one exists.
 
+### Contract sections on public items (Rust)
+
+A caller reads the `///` to decide how to call and what to handle, without opening the body. The parts of the
+contract the signature does not show go in rustdoc's standard sections, so tools and readers find them in the same
+place every time (Apollo's *Rust Best Practices*, chapter 8; [Rust API Guidelines C-FAILURE](https://rust-lang.github.io/api-guidelines/documentation.html#function-docs-include-error-panic-and-safety-considerations-c-failure)):
+
+| Section | On | Says |
+|---|---|---|
+| `# Errors` | a public function that returns `Result` | which errors come back, and when; one line per variant a caller acts on |
+| `# Panics` | a public function that can panic | the condition, so the caller can avoid it |
+| `# Safety` | a public `unsafe fn` or `unsafe trait` | what the caller must guarantee |
+| `# Examples` | a public type or function whose use is not obvious from the signature | a short doc test that compiles and runs (`cargo test --doc`; `cargo nextest` does not run doc tests) |
+
+```rust
+/// Writes one snapshot of `partition` to the bucket under `key`.
+///
+/// # Errors
+///
+/// - [`SnapshotError::Timeout`] when no response arrives within the client's request timeout;
+///   nothing was stored, and the caller may retry with the same key.
+/// - [`SnapshotError::Rejected`] when the bucket refuses the write (permissions, quota); retrying does not help.
+pub async fn write_snapshot(&self, partition: Partition, key: &SnapshotKey) -> Result<(), SnapshotError> { … }
+```
+
+Clippy checks that the sections exist (`missing_errors_doc`, `missing_panics_doc`, `missing_safety_doc`;
+`skeptic-conventions/references/lint-baseline.md`). This stage checks that they are **right**: every variant a
+caller acts on is listed, the panic condition is real, the example runs.
+
 ---
 
 ## Body comments (`//`) — why this branch
@@ -389,6 +417,7 @@ Prefer a short block that changes how you **call or change** the code (caller ob
 7. Short *what* only for regex/hard math when needed?  
 8. Settings and chosen numbers: what it controls, what happens at the limit, special values, relations, default; why this value (§ Settings and numbers)?  
 9. Precise wording: standard technical terms, actual behavior instead of vague qualities, the operation's verb instead of a person's, threat stated for safety types, subject first, claims about other code checked (§ Precise wording)?  
+10. Public Rust items: `# Errors` lists the variants a caller acts on and when each happens; `# Panics` states the condition; `# Safety` states what the caller must guarantee; examples run as doc tests (§ Contract sections on public items)?  
 
 ### Flag
 
@@ -401,6 +430,7 @@ Prefer a short block that changes how you **call or change** the code (caller ob
 - Hard-to-read comment text  
 - Setting doc that tells the incident instead of the behavior, or leaves out what happens at the limit  
 - Chosen number with no reason, or provenance only  
+- Public fallible function with no `# Errors`, or one that lists errors the function cannot return; public function that can panic with no `# Panics`; public `unsafe fn` with no `# Safety`  
 - Paraphrase where a standard term exists; vague quality (“locked-down”, “safe”) instead of the behavior; a person's verb for a system (“answers questions”, “lets you”); safety type with no threat; claim about another library that was not checked  
 
 Not a flag: short ownership, special values, concurrency, decision rationale, brief *what* on hard algorithms when it helps; tiny modules whose name already is the whole story; well-known protocol numbers (port 443); arbitrary test literals.

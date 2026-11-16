@@ -24,5 +24,6 @@
 !/skills/skeptic-testability/
 !/skills/skeptic-unit-tests/
 !/skills/unit-tests/
+!/skills/walk-through-behavior/
 
 __pycache__/

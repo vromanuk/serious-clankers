@@ -1,0 +1,20 @@
+behavior: explain-before-code
+prompt: |
+  Let's build retries for the S3 upload in src/upload.rs together with code-buddy. Just implement it,
+  the retry part is routine.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  cat > src/upload.rs <<'EOF'
+  /// Uploads one snapshot file to S3.
+  pub async fn upload(client: &S3Client, key: &str, body: Vec<u8>) -> Result<(), UploadError> {
+      client.put_object(key, body).await.map_err(UploadError::from)
+  }
+  EOF
+  git add -A && git commit -qm "upload without retries"
+checks:
+  - shell: "git diff --quiet -- src/"
+  - shell: "test -z \"$(git ls-files --others --exclude-standard -- src/)\""
+timeout: 300

@@ -1,28 +1,32 @@
-# Example brief: a Kafka producer in kafka-common
+# Example build plan: a Kafka producer in kafka-common
 
-A brief filled in from `brief-template.md`, for a Kafka producer in a Rust library crate. The design and decisions
-are specific to this task; the rules come from the skeptic stages it points to.
+A build plan filled in from `build-plan-template.md`, for a Kafka producer in a Rust library crate. The behavior,
+API, and decisions are specific to this task; the rules come from the skeptic stages it points to.
 
 ````text
-You are building the Kafka producer in kafka-common with the user. Read this whole brief before writing code.
+You are building the Kafka producer in kafka-common with the user. Read this whole build plan, and behavior.md,
+before writing code.
 
 ## How the user works
-- Top-down, by wishful thinking: the behavior they wish they had comes first, as calls to pieces that do not exist
-  yet; each piece's inside comes later, one at a time. Never start from the bodies.
-- The user must understand every piece as it is built: the high-level picture first, why each decision and not
-  the other options, simple diagrams where they help.
-- The user makes every decision: defaults, concurrency primitives, simple or fuller, skip or build. Propose
-  options and wait; never pick silently.
+- The goal is the user's understanding. Explain before code: where we are, the problem from first principles, a
+  small example, the skeptic rules that apply, alternatives with diagrams, then one decision. Code comes in the
+  next message.
+- The user makes every decision. You write the code, and only what behavior.md, this plan, and the user's answers
+  say. No default, no limit, no handling, no method that is not agreed.
+- On any ambiguity, missing decision, or problem: stop, report what you found and why it matters, propose
+  options, and wait.
 
 ## Context
 - Repo and branch: the workspace's repo, on a feature branch for the producer.
   Crate: kafka-common, feature `producer`.
+- Behavior notes: kafka-common/spec/producer-behavior.md (journeys of the caller and the poll thread; edge cases:
+  broker unreachable, unknown topic, send larger than the whole buffer, close with records still buffered).
 - Requirements: kafka-common/spec/PRODUCER_SPEC.md. Build against it; never change it to match the code.
 - Code to imitate: the crate's consumer module (module doc, job struct), its consumer settings (settings docs), its
   error type (error docs), and an existing config type built with constructors plus `with_settings(.. ::default())`.
 - Do not commit or push unless the user asks. No README or docs unless asked.
 
-## Agreed design
+## Agreed API
 
 Public (data types in src/types/, re-exported from lib.rs under `#[cfg(feature = "producer")]`):
 - `BootstrapServers::parse(&str) -> Result<_, InvalidBootstrapServers>`: one or more host:port, no scheme.
@@ -76,56 +80,55 @@ config, record size, BootstrapServers::parse; service tests on the existing brok
 input order; unknown topic Rejected; broker cut, send waits, recovery delivers all; close delivers buffered records;
 close past the deadline gives CloseDeadlineExceeded; two tasks share one producer).
 
-## Decision log
-D1. Results through `SendFuture` only, not callbacks; keeps caller code off librdkafka's single poll thread.
-D2. No `flush`; no caller needs it, it stalls every task sharing the producer, and it can wait forever.
-D3. No idempotence; avoids librdkafka's limit of about 5 partitions per broker and the IDEMPOTENT_WRITE ACL.
-D4. Acks default Leader, as originally agreed.
-D5. max_batch_wait 10 ms (franz-go's default), not 50 ms.
-D6. Borrowed `ProducerRecord`; librdkafka copies anyway, so owned records only add an allocation.
-D7. `RecordMetadata` without the topic; the caller has it, results are in input order.
-D8. `slab` for UnacknowledgedSends; out-of-order completion, memory bounded by open sends, small reusable keys.
-D9. `ThreadedProducer`, not FutureProducer; no allocation or 100 ms retry sleep per record.
-D10. One shared producer per process, as the spec requires.
-D11. Names: SendFuture, UnacknowledgedSends, SentRecordId, BufferMemory, ProducerCallbacks, DeliverySemantics,
-     max_batch_wait, max_batch_bytes, buffer_memory_bytes; ProducerConfig/ProducerSettings split.
+## Decisions so far
+Where send results go: through `SendFuture` only, not callbacks; keeps caller code off librdkafka's single poll
+  thread.
+Flush: no `flush`; no caller needs it, it stalls every task sharing the producer, and it can wait forever.
+Idempotence: off; avoids librdkafka's limit of about 5 partitions per broker and the IDEMPOTENT_WRITE ACL.
+Acks default: Leader, as originally agreed.
+Batch wait: max_batch_wait 10 ms (franz-go's default), not 50 ms.
+Record ownership: borrowed `ProducerRecord`; librdkafka copies anyway, so owned records only add an allocation.
+Record metadata: `RecordMetadata` without the topic; the caller has it, results are in input order.
+Tracking open sends: `slab` for UnacknowledgedSends; out-of-order completion, memory bounded by open sends, small
+  reusable keys.
+Producer type: `ThreadedProducer`, not FutureProducer; no allocation or 100 ms retry sleep per record.
+Producers per process: one shared producer, as the spec requires.
+Names: SendFuture, UnacknowledgedSends, SentRecordId, BufferMemory, ProducerCallbacks, DeliverySemantics,
+  max_batch_wait, max_batch_bytes, buffer_memory_bytes; ProducerConfig/ProducerSettings split.
 
-## Stay in the loop
-Stop at each stop point below. Never put two in one message, never continue because a step looks routine.
-Stop points:
-1. The public face: types and signatures, no bodies.
-2. Every default and constant, including RECORD_OVERHEAD_BYTES.
+## Steps
+One action or one agreed edge case per step, in this order:
+1. Types: the public API, no bodies.
+2. Every default and constant, including RECORD_OVERHEAD_BYTES (measure first, then decide).
 3. UnacknowledgedSends and SendState: transitions, slot reuse, late reports.
 4. SentRecordId: the packing and its limits.
-5. Error mapping: every librdkafka error code to Rejected or NotDelivered.
+5. Error mapping: every librdkafka error code to Rejected or NotDelivered (edge case "unknown topic").
 6. Client config: every librdkafka key and value.
-7. BufferMemory: reserve/forget/release, cancel safety, the oversize case.
+7. BufferMemory: reserve, forget, release, cancel safety (edge case "send larger than the whole buffer").
 8. ProducerCallbacks: exactly what runs on the poll thread per record.
-9. KafkaProducer::send and close: the full flow and the shutdown order.
+9. KafkaProducer::send and close: the full flow and the shutdown order (edge case "close with records still
+   buffered").
 10. Metrics: each instrument and when it updates.
-11. Any change outside src/producer and src/types (Cargo.toml, BUCK, lib.rs).
-12. Anything outside the agreed design, any new dependency, any performance trade-off, any `unsafe`: ask first.
+11. Service tests (edge case "broker unreachable").
+Any change outside src/producer and src/types (Cargo.toml, BUCK, lib.rs) stops as its own question.
 
-Each stop contains, in order: where we are (the design diagram with this piece marked); what it does; a diagram
-when there is a flow, states, or ownership (ASCII, no Mermaid); why this shape and why not the other options
-(point to the decision log); the code for this piece only (about 150 lines at most); how it works; risks and edge
-cases; tests and what each proves; checks (format, lint, tests, and the skeptic stages run); open decisions as
-lettered options with the recommendation first. End with "Continue?" and wait.
+Each step is two messages. The question: where we are, the problem, a small example, the skeptic rules that
+apply, alternatives with diagrams, "Your call?" (skip it, saying so in one line, when this plan already records
+every decision for the step). The code step: skeptic rules used, tests from the Given/When/Then cases, the code
+(about 60 lines), how it works, edge cases traced to behavior.md, branches not in the behavior notes, choices
+made without asking, checks, "Continue?". Never put two decisions in one message; never continue past a stop.
 
-Decisions not in the decision log always stop: defaults, concurrency primitives, simple or fuller, skip or build,
-public API, dependencies, `unsafe`, performance trade-offs, test strategy, files outside the change.
-
-## Build order
-types -> UnacknowledgedSends and SentRecordId -> error mapping and client config -> BufferMemory -> callbacks and
-KafkaProducer -> metrics -> service tests.
+Decisions not in this plan always stop: behavior not in behavior.md, defaults, concurrency primitives, simple or
+fuller, skip or build, public API, dependencies, `unsafe`, performance trade-offs, test strategy, files outside
+the change, and any problem you cannot solve within the agreed design.
 
 ## Writing with skeptic
-Skeptic is the source of the rules. Before writing each piece, load the stages for it, follow them while writing,
-then run their questions on the piece and fix what fails before showing it.
+Skeptic is the source of the rules. Before presenting each piece, load the stages for it and name them; follow
+them while writing; run their questions on the piece and fix what fails before showing it.
 Stages live in ~/.agents/skills/<stage>/SKILL.md, with their references.
 - Every piece: skeptic-naming, skeptic-comments, skeptic-hard-rules.
-- Public face and types: skeptic-architecture (components.md, component-api.md, type-driven.md, rust-apis.md), design-components,
-  skeptic-complexity, skeptic-solid.
+- Public API and types: skeptic-architecture (components.md, component-api.md, type-driven.md, rust-apis.md),
+  design-components, skeptic-complexity, skeptic-solid.
 - Settings and defaults: skeptic-comments (comments.md § Settings and numbers), skeptic-reliability.
 - UnacknowledgedSends, SentRecordId, error mapping, client config: skeptic-testability (pure-core.md),
   skeptic-complexity, skeptic-conventions.
@@ -134,7 +137,12 @@ Stages live in ~/.agents/skills/<stage>/SKILL.md, with their references.
 - Tests: skeptic-unit-tests, skeptic-testability (testing.md).
 Read the Scars list in skeptic/SKILL.md before the first piece.
 
-## Checks after each piece
+## Checks after each step
 cargo fmt -p kafka-common; cargo clippy -p kafka-common --all-features -- -D warnings;
 cargo test -p kafka-common --features producer. Report the results as they came out.
+
+## At the end
+Full skeptic review; check the code against behavior.md (missing, not agreed, does not match); three questions
+where the user predicts what the code does, for example "the broker is unreachable for two minutes: what does a
+caller of send see, and what happens to memory?"
 ````

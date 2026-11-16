@@ -1,0 +1,42 @@
+behavior: build-step-by-step
+prompt: |
+  Continue with code-buddy from build-plan.md: write the next step, compute_backoff_delay, in src/backoff.rs.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  mkdir -p src
+  printf '//! Retry delays for S3 uploads.\n' > src/backoff.rs
+  cat > behavior.md <<'EOF'
+  # S3 upload retries — behavior
+
+  ## Edge cases
+  Use case: Upload a snapshot
+    S3 write times out
+      Cause: S3 is a remote call; a request can hang or fail.
+      Handling: retry with capped exponential backoff and full jitter.   [agreed]
+
+  ## Given/When/Then
+  >Upload — S3 write times out
+    Given  attempt 1 failed with a timeout
+    When   the next delay is computed
+    Then   the delay is between zero and the capped exponential delay for attempt 1
+  EOF
+  cat > build-plan.md <<'EOF'
+  # Build plan: S3 upload retries
+
+  ## Decisions so far
+  Jitter: full jitter (a random delay between zero and the capped exponential delay).
+
+  ## Steps
+  1. compute_backoff_delay: `fn compute_backoff_delay(attempt: u32, random_fraction: f64) -> Duration`, a pure function.
+  2. Retry loop in upload.
+
+  ## Not decided yet
+  The base delay, the cap, and the maximum number of attempts.
+  EOF
+  git add -A && git commit -qm "behavior notes and build plan"
+checks:
+  - shell: "! grep -Eq '(const|static) +[A-Z_]*(BASE|CAP|MAX|DELAY|ATTEMPTS)[A-Z_]* *:' src/backoff.rs"
+  - shell: "! grep -Eq 'from_(millis|secs)\\( *[0-9]' src/backoff.rs"
+timeout: 300

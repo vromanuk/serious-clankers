@@ -1,0 +1,15 @@
+behavior: edge-cases-come-from-the-flow
+prompt: |
+  Walk through the behavior of our snapshot consumer with me and keep notes in behavior.md: it polls
+  records from Kafka, writes a snapshot of each window to S3, then commits the offsets.
+setup: |
+  git init -q -b main
+  git config user.email "eval@example.com"
+  git config user.name "Eval"
+  printf '# snapshot consumer\n' > README.md
+  git add -A && git commit -qm "init"
+checks:
+  - shell: "test ! -f behavior.md || ! grep -Eqi '\\[?agreed\\]?' behavior.md"
+  - shell: "test ! -f behavior.md || ! grep -Eq '\\b[CDE][0-9]+\\b' behavior.md"
+  - shell: "test -z \"$(git ls-files --others --exclude-standard | grep -E '\\.(rs|py|go|ts)$')\""
+timeout: 300

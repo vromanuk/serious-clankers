@@ -2,101 +2,104 @@
 
 ## Intent
 
-Write code together with the user, not for them. Three things about how the user works shape everything here:
+Write code together with the user so that the user's understanding grows; the code is the way there, not the goal. A piece is done when the user can explain what it does, predict how it behaves in an edge case, and say why the other options lost.
 
-- **Top-down, by wishful thinking.** The user designs from the top: the behavior they wish they had comes first, written as calls to pieces that do not exist yet, and each piece's inside comes later, one at a time. The agent works the same way and never starts from the bodies.
-- **Understanding the code.** The user must understand every piece of the code they are writing, not receive it at the end. The agent builds a high-level picture first (where the piece sits and how the parts fit), then explains each piece as it is built: what it does, why this decision and not the other options, what can go wrong. It draws simple diagrams wherever a flow, a state machine, or ownership is easier to see than to read.
-- **In the loop of every decision.** The user makes the decisions: a default value or not, a mutex or a channel, a simple or a fuller solution, skip something or build it. The agent proposes options and waits; it never picks silently.
+- **Explain before code.** Every decision is explained from first principles (what must be true, which constraint forces it, what breaks without it), with a small example, real alternatives, and plain-text diagrams of flows, states, and ownership. Code comes only after the user decides.
+- **Skeptic first.** Before presenting an API, a design option, or code, the agent loads the skeptic stages for that kind of piece and names the rules used, so the user sees which conventions shaped it. Skeptic stays the only source of the rules.
+- **The user is in charge of every decision.** The agent writes the code, and only what the agreed behavior, API, and build plan say. It adds no default, limit, handling, or method the user has not agreed. On any ambiguity or problem it stops, reports, proposes options, and waits.
 
-So the agent designs from the top, settles every choice with the user, turns the agreed design into an implementation brief, and builds in small explained steps that each wait for the user. It writes to the skeptic rules from the first line, so the review afterwards finds little to fix.
+Six stages: agree on the need, walk through the behavior (`walk-through-behavior`), design the API, plan the build, build step by step, review and check understanding.
 
 ## Triggers
 
-- **SHOULD** apply when the user asks to build or implement a feature or component together, to stay in the loop, to pair, or to get an implementation prompt or brief.
+- **SHOULD** apply when the user asks to build or implement a feature or component together, to stay in the loop, to pair, or to get an implementation plan.
 - **SHOULD** apply when non-trivial code is about to be written and the user wants to understand it and make the decisions.
 - **SHOULD NOT** apply to a one-line fix, a rename, formatting, or when the user asks for code without taking part.
 - **SHOULD NOT** replace skeptic for reviewing code that already exists.
 
 ## Behaviors
 
-### Behavior: Design from the top
+### Behavior: Agree on the need
 
-The agent SHALL restate the real need, the scope, and what is out of scope. It SHALL write the public face first, as calls to pieces that do not exist yet: what goes in, what comes back, what a caller can see, with signatures and no bodies. It SHALL list every choice a caller would notice as a numbered decision with lettered options, the recommended option first, each with what it is, its pros, its cons, what it gains, and when it is worse. It SHALL NOT pick such a choice silently. Before any code, it SHALL run the skeptic stages on the design and settle their findings with the user.
+The agent SHALL restate the real need in one sentence, the scope, what is out of scope, and who uses it, answering from the code where it can and asking the user one question per message where it cannot. It SHALL write no code in stages 1 to 4, and SHALL offer plan mode for them when the tool has one.
 
-#### Scenario: A default value is undecided
+#### Scenario: The code answers the question
 
-- **WHEN** the design needs a default buffer size and the user has not chosen one
-- **THEN** the agent lists it as a decision with options and the reason for each value, and waits for the user's choice
+- **WHEN** the scope depends on whether the crate already has a retry helper
+- **THEN** the agent reads the crate and states what it found instead of asking the user
 
-#### Scenario: The design breaks a skeptic rule
+### Behavior: Walk through the behavior
 
-- **WHEN** the skeptic pass on the design finds settings that allow combinations that make no sense
-- **THEN** the agent shows the finding and a fix, such as one enum per valid combination, and changes the design only after the user agrees
+The agent SHALL run `walk-through-behavior` before designing the API, and SHALL build the API, the tests, and the edge-case handling only from the agreed `behavior.md`.
 
-### Behavior: Write the brief
+#### Scenario: The user asks for the API first
 
-The agent SHALL turn the agreed design into an implementation brief from `references/brief-template.md`: how the user works, context, agreed design, decision log, stop points, what each stop contains, build order, and which skeptic stages to load for each piece. The brief SHALL point to the skeptic stages by path and SHALL NOT copy their rules. It SHALL show the brief in chat, and SHALL also save it to a file when the user asks or the work spans more than one session.
+- **WHEN** the user asks to see the struct before the walk-through
+- **THEN** the agent says the API is derived from the behavior notes and asks whether to skip the walk-through, and follows the user's answer
 
-#### Scenario: Work spans sessions
+### Behavior: Design the API with skeptic first
 
-- **WHEN** the user says the implementation continues tomorrow
-- **THEN** the agent saves the brief to the file the user names, so a new session starts from it
+Before presenting the API, the agent SHALL load the skeptic stages that `references/writing-with-skeptic.md` maps to the public API and list them under the skeptic rules that apply. It SHALL derive methods from actions, result types from events, and queries from reads in `behavior.md`, write signatures without bodies, and present each choice a caller would notice as its own decision, one per message.
 
-### Behavior: Build in explained steps
+#### Scenario: A method nobody needs
 
-The agent SHALL build in the brief's order and stop at each stop point and each decision trigger in `references/decision-triggers.md`. Each stop SHALL contain what `references/explanation-format.md` lists: what the piece does, a diagram when there is a flow or states, the code for that piece only, why this shape and what lost, the risks, the tests, open questions, and the check results. Explanations SHALL be simple, technical, and literal, as the Language section of `references/explanation-format.md` describes: literal verbs instead of figures of speech, what a thing is before its library name, the code's own names, and why for each unusual step. Each stop SHALL end with "Continue?". The agent SHALL NOT go further until the user answers. When the user asks a question, the agent answers and stops again. When the user asks for a change, the agent makes it, shows the diff and the reason, and stops again.
+- **WHEN** the agent considers adding a `flush` method that no action in `behavior.md` calls for
+- **THEN** it presents adding it as a decision with options and does not add it unless the user agrees
 
-#### Scenario: Two critical pieces are ready
+### Behavior: Explain before code
 
-- **WHEN** the state machine and the configuration mapping are both written
-- **THEN** the agent shows the state machine, ends with "Continue?", and shows the configuration mapping only after the user answers
+For each step of the build, the agent SHALL first send the question: where we are, the problem from first principles, a small example, the skeptic rules that apply, two or three alternatives with a diagram each when their shapes differ (each saying which skeptic rule it meets or breaks), and one decision, ending with "Your call?". It SHALL send the code only in the next message, after the user decides. It SHALL follow `../explain-diff/references/shape.md` for first principles, examples, and alternatives, and use plain technical words and plain names, never codes such as C1 or D4.
 
-#### Scenario: A library term needs explaining
+#### Scenario: A concurrency choice
 
-- **WHEN** a stop relies on a library feature the user may not know, such as a number attached to each record that the library returns with its result
-- **THEN** the agent first says what that number is and what the code stores in it and why, in plain sentences, and only then gives the library's name for it
+- **WHEN** the step needs a way to make sends wait for buffer room
+- **THEN** the agent explains why memory must be bounded, shows a small example with byte counts, names the skeptic-async and skeptic-complexity rules that apply, compares a semaphore with a mutex and notify with a diagram each, and stops with "Your call?" before writing any code
 
-#### Scenario: A choice comes up during the build
+#### Scenario: Every decision for the step is already recorded
 
-- **WHEN** the agent has to pick between a mutex and a channel that the brief does not decide
-- **THEN** it stops, presents both as lettered options with their trade-offs, and continues only with the user's choice
+- **WHEN** the build plan already records every decision for a step
+- **THEN** the agent says so in one line and sends the code step directly
 
-### Behavior: Write with skeptic
+### Behavior: Build step by step
 
-Before writing a piece, the agent SHALL load the skeptic stages that `references/writing-with-skeptic.md` maps to that kind of piece, and SHALL follow them while writing. Before showing the piece, it SHALL run those stages' questions on it, fix what fails, and report what it ran under Checks. The agent SHALL NOT copy skeptic's rules into this skill: skeptic stays the only source, so its rules cannot drift apart.
+The code step SHALL contain the skeptic rules used, tests from the agreed Given/When/Then cases, the code for that piece only (about 60 lines), how it works, the edge cases handled with the line in `behavior.md` each comes from, the branches in decision code with no matching case or decision, the choices made without asking, and the check results, ending with "Continue?". The agent SHALL NOT go further until the user answers.
 
-#### Scenario: A helper only renames a loop
+#### Scenario: A branch the behavior notes do not cover
 
-- **WHEN** the agent is about to add a private function that only wraps one loop used once
-- **THEN** the conventions stage it loaded says to inline it, and it writes the loop inline before the code is shown
+- **WHEN** the code needs a branch for a send that arrives after `close` started, and `behavior.md` has no such case
+- **THEN** the agent stops before writing it, proposes the case with cause and handling, and writes it only after the user agrees
 
-#### Scenario: A default is being written
+#### Scenario: A check fails
 
-- **WHEN** the piece adds a default value
-- **THEN** the agent has loaded skeptic-comments' guidance on settings and numbers, documents the value with its reason, and presents the value itself as a decision
+- **WHEN** clippy fails in a way that can only be fixed by changing an agreed signature
+- **THEN** the agent reports the failure and why it needs a design change, proposes options, and waits
 
-### Behavior: Close
+### Behavior: Review and check understanding
 
-When the build is done, the agent SHALL run the skeptic stages on the change. For each finding, it SHALL say whether a stage was not loaded or not run for that kind of piece, and propose a fix to the map in `references/writing-with-skeptic.md`, or whether the stage has no rule for it, and propose a change to that skeptic stage. It SHALL change either only when the user agrees.
+When the build is done, the agent SHALL run the full skeptic review, check the code against `behavior.md` for what is missing, not agreed, or does not match, and ask three questions where the user predicts what the code does, taken from the behavior notes. For each review finding, it SHALL say whether a stage was not loaded for that kind of piece, and propose a fix to the map in `references/writing-with-skeptic.md`, or whether the stage has no rule for it, and propose a change to that stage. It SHALL change either only when the user agrees.
 
-#### Scenario: The review finds a missed rule
+#### Scenario: The user's prediction differs from the code
 
-- **WHEN** the closing review finds a comment that restates the code, and skeptic-comments was not run on that piece
-- **THEN** the agent fixes the comment with the user and proposes adding skeptic-comments for that kind of piece in the map
+- **WHEN** the user predicts that sends fail at once while the broker is down, and the code makes them wait
+- **THEN** the agent shows the lines that make sends wait and the edge case in `behavior.md` they come from, and asks whether the code or the behavior notes should change
 
 ## Constraints
 
-### Constraint: No silent choices
+### Constraint: No unagreed decisions
 
-The agent MUST NOT pick a default, a dependency, a concurrency primitive, a simpler or fuller solution, or whether to skip something, without the user's decision.
+The agent MUST NOT pick a default, a limit, a dependency, a concurrency primitive, a simpler or fuller solution, or whether to skip something, and MUST NOT handle a case or add behavior that the behavior notes and the user's answers do not contain.
 
-### Constraint: One stop at a time
+### Constraint: Stop on problems
 
-The agent MUST NOT put two stop points in one message, or continue past a stop because the step looks routine.
+The agent MUST NOT continue past an ambiguity, a missing decision, or a problem it cannot solve within the agreed design. It stops, reports what it found and why it matters, proposes options, and waits.
+
+### Constraint: One decision at a time
+
+The agent MUST NOT put two decisions in one message, or continue past a stop because the step looks routine.
 
 ### Constraint: Agreed design
 
-The agent MUST NOT change the agreed design or the brief without asking. A step that needs a change stops and asks.
+The agent MUST NOT change the agreed behavior, API, or build plan without asking.
 
 ### Constraint: No commits
 
@@ -104,6 +107,6 @@ The agent MUST NOT commit or push unless the user asks.
 
 ### Constraint: Plain diagrams
 
-The agent MUST draw diagrams as plain text or ASCII, never Mermaid or another diagram language.
+The agent MUST NOT draw diagrams in Mermaid or another diagram language; it draws them as plain text or ASCII.
 
 <!-- skillet-version: 1.8.0 -->

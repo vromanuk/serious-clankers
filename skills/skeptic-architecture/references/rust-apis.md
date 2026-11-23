@@ -21,6 +21,8 @@ label: String,           // "baseline_*" convention is the only identity
 ## C-CUSTOM-TYPE / misuse resistance
 
 - Newtypes when two `u64`s mean different things (`DeviceCount`, ids).  
+- Newtype with a private field and `parse` when a `String` or number must satisfy a rule; a type alias only names a type and never stops a mix-up. Which to pick, and when a plain primitive is right: **`type-driven.md` § Example H**.  
+- No `pub type X = String` (or `= u64`) at a crate boundary: callers then depend on the primitive, and moving to a newtype later breaks them.  
 - Enums for real alternatives, not magic strings at internal boundaries.  
 - Parse at the edge; inner code uses domain types.  
 - **Witness / non-empty success types** when “empty is an error” must not be forgettable — full worked examples in **`type-driven.md`**.

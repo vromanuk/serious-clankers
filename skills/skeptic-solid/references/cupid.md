@@ -46,7 +46,7 @@ Martin's reply is the other half: "The best way to make a complicated mess is to
 - **Structure:** directory and module layout mirrors the domain; "grouping them by type should not form the primary structure."
 - **Boundaries:** module boundaries become domain boundaries.
 
-**Flag:** money as `f64`; identifiers of different kinds all `String` or `u64`; several `bool` parameters where an enum would name the meaning; top-level `models/`, `handlers/`, `services/` where one domain change touches all of them. Naming depth is the naming stage's; layout depth is the architecture stage's.
+**Flag:** money as `f64`; identifiers of different kinds all `String` or `u64`; several `bool` parameters where an enum would name the meaning; top-level `models/`, `handlers/`, `services/` where one domain change touches all of them. Naming depth is the naming stage's; layout depth is the architecture stage's; newtype vs alias vs plain primitive is `skeptic-architecture/references/type-driven.md` § Example H.
 
 ---
 

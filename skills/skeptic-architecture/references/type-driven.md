@@ -17,6 +17,7 @@ Map the real concept 1:1 into types (**cardinality**). When several pieces must 
 | **Enum of states** | Each variant holds only that state’s data; a transition takes `self` and returns the next state | State that changes at run time — events, IO, correlated flags (Example E) |
 | **Required inputs in the constructor** | A value with no default is a `new` argument, not an `Option` checked in `build()` | Builders and configs with required fields (Example F) |
 | **Parse at the edge** | `&str` / CLI → domain type once | Don’t re-check the same rule in three places |
+| **Newtype / alias / plain primitive** | Newtype when a rule must hold or look-alike values mix; alias when a spot with no name needs one; otherwise a well-named primitive | `String`, `i64`, `u64` with a domain meaning (Example H) |
 
 Do **not** reach for heavy state-in-type machinery by default. Prefer the **smallest** type that removes the real forgettable bug.
 
@@ -362,7 +363,18 @@ In order of preference:
 3. **Typestate builder** (one marker per required field, `build` only on the all-set state) → only for a public API with many required fields, where even newtype arguments read poorly. It costs a type per field and harder rustdoc.
 4. **`Option` + `build() -> Result`** → right when the values arrive at run time from config, files, or requests. That is parsing at the edge (Example C): done once, with an error that names the missing key.
 
-**Review check:** a required field stored as an `Option` in a builder that code (not config) fills? → move it to `new`. A typestate builder for an internal type with one or two required fields? → constructor arguments.
+**Flags on a plain value: `with_*` methods on the type itself.** When the value only holds data (no validation or work at build time), skip the separate builder type. `new` takes what has no sensible default; each optional flag gets a `with_*` method that takes `self` and returns it, and flags default to off (the strict choice). arrow's `Field` does this (`Field::new("c1", DataType::Int64, false).with_nullable(true)`), as do Java's immutable value types (`java.time`'s `with…` methods). A separate builder (Effective Java, Item 2; std `OpenOptions`, `Command`) pays off when `build` validates or does work, or when there are many settings.
+
+```rust
+// Bad: two bools side by side; a swap compiles and the call site cannot say which is which
+VarcharColumn::new("din", 64, true, false)
+
+// Good: required values in new, flags named, off by default
+VarcharColumn::new("din", 64).with_nullable(true).with_csv_base64_encode(true)
+BigIntColumn::new("ts") // not nullable
+```
+
+**Review check:** a required field stored as an `Option` in a builder that code (not config) fills? → move it to `new`. A typestate builder for an internal type with one or two required fields? → constructor arguments. Positional `bool` arguments to a constructor (`new(name, true, false)`)? → `with_*` methods with off-by-default flags, or a two-variant enum per flag (Rust API Guidelines C-CUSTOM-TYPE). A separate builder type whose `build` only copies fields? → `with_*` methods on the type.
 
 ---
 
@@ -429,6 +441,71 @@ pub fn count_pages(size_bytes: u64) -> u64 {
 
 ---
 
+## Example H — newtype, type alias, or plain primitive
+
+**Sources:** *The Rust Programming Language*, ch. 20 “Advanced Types” (an alias “is not a separate, new type”); Luca Palmieri, *Zero to Production in Rust*, ch. 6 ([Using Types To Guarantee Domain Invariants](https://lpalmieri.com/posts/2020-12-11-zero-to-production-6-domain-modelling/)); David Drysdale, *Effective Rust*, [Item 6](https://www.lurklurk.org/effective-rust/newtype.html); Rust API Guidelines C-NEWTYPE, C-NEWTYPE-HIDE.
+
+**Need:** a `String`, `i64`, `u64`, `usize`, or other primitive carries a domain meaning. Pick the smallest type that removes the real risk; do not default to the bare primitive because a newtype looks expensive, and do not wrap every value.
+
+| The value | Use | Why |
+|---|---|---|
+| One of a fixed set known at compile time | Enum | Unknown values cannot exist |
+| Must satisfy a rule (non-empty, format, length, range) | Newtype with a **private** field and a `parse` / `TryFrom` constructor; read through `AsRef<str>` or `as_str()` | The type is the proof the rule held; every function taking it can trust it (*Zero to Production*’s `SubscriberName`) |
+| No rule, but travels with values of the same primitive and a different meaning (ids of different kinds, topic and group, unit-bearing numbers) | Newtype; a `pub` field is fine because there is nothing to protect | A mix-up stops compiling |
+| Needs a readable name in a spot that has no name of its own — map key or value, generic argument, return type, tuple element — inside one component | Type alias | `HashMap<TopicName, Vec<PartitionId>>` says what `HashMap<String, Vec<i32>>` hides |
+| A long type repeated many times | Type alias | `type Result<T> = std::result::Result<T, Error>`; composition-root aliases (`components.md`) |
+| None of the above: no rule, no look-alike value in the same signatures, local, or handed straight to a library | Plain primitive with a descriptive field or parameter name (and the unit in the name: `timeout_ms`) | The name already documents it; a wrapper would add only conversions |
+
+**An alias documents; it never protects.** `type AccountId = u64` and `type AmountCents = u64` are both `u64`, so swapping them compiles. Use an alias only where a name helps the reader and a mix-up is not the risk. An alias on a field or parameter that is already named (`topic: Topic` with `type Topic = String`) only repeats the name.
+
+**A public alias over a primitive is a commitment.** `pub type UserId = String` at a crate boundary lets callers pass and receive any `String`; switching to a newtype later breaks them. At a public boundary, choose a newtype (which can also hide what it wraps, C-NEWTYPE-HIDE) or the plain primitive.
+
+**What a newtype costs.** Nothing at run time: a one-field struct has the same size as its field (`#[repr(transparent)]` only when FFI or transmute needs a layout guarantee). The cost is code: derives, `Display`, serde and database support, and conversions where it meets libraries. Most of that is one line each:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, sqlx::Type)]
+#[serde(transparent)]
+#[sqlx(transparent)]
+pub struct DeviceId(pub i64);
+```
+
+`derive_more` adds `Display`, `From`, `AsRef`; `nutype` generates a checked constructor and error type. Convert at the edges (handler, repository) so inner code passes the newtype and never unwraps it.
+
+**Pitfalls on a newtype that guarantees a rule:**
+
+```rust
+// Bad: a public field lets anyone skip the rule
+pub struct SubscriberName(pub String);
+
+// Bad: derived Deserialize builds the value without calling parse
+#[derive(Deserialize)]
+pub struct SubscriberName(String);
+
+// Bad: DerefMut lets callers change the inner String after the check;
+// Deref<Target = String> hands out String's whole API
+impl DerefMut for SubscriberName { /* ... */ }
+
+// Good: one way in, read-only way out
+#[derive(Deserialize)]
+#[serde(try_from = "String")]
+pub struct SubscriberName(String);
+
+impl TryFrom<String> for SubscriberName {
+    type Error = InvalidSubscriberName;
+    fn try_from(raw: String) -> Result<Self, Self::Error> { /* check once */ }
+}
+
+impl AsRef<str> for SubscriberName {
+    fn as_ref(&self) -> &str { &self.0 }
+}
+```
+
+Test the constructor through its public contract: one case per rejection rule, and a property test for valid inputs (*Zero to Production* uses `fake` with `quickcheck`).
+
+**Review check:** a primitive that must satisfy a rule, checked at more than one call site or not at all? → newtype with a private field and `parse`. Several values of one primitive with different meanings in the same signatures or structs? → newtypes (Example G for same-kind swaps). `HashMap<String, Vec<String>>` or a tuple of bare primitives whose meaning the reader must guess? → aliases inside the component. An alias offered as protection against mix-ups, or `pub type X = String` at a crate boundary? → newtype. A newtype demanded for a local, rule-free value with no look-alike nearby? → keep the primitive with a descriptive name.
+
+---
+
 ## New struct vs one that already exists
 
 **Need:** a new struct only when no existing type can be reused or generalized.
@@ -460,6 +537,9 @@ Highlight this. Do not decide it off-stage. The finding offers:
 ## What *not* to do
 
 - Newtype every `Vec` when empty is a valid **inventory** outcome.  
+- Newtype every `String` or number: a local, rule-free value with no look-alike nearby stays a well-named primitive.  
+- Treat a type alias as protection against mix-ups, or use `pub type X = String` (or `= u64`) at a crate boundary.  
+- A newtype that guarantees a rule but has a `pub` field, a derived `Deserialize` that skips `parse`, or `DerefMut` to its inner value.  
 - Typestate for a two-step script that never returns mid-protocol.  
 - Typestate for a machine driven by incoming events — the state is only known at run time; use an enum of states.  
 - A catch-all arm in a transition `match` that keeps or defaults the state without saying why.  
@@ -481,5 +561,7 @@ Highlight this. Do not decide it off-stage. The finding offers:
 - Finding: “`on_session` ends in `other => other`, so a session event while `Failed` is silently dropped. Options: return `Err((state, NotConnecting))`; name the states where it is a no-op; `unreachable!` if it cannot happen.”  
 - Finding: “`run_light` shows a color, then `sleep(30 s)`; a button press waits out the sleep, and the state exists only as the paused line. Option: `Light { color, change_at }` with a pure `step(self, event, now)`; the shell waits until `change_at` or the next event.”  
 - Finding: “`fn transfer(debit: u64, credit: u64, amount_cents: u64)` — swapping `debit` and `credit` compiles. Option: a `Transfer` struct with named fields and `AccountId` newtypes.”  
+- Finding: “`subscriber_name: String` is checked for empty in the handler and again in the repository. Options: `SubscriberName(String)` with a private field, `TryFrom<String>`, `#[serde(try_from = "String")]`, and `AsRef<str>`; or one `parse` at the handler with the repository taking the newtype.”  
+- Finding: “`HashMap<String, Vec<i32>>` maps topic to partitions, and the reader must guess both. Option: `type TopicName = String; type PartitionId = i32;` inside the component (not a newtype: there is no rule and no look-alike in scope).”  
 - Finding: “`RequestBuilder::build()` fails when `url` was never set, but code always sets it. Option: take `url` in `new`; `build()` stops returning `Result`.”  
 - Finding: “new `KafkaRecord` repeats `BrokerRecord` (topic, partition, offset, key, payload). Options: reuse and carry registration beside it; generalize to one record and one payload enum; keep both only because registration does not exist before register.”

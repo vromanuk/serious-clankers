@@ -87,7 +87,7 @@ The agent SHALL flag components that build their own clients, stores, or formats
 
 ### Behavior: Type-driven boundaries
 
-When APIs or shared results change, the agent SHALL check whether callers can forget a real decision, and SHALL report `type-driven: ok` or type-driven findings. When the diff adds a struct, the agent SHALL also check whether an existing struct or enum variant already carries those fields, and SHALL flag a near-copy with reuse / generalize / keep-both options.
+When APIs or shared results change, the agent SHALL check whether callers can forget a real decision, and SHALL report `type-driven: ok` or type-driven findings. When the diff adds a struct, the agent SHALL also check whether an existing struct or enum variant already carries those fields, and SHALL flag a near-copy with reuse / generalize / keep-both options. When a primitive (`String`, `i64`, `u64`, …) carries a domain meaning, the agent SHALL choose by the real risk: a newtype with a private field and a checked constructor when a rule must hold; a newtype when look-alike values could be mixed; a type alias only for readability in a spot with no name of its own inside a component; otherwise the primitive with a descriptive name. The agent MUST NOT present a type alias as protection against mix-ups, and SHALL flag `pub type X = <primitive>` at a crate boundary.
 
 #### Scenario: Empty list as silent success
 
@@ -154,6 +154,24 @@ When APIs or shared results change, the agent SHALL check whether callers can fo
 - **GIVEN** a new public `fn register(&mut self, device: &Device)` whose body stores `device.clone()`
 - **WHEN** reviewing type-driven boundaries
 - **THEN** the agent flags the hidden copy and suggests taking `Device` by value, so a caller that is done with it moves it and the cost shows at the call site (`rust-apis.md` § Ownership)
+
+#### Scenario: Primitive with a rule re-checked at call sites
+
+- **GIVEN** `subscriber_name: String` checked for empty and length in the handler and again in the repository
+- **WHEN** reviewing type-driven boundaries
+- **THEN** the agent offers a `SubscriberName` newtype with a private field, a `TryFrom<String>` or `parse` constructor, `#[serde(try_from = "String")]` instead of a plain derived `Deserialize`, and read access through `AsRef<str>`, and does not offer a type alias, because an alias cannot hold the rule
+
+#### Scenario: Map of bare primitives
+
+- **GIVEN** a private `HashMap<String, Vec<i32>>` from topic name to partition ids inside one component, with no rule on either value and no other strings or integers it could be mixed with
+- **WHEN** reviewing type-driven boundaries
+- **THEN** the agent may suggest `type TopicName = String` and `type PartitionId = i32` for readability, says the aliases do not prevent mix-ups, and does not demand newtypes
+
+#### Scenario: Local rule-free primitive
+
+- **GIVEN** a `label: String` built and logged inside one function, or a `retry_count: u32` local to one loop
+- **WHEN** reviewing type-driven boundaries
+- **THEN** the agent does not ask for a newtype or an alias
 
 ### Behavior: Component provided face
 

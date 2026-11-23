@@ -1,6 +1,6 @@
 ---
 name: skeptic-architecture
-spec_hash: 418b2a93dcca
+spec_hash: 4606aee12b38
 description: >
   Stage 2 of skeptic: component-based layout (job-shaped components, public vs
   private surface, use-case orchestration surface not stray helpers, data
@@ -62,6 +62,7 @@ description: >
 | Enum of states for run-time state: data inside its variant, transitions take `self`, a rejected transition returns the state with the reason | Correlated bools / an `Option` valid only under a flag; a catch-all arm that silently keeps or invents a state |
 | Required values as constructor arguments | A required `Option` in a builder that `build()` checks at run time |
 | The time of the next change stored in the state, with `now` passed in | `sleep` between steps, so the state is only the line the program is paused on |
+| Newtype (private field + `parse`) for a primitive that must satisfy a rule; newtype for look-alike values that must not mix; alias to name a map key, generic argument, or return type inside a component | A bare `String` / `i64` / `u64` re-checked at each call site; an alias treated as protection against mix-ups; a newtype forced on a local, rule-free value |
 
 **Ask on each changed boundary:**
 
@@ -74,6 +75,7 @@ description: >
 7. Does a builder check at run time a **required field** that code always sets? Move it to `new`. Detail: § Example F.  
 8. Does a long-running loop separate its steps with **`sleep`**, or count ticks to measure time? Store when the next change is due in the state, pass `now` in, and let the shell wait for that time or the next event. Detail: § Example E2.  
 9. Do **two arguments of the same type** mean different things (debit and credit accounts, source and target offsets, an index and a count) where a swap would compile? Offer named fields in a struct, or newtypes when the kinds differ; an index newtype for a specific collection; `div_ceil` or a stated rounding for sizes. Detail: § Example G.  
+10. Does a **primitive** (`String`, `i64`, `u64`, …) carry a domain meaning? A rule it must satisfy → newtype with a private field and `parse` (no `pub` field, no derived `Deserialize` that skips `parse`, no `DerefMut`). Look-alike values in the same signatures → newtype. A map key, generic argument, or return type the reader must guess → alias inside the component, never offered as protection and never `pub type X = String` at a crate boundary. Otherwise keep the primitive with a descriptive name. Detail: § Example H.  
 
 **Flag:** silent empty success; optional fields that only make sense together; duplicate empty-checks with the same string.
 
@@ -129,6 +131,7 @@ Architecture decides how failure and trust flow between components, so this stag
 - Naming quality alone (→ naming)  
 - Full hard-rule walk (→ hard-rules); still flag private-import as architecture  
 - Newtypes for every list when empty is a valid inventory outcome  
+- Newtypes for every `String` or number: a local, rule-free value with no look-alike nearby stays a well-named primitive  
 - Demand multi-crate / multi-module packaging theater for a tiny single-site change  
 - Demand literal `api/` / `internal/` folders when the root module already defines a clear public surface  
 - Treat “no layers” as “no public use-case orchestration on the component”  
